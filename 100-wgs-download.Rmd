@@ -1,0 +1,27 @@
+---
+title: "100-wgs-download"
+output: html_document
+date: "2023-06-06"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+## https://www.ncbi.nlm.nih.gov/bioproject/PRJNA311498
+
+```{r}
+sra<-read_csv("meta/lates-wgs-SraRunInfo.csv")
+sra %>% select(download_path)
+```
+
+Doing this a lazy way.    
+
+
+```{sh, eval=FALSE}
+
+```
