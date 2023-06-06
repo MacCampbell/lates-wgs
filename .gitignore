@@ -1,3 +1,14 @@
+outputs/
+genome/
+data/
+bams/
+*.html
+
+*DS_Store
+**/.DS_Store
+
+
+
 # History files
 .Rhistory
 .Rapp.history
