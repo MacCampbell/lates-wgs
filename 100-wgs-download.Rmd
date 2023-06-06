@@ -40,3 +40,12 @@ Produces files like:
 SRR3165618.sralite.1_pass_1.fastq.gz      
 SRR3165618.sralite.1_pass_2.fastq.gz     
 
+can use doAlign-zipped.sh to align which will give us properly paired and PCR deduplicated read counts. Should probably consider per-site coverage calcs. Adding to doAlign-zipped.sh .      
+
+samtools depth -a $name.bam | awk '{sum+="\$3"} END {print sum/NR}' 
+
+Note to self: Trial on an reduced set of files, say n=1000 fastqs    
+
+## QC     
+     
+Visualize read counts.        
