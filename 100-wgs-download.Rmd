@@ -21,7 +21,22 @@ sra %>% select(download_path)
 
 Doing this a lazy way.    
 
+in data/raw
 
 ```{sh, eval=FALSE}
-
+cat ../../meta/lates-wgs-SraRunInfo.csv | cut -d ',' -f 10 | while read line; do wget $line; done;
 ```
+
+Need to dump files, something like
+
+fastq-dump --outdir split --skip-technical--readids --read-filter pass --dumpbase --split-3 --gzip --clip 
+
+module load ncbi-toolkit/26_0_1 (added to bash_profile)     
+module load sratoolkit/3.0.0       
+
+fastq-dump --outdir split --skip-technical --readids --read-filter pass --dumpbase --split-3 --gzip --clip raw/SRR3165618.sralite.1      
+
+Produces files like: 
+SRR3165618.sralite.1_pass_1.fastq.gz      
+SRR3165618.sralite.1_pass_2.fastq.gz     
+
