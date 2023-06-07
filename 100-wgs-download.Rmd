@@ -36,6 +36,10 @@ module load sratoolkit/3.0.0
 
 fastq-dump --outdir split --skip-technical --readids --read-filter pass --dumpbase --split-3 --gzip --clip raw/SRR3165618.sralite.1      
 
+--readids causes bwa to not like it, dropping option
+ `for f in raw/*sralite.1; do echo $f; fastq-dump --outdir split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip $f; done;  `    
+ 
+
 Produces files like: 
 SRR3165618.sralite.1_pass_1.fastq.gz      
 SRR3165618.sralite.1_pass_2.fastq.gz     
@@ -44,7 +48,16 @@ can use doAlign-zipped.sh to align which will give us properly paired and PCR de
 
 samtools depth -a $name.bam | awk '{sum+="\$3"} END {print sum/NR}' 
 
-Note to self: Trial on an reduced set of files, say n=1000 fastqs    
+Note to self: Trial on an reduced set of files
+
+`(base) maccamp@farm:~/lates-wgs/data/split$ gunzip -c SRR3165592.sralite.1_pass_1.fastq.gz | head -n 400000 > test.sralite.1_pass_1.fastq`      
+`(base) maccamp@farm:~/lates-wgs/data/split$ gunzip -c SRR3165592.sralite.1_pass_2.fastq.gz | head -n 400000 > test.sralite.1_pass_2.fastq`      
+
+` gzip test.sralite.1_pass_*`    
+`maccamp@farm:~/lates-wgs/data/split$ bash ../../doAlign-zipped.sh test.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz`      
+
+Ran to completion:   
+test-fastqs,200663,97850,0.0151149      
 
 ## QC     
      
