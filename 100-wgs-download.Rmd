@@ -38,7 +38,8 @@ fastq-dump --outdir split --skip-technical --readids --read-filter pass --dumpba
 
 --readids causes bwa to not like it, dropping option
  `for f in raw/*sralite.1; do echo $f; fastq-dump --outdir split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip $f; done;  `    
- 
+
+This is going to take a day or so. Next time do something faster!    
 
 Produces files like: 
 SRR3165618.sralite.1_pass_1.fastq.gz      
@@ -57,8 +58,36 @@ Note to self: Trial on an reduced set of files
 `maccamp@farm:~/lates-wgs/data/split$ bash ../../doAlign-zipped.sh test.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz`      
 
 Ran to completion:   
-test-fastqs,200663,97850,0.0151149      
+test-fastqs,200663,97850,0.0151149    
 
+`(base) maccamp@farm:~/lates-wgs/data/split$ ls | grep pass_1 | perl -pe 's/.fastq.gz//g' > forward`     
+`(base) maccamp@farm:~/lates-wgs/data/split$ ls | grep pass_2 | perl -pe 's/.fastq.gz//g' > reverse`     
+`(base) maccamp@farm:~/lates-wgs/data/split$ ls | grep pass_2 | perl -pe 's/.sralite.1_pass_2.fastq.gz//g' > name`      
+
+(running for 4-10)      
+`(base) maccamp@farm:~/lates-wgs/data/split$ paste forward reverse name  > to-align.txt`     
+`bash ../../doAlign-zipped.sh to-align.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz `
+
+Cluster choked. Checking available partitions:
+
+sacctmgr show User $USER --associations
+sinfo shows time limits     
+
+bmm is available 150-00:00
 ## QC     
      
+First, get meta.    
+
+```{r}
+meta<-sra %>% select(Run, BioSample, Sample, Region, Locality)
+meta$Region<-factor(meta$Region, levels=c("Queensland","Northern Territory","Papua New Guinea",
+                                              "Indonesia","Philipines","Vietnam","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
+meta %>% group_by(Region, Locality) %>% summarize(Count=n())
+```
+     
 Visualize read counts.        
+
+Set up bamlist, maybe downsample
+
+Check one region with GLs

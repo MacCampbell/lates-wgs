@@ -34,7 +34,7 @@ do
        rmdup=\$(samtools view -c ${c3}.sort.flt.bam)
        depth=\$(samtools depth -a ${c3}.sort.flt.bam | awk '{sum+="\$3"} END {print sum/NR}' )
        echo \"${c3},\${reads},\${rmdup},\${depth}\"  > ${c3}.stats" > ${c3}.sh
-       sbatch -p med -t 4-10:00:00 --mem=8G ${c3}.sh
+       sbatch -p bmm -t 7-10:00:00 --mem=8G ${c3}.sh
 
        x=$(( $x + 1 ))
 

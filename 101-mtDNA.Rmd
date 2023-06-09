@@ -1,0 +1,35 @@
+---
+title: "101-mtDNA"
+output: html_document
+date: "2023-06-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+Obtained bold data for Lates
+
+grep -A 1 COI-5P bold.fas | perl -pe 's/--\n//g' > bold-COI.fas 
+./shortenNamesBold.pl bold-COI.fas  > bold-renamed.fas
+ mafft bold-renamed.fas > bold-renamed.afas     
+682 seqs
+
+Very divergent "Lates calcarifer", it is a mess.
+
+Looking at data from Vi et al., Ward et al. and
+(base) Macs-MacBook-Pro-2:mtdna mac$ grep uwisara bold_data.txt | cut -f 1 | while read line; do selectSeqs.pl -m $line bold.fas >> l-uwisara.fas; done;
+
+no lakdiva data
+
+(base) Macs-MacBook-Pro-2:mtdna mac$ cat ward-vi-renamed.fas l-uwisara.fas > ward-vi-uwisara.fas
+(base) Macs-MacBook-Pro-2:mtdna mac$ mafft ward-vi-uwisara.fas > ward-vi-uwisara.afas
+ iqtree -s ward-vi-uwisara.afas -bb 1000 -m GTR+G
+
+
+darwiniensis, Lates Macleay [W.] 1878:345 [Proceedings of the Linnean Society of New South Wales v. 2 (pt 4); ref. 17573] Port Darwin, Northern Territory, Australia. Holotype (unique): AMS I.16319-001 [ex MAMU F442(b)]. Type catalog: Stanbury 1969:206 [ref. 19518]. •Synonym of Lates calcarifer (Bloch 1790) -- (Paxton et al. 1989:482 [ref. 12442], Larson & Williams 1997:354 [ref. 23967], Allen et al. 2006:967 [ref. 29081], Pethiyagoda & Gill 2012:11 [ref. 31984], Larson et al. 2013:93 [ref. 32988], Kottelat 2013:323 [ref. 32989]). Current status: Synonym of Lates calcarifer (Bloch 1790). Latidae. Habitat: freshwater, brackish, marine.
+
