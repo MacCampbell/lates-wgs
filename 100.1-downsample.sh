@@ -1,0 +1,15 @@
+samtools view -bs 0.863298555696337 /home/maccamp/lates-wgs/data/split/SRR3183253.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183253.reduced.bam
+samtools view -bs 0.27990470521153 /home/maccamp/lates-wgs/data/split/SRR3183258.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183258.reduced.bam
+samtools view -bs 0.375682594611867 /home/maccamp/lates-wgs/data/split/SRR3183259.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183259.reduced.bam
+samtools view -bs 0.693900686518971 /home/maccamp/lates-wgs/data/split/SRR3183267.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183267.reduced.bam
+samtools view -bs 0.724250354169287 /home/maccamp/lates-wgs/data/split/SRR3183268.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183268.reduced.bam
+samtools view -bs 0.687522647855424 /home/maccamp/lates-wgs/data/split/SRR3183269.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183269.reduced.bam
+samtools view -bs 0.312228402270003 /home/maccamp/lates-wgs/data/split/SRR3183270.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183270.reduced.bam
+samtools view -bs 0.915632336332414 /home/maccamp/lates-wgs/data/split/SRR3183271.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183271.reduced.bam
+samtools view -bs 0.981669829017854 /home/maccamp/lates-wgs/data/split/SRR3165609.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3165609.reduced.bam
+samtools view -bs 0.693906137120988 /home/maccamp/lates-wgs/data/split/SRR3183262.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183262.reduced.bam
+samtools view -bs 0.548172987124962 /home/maccamp/lates-wgs/data/split/SRR3183263.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183263.reduced.bam
+samtools view -bs 0.371748372745848 /home/maccamp/lates-wgs/data/split/SRR3183264.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183264.reduced.bam
+samtools view -bs 0.421333734802587 /home/maccamp/lates-wgs/data/split/SRR3183265.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183265.reduced.bam
+samtools view -bs 0.696300985960803 /home/maccamp/lates-wgs/data/split/SRR3183266.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183266.reduced.bam
+samtools view -bs 0.795212907361529 /home/maccamp/lates-wgs/data/split/SRR3183252.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183252.reduced.bam

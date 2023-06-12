@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 
 ```{r}
 library(tidyverse)
+library(ggrepel)
 ```
 
 ## https://www.ncbi.nlm.nih.gov/bioproject/PRJNA311498
@@ -148,29 +149,23 @@ Say, at 75% missing threshold?
 ```{sh, eval=FALSE}
 srun -p high -t 12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 -bam bamlists/58.bamlist -r NC_066833.1 \
--ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 44 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
--out outputs/100/58-ibs > outputs/100/58-ibs.out 2> outputs/100/48-ibs.err &
+-out outputs/100/58-ibs > outputs/100/58-ibs.out 2> outputs/100/58-ibs.err &
 ```
 
-srun -p high -t 12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
--bam bamlists/ -r NC_066833.1 \
--minInd   -GL 1 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz -minMaf 0.05 \
--doGLF 2 -doMajorMinor 1 -doMaf 2 -SNP_pval 1e-6 -minMapQ 20 -minQ 20 \
--out outputs/100/ > outputs/302/ -beagle.out 2> outputs/302/ -beagle.err &
 
-srun -p high -t 1:00:00 python $HOME/pcangsd/pcangsd.py -beagle outputs/100/ .beagle.gz -o outputs/100/ -pca -threads 10
-```
-
+	-> Total number of sites analyzed: 24785854
+	-> Number of sites retained after filtering: 302009 
 
 Visualize covMat    
 
 
 ```{r}
-meta<-mo300
-m <- as.matrix(read.table("outputs/302/mo300k-ibs.covMat"))
+meta<-m2
+m <- as.matrix(read.table("outputs/100/58-ibs.covMat"))
 eig <- eigen(m)
 var<-eig$values/sum(eig$values)
 cumvar<-cumsum(eig$values)/sum(eig$values)
@@ -183,12 +178,12 @@ head(cumvar)
 ```{r}
 covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta)
 
-text12<-covs %>% select(SampleID, Region, V1, V2) %>%
+text12<-covs %>% select(Run, Region, V1, V2) %>%
   group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
 
 ggplot(covs) +
   geom_point(aes(x=V1, y=V2, fill=Region), pch=21, alpha=0.75) +
-  geom_text_repel(data=text12, aes(x=x, y=y, label=Location), max.overlaps = Inf) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
   xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
   ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
   theme_bw() +
@@ -197,12 +192,12 @@ ggplot(covs) +
 ```
 
 ```{r}
-text13<-covs  %>% select(SampleID, Region, V1, V3) %>%
+text13<-covs  %>% select(Run, Region, V1, V3) %>%
   group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
 
 ggplot(covs) +
   geom_point(aes(x=V1, y=V3, fill=Region), pch=21, alpha=0.75) +
-  geom_text_repel(data=text13, aes(x=x, y=y, label=Location), max.overlaps = Inf) +
+  geom_text_repel(data=text13, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
   xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
   ylab(paste("PC3", " ", round((100*var[3]),2), "%", sep = "")) +
   theme_bw() +
@@ -210,6 +205,55 @@ ggplot(covs) +
   scale_fill_viridis_d(option="turbo")
 ```
 
+## Downsampling
+
+Let's review those counts again:
+
+```{r}
+ggplot(meta2) +
+  geom_histogram(aes(x=Filtered, fill=Region)) +
+  scale_fill_viridis_d(option="turbo") +
+  theme_bw() +
+  ylab("Count") +
+  xlab("Filtered Read Number") +
+  theme(panel.grid=element_blank())
+```
+
+Downsampling to 5e7 is about 10X coverage or so.
+```{r}
+median(meta2$Filtered)
+meta2 %>% arrange(Filtered) %>% head(n=5)
+meta2 %>% filter(Filtered > 5e7) %>% summarize(Count=n())
+```
+
+
+```{r}
+meta3<-meta2 %>%  mutate(Frac=5e7/Filtered)  %>% 
+  mutate(Path=ifelse(Filtered > 5e7, paste0("data/downsample/",Run,".reduced.bam"),
+                     paste0("data/split/",Run,".sort.flt.bam")))
+                     
+downsample<-meta3 %>% filter(Filtered > 5e7 ) %>%
+  mutate(ReductionCommand = paste0("samtools view -bs ",Frac, " ", "/home/maccamp/lates-wgs/data/split/",
+                                   Run, ".sort.flt.bam"," > ",
+                                   "/home/maccamp/lates-wgs/data/downsample/",
+                                   Run,".reduced.bam" )) 
+
+write_csv(downsample$ReductionCommand %>% as_tibble(), "100.1-downsample.sh", col_names = FALSE)
+```
+
+Downsampling    
+```{sh, eval=FALSE}
+srun -p high -t 02:00:00 –nodes=1 parallel -j 10 < 100.1-downsample.sh > outputs/100/downsample.stdout 2> outputs/100/downsample.stderr
+```
+
+srun -p high -t 12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/ -r NC_066833.1 \
+-minInd   -GL 1 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz -minMaf 0.05 \
+-doGLF 2 -doMajorMinor 1 -doMaf 2 -SNP_pval 1e-6 -minMapQ 20 -minQ 20 \
+-out outputs/100/ > outputs/302/ -beagle.out 2> outputs/302/ -beagle.err &
+
+srun -p high -t 1:00:00 python $HOME/pcangsd/pcangsd.py -beagle outputs/100/ .beagle.gz -o outputs/100/ -pca -threads 10
+```
 
 
 Covariance matrix from PCAngsd     
