@@ -73,7 +73,14 @@ Cluster choked. Checking available partitions:
 sacctmgr show User $USER --associations
 sinfo shows time limits     
 
-bmm is available 150-00:00
+bmm is available 150-00:00, trying bmm 7-10:00
+
+Running all jobs!     
+
+
+At a glance, aligment success is 99.5% or so!
+
+
 ## QC     
      
 First, get meta.    
@@ -81,13 +88,128 @@ First, get meta.
 ```{r}
 meta<-sra %>% select(Run, BioSample, Sample, Region, Locality)
 meta$Region<-factor(meta$Region, levels=c("Queensland","Northern Territory","Papua New Guinea",
-                                              "Indonesia","Philipines","Vietnam","Cambodia","Thailand",
+                                              "Indonesia","Philippines","Vietnam","Cambodia","Thailand",
                                               "India Eastern Coast","India Western Coast"))
 meta %>% group_by(Region, Locality) %>% summarize(Count=n())
 ```
      
-Visualize read counts.        
+```{r}
+meta %>% group_by(Region) %>% summarize(Count=n())
+```
 
-Set up bamlist, maybe downsample
+Visualize read counts.     
 
-Check one region with GLs
+```{r}
+files<-list.files(path="outputs/100", patter="*.stats", full.names = TRUE)
+reads<-lapply(files, read.csv, header=FALSE, col.names=c("Run","Aligned","Filtered","Coverage"))
+reads<-bind_rows(reads)
+``` 
+
+```{r}
+meta2<-left_join(meta,reads)
+meta2
+```
+
+```{r}
+ggplot(meta2) +
+  geom_histogram(aes(x=Filtered, fill=Region)) +
+  scale_fill_viridis_d(option="turbo") +
+  theme_bw() +
+  ylab("Count") +
+  xlab("Filtered Read Number") +
+  theme(panel.grid=element_blank())
+```
+
+```{r}
+ggplot(meta2) +
+  geom_histogram(aes(x=Coverage, fill=Region)) +
+  scale_fill_viridis_d(option="turbo") +
+  theme_bw() +
+  ylab("Count") +
+  theme(panel.grid=element_blank())
+```
+
+Set up bamlist, maybe downsample? Using doIbs to get random read sampled and a more conventional approach of one region, LG01 with GLs.
+
+
+```{r}
+m2<-meta2 %>% filter(Coverage > 3) %>% mutate(Path=paste0("data/split/",Run,".sort.flt.bam"))
+write_tsv(m2 %>% select(Path), file="bamlists/58.bamlist", col_names = FALSE)
+m2 %>% group_by(Region) %>% summarize(Count=n())
+```
+
+Expectations are that the India fish are divergent, a major mtDNA phylogroup is there. Should probably also find a lesser separation withing of Oz+PNG from Indonesia, Philippnes, Vietnam, Cambodia, Cambodia, Thailand. Though, who knows at this point! Philippines is pretty far away. I may have to try non-allele frequency based methods.    
+But still, a MAF of 0.05 should identify fixed variants in India.      
+
+Using LG01/NC_066833.1      
+
+Say, at 75% missing threshold?
+
+```{sh, eval=FALSE}
+srun -p high -t 12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/58.bamlist -r NC_066833.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz \
+-minInd 44 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/100/58-ibs > outputs/100/58-ibs.out 2> outputs/100/48-ibs.err &
+```
+
+srun -p high -t 12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/ -r NC_066833.1 \
+-minInd   -GL 1 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz -minMaf 0.05 \
+-doGLF 2 -doMajorMinor 1 -doMaf 2 -SNP_pval 1e-6 -minMapQ 20 -minQ 20 \
+-out outputs/100/ > outputs/302/ -beagle.out 2> outputs/302/ -beagle.err &
+
+srun -p high -t 1:00:00 python $HOME/pcangsd/pcangsd.py -beagle outputs/100/ .beagle.gz -o outputs/100/ -pca -threads 10
+```
+
+
+Visualize covMat    
+
+
+```{r}
+meta<-mo300
+m <- as.matrix(read.table("outputs/302/mo300k-ibs.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+```
+
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta)
+
+text12<-covs %>% select(SampleID, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Region), pch=21, alpha=0.75) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Location), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="turbo")
+```
+
+```{r}
+text13<-covs  %>% select(SampleID, Region, V1, V3) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
+
+ggplot(covs) +
+  geom_point(aes(x=V1, y=V3, fill=Region), pch=21, alpha=0.75) +
+  geom_text_repel(data=text13, aes(x=x, y=y, label=Location), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC3", " ", round((100*var[3]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="turbo")
+```
+
+
+
+Covariance matrix from PCAngsd     
