@@ -136,6 +136,7 @@ Set up bamlist, maybe downsample? Using doIbs to get random read sampled and a m
 ```{r}
 m2<-meta2 %>% filter(Coverage > 3) %>% mutate(Path=paste0("data/split/",Run,".sort.flt.bam"))
 write_tsv(m2 %>% select(Path), file="bamlists/58.bamlist", col_names = FALSE)
+write_csv(m2, file="meta/58.csv")
 m2 %>% group_by(Region) %>% summarize(Count=n())
 ```
 
@@ -160,12 +161,31 @@ srun -p high -t 12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 	-> Total number of sites analyzed: 24785854
 	-> Number of sites retained after filtering: 302009 
 
-Visualize covMat    
+90% threshold    
+
+```{sh, eval=FALSE}
+srun -p high -t 12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/58.bamlist -r NC_066833.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 53 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/100/58-ibs-90 > outputs/100/58-ibs-90.out 2> outputs/100/58-ibs-90.err &
+
+#ngs admix    
+srun -p high -t 02:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-90.beagle.gz -K 2 -o outputs/100/58-K2 &
+srun -p high -t 02:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-90.beagle.gz -K 3 -o outputs/100/58-K3 &
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-90.beagle.gz -K 4 -o outputs/100/58-K4 &
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-90.beagle.gz -K 5 -o outputs/100/58-K5 &
+```
+
+282906     
+Visualize covMat     
 
 
 ```{r}
 meta<-m2
-m <- as.matrix(read.table("outputs/100/58-ibs.covMat"))
+m <- as.matrix(read.table("outputs/100/58-ibs-90.covMat"))
 eig <- eigen(m)
 var<-eig$values/sum(eig$values)
 cumvar<-cumsum(eig$values)/sum(eig$values)
@@ -205,6 +225,68 @@ ggplot(covs) +
   scale_fill_viridis_d(option="turbo")
 ```
 
+### NGS Admix
+
+
+
+```{r, echo=FALSE}
+PlotAdmix<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Last col empty
+q<-q[1:length(colnames(q))-1]
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  theme(legend.position = "") +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  scale_fill_viridis_d(option="magma")
+
+}
+```
+
+```{r}
+PlotAdmix("outputs/100/58-K2.qopt", m2)
+```
+```{r}
+PlotAdmix("outputs/100/58-K3.qopt", m2)
+```
+
+```{r}
+PlotAdmix("outputs/100/58-K4.qopt", m2)
+```
 ## Downsampling
 
 Let's review those counts again:
@@ -243,17 +325,18 @@ write_csv(downsample$ReductionCommand %>% as_tibble(), "100.1-downsample.sh", co
 
 Downsampling    
 ```{sh, eval=FALSE}
-srun -p high -t 02:00:00 –nodes=1 parallel -j 10 < 100.1-downsample.sh > outputs/100/downsample.stdout 2> outputs/100/downsample.stderr
+srun -p high -t 04:00:00 --nodes=1 parallel -j 10 < 100.1-downsample.sh > outputs/100/downsample.stdout 2> outputs/100/downsample.stderr
 ```
 
+Calling GLs      
+
+```{sh, eval=FALSE}
 srun -p high -t 12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 -bam bamlists/ -r NC_066833.1 \
 -minInd   -GL 1 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz -minMaf 0.05 \
--doGLF 2 -doMajorMinor 1 -doMaf 2 -SNP_pval 1e-6 -minMapQ 20 -minQ 20 \
+-doGLF 2 -doMajorMinor 1 -doMaf 2 -SNP_pval 1e-6 -minMapQ 10 -minQ 20 \
 -out outputs/100/ > outputs/302/ -beagle.out 2> outputs/302/ -beagle.err &
 
 srun -p high -t 1:00:00 python $HOME/pcangsd/pcangsd.py -beagle outputs/100/ .beagle.gz -o outputs/100/ -pca -threads 10
 ```
 
-
-Covariance matrix from PCAngsd     
