@@ -177,15 +177,55 @@ srun -p high -t 02:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes output
 srun -p high -t 02:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-90.beagle.gz -K 3 -o outputs/100/58-K3 &
 srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-90.beagle.gz -K 4 -o outputs/100/58-K4 &
 srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-90.beagle.gz -K 5 -o outputs/100/58-K5 &
+
+#Altered MAF
+srun -p high -t 12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/58.bamlist -r NC_066833.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 53 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.10 \
+-out outputs/100/58-ibs-90-1 > outputs/100/58-ibs-90-1.out 2> outputs/100/58-ibs-90-1.err &
+
+srun -p high -t 2:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/58.bamlist -r NC_066833.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 53 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.20 \
+-out outputs/100/58-ibs-90-2 > outputs/100/58-ibs-90-2.out 2> outputs/100/58-ibs-90-2.err &
+
+srun -p high -t 02:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-90-2.beagle.gz -K 2 -o outputs/100/58-K2-2 &
+srun -p high -t 02:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-90-2.beagle.gz -K 3 -o outputs/100/58-K3-2 &
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-90-2.beagle.gz -K 4 -o outputs/100/58-K4-2 &
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-90-2.beagle.gz -K 5 -o outputs/100/58-K5-2 &
+
+
+srun -p high -t 2:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/58.bamlist -r NC_066833.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 53 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.30 \
+-out outputs/100/58-ibs-90-3 > outputs/100/58-ibs-90-3.out 2> outputs/100/58-ibs-90-3.err &
+
+
+srun -p high -t 02:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-90-3.beagle.gz -K 2 -o outputs/100/58-K2-3 &
+srun -p high -t 02:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-90-3.beagle.gz -K 3 -o outputs/100/58-K3-3 &
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-90-3.beagle.gz -K 4 -o outputs/100/58-K4-3 &
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-90-3.beagle.gz -K 5 -o outputs/100/58-K5-3 &
+
 ```
 
-282906     
+282906 
+64041 at maf = 0.2  
+37921 at maf = 0.3
 Visualize covMat     
 
 
 ```{r}
 meta<-m2
-m <- as.matrix(read.table("outputs/100/58-ibs-90.covMat"))
+m <- as.matrix(read.table("outputs/100/58-ibs-90-3.covMat"))
 eig <- eigen(m)
 var<-eig$values/sum(eig$values)
 cumvar<-cumsum(eig$values)/sum(eig$values)
@@ -258,7 +298,7 @@ labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %
 
 #Plot
 ggplot(rdf) + 
-  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1, alpha=0.8) +
   geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
   geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
                xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
@@ -278,14 +318,18 @@ ggplot(rdf) +
 ```
 
 ```{r}
-PlotAdmix("outputs/100/58-K2.qopt", m2)
+PlotAdmix("outputs/100/58-K2-3.qopt", m2)
 ```
 ```{r}
-PlotAdmix("outputs/100/58-K3.qopt", m2)
+PlotAdmix("outputs/100/58-K3-3.qopt", m2)
 ```
 
 ```{r}
-PlotAdmix("outputs/100/58-K4.qopt", m2)
+PlotAdmix("outputs/100/58-K4-3.qopt", m2)
+```
+
+```{r}
+PlotAdmix("outputs/100/58-K5-3.qopt", m2)
 ```
 ## Downsampling
 
@@ -333,7 +377,7 @@ Calling GLs
 ```{sh, eval=FALSE}
 srun -p high -t 12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 -bam bamlists/ -r NC_066833.1 \
--minInd   -GL 1 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz -minMaf 0.05 \
+-minInd   -GL 1 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna -minMaf 0.05 \
 -doGLF 2 -doMajorMinor 1 -doMaf 2 -SNP_pval 1e-6 -minMapQ 10 -minQ 20 \
 -out outputs/100/ > outputs/302/ -beagle.out 2> outputs/302/ -beagle.err &
 
