@@ -35,12 +35,13 @@ srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 -out outputs/101/58-ibs-90 > outputs/101/58-ibs-90.out 2> outputs/101/58-ibs-90.err &
 
 #ngs admix    
-srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 2 -o outputs/101/58-K2 &
-srun -p high -t 05:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 3 -o outputs/101/58-K3 &
-srun -p high -t 06:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 4 -o outputs/101/58-K4 &
-srun -p high -t 07:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 5 -o outputs/101/58-K5 &
+srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 2 -o outputs/101/58-K2 &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 3 -o outputs/101/58-K3 &
+srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 4 -o outputs/101/58-K4 &
+srun -p high -t 07:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 5 -o outputs/101/58-K5 &
 ```
 
+	-> Number of sites retained after filtering: 7437516     
 
      
 ### Visualize covMat     
@@ -71,7 +72,11 @@ ggplot(covs) +
   ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
   theme_bw() +
   theme(panel.grid=element_blank()) +
-  scale_fill_viridis_d(option="turbo")
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("Genome-Wide PCA of L. calcarifer WGS Data") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+ggsave("outputs/101/lates-c-genome-wide-pca-12.jpeg")
 ```
 
 ```{r}
@@ -140,4 +145,24 @@ ggplot(rdf) +
 
 ```{r}
 PlotAdmix("outputs/101/58-K2.qopt", m2)
+```
+
+
+### Dropping India
+
+These guys are so far out there, let's drop and use one chrom.    
+
+```{r}
+m47<-m2 %>% filter(!Region %in% c("India Eastern Coast","India Western Coast"))
+write_tsv(m47 %>% select(Path), col_names = FALSE, "bamlists/47.bamlist")
+```
+
+```{sh, eval=FALSE}
+srun -p high -t 1:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/47.bamlist -r NC_066833.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 42 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/101/47-ibs-90 > outputs/101/47-ibs-90.out 2> outputs/101/47-ibs-90.err &
 ```

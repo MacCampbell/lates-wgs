@@ -33,3 +33,36 @@ no lakdiva data
 
 darwiniensis, Lates Macleay [W.] 1878:345 [Proceedings of the Linnean Society of New South Wales v. 2 (pt 4); ref. 17573] Port Darwin, Northern Territory, Australia. Holotype (unique): AMS I.16319-001 [ex MAMU F442(b)]. Type catalog: Stanbury 1969:206 [ref. 19518]. •Synonym of Lates calcarifer (Bloch 1790) -- (Paxton et al. 1989:482 [ref. 12442], Larson & Williams 1997:354 [ref. 23967], Allen et al. 2006:967 [ref. 29081], Pethiyagoda & Gill 2012:11 [ref. 31984], Larson et al. 2013:93 [ref. 32988], Kottelat 2013:323 [ref. 32989]). Current status: Synonym of Lates calcarifer (Bloch 1790). Latidae. Habitat: freshwater, brackish, marine.
 
+
+Can use mitogenomes for basic time calibrated tree....
+EU189379.1 WA
+DQ108026.1 QLD
+KJ573921.1 Indonesia
+KJ573937.1 Singapore
+KJ573895.1 Andaman and Nicobar
+KJ573901.1 Bangladesh
+
+
+ANGBF15780-19	Lates japonicus
+ISZA082-21	Lates microlepis
+ANGBF15782-19	Lates niloticus
+JQ841102.1 Centropomus undecimalis
+KP112195.1 Channa maculata
+KX245097.1 Nandus nandus
+
+
+Centropomidae	48.6	1.0	1.0	Otero 2004	Centropomus undecimalis and Lates calcarifer
+Channoidea	48	1.71	1.14	Santini et al. 2009	Channa maculata and Nandus nebulosus
+
+iqtree -s for-mtdna-time.afas  -bb 1000 -m GTR+G --redo
+
+Set up for MB
+
+seqConverter.pl -dfor-mtdna-time.afas -on
+
+
+Li et al. 16S
+
+L04 100% identical to D32 Australia: Darwin Harbour, Darwin
+L05 96.38% identical to D32, similar to Malaysian seq.
+L07 99.85% similar to D32, see DQ010541
