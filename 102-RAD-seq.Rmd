@@ -1,0 +1,29 @@
+---
+title: "102-RAD-seq"
+output: html_document
+date: "2023-07-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+PRJDB3890    
+Wang et al. (2016) data     
+This data set includes the raw ddRAD-seq sequencing reads of Asian seabass, which were collected from six geographical populations consisting of 191 individuals from Southeast Asia to northern Australia and Papua New Guinea.     
+
+
+```{r}
+rad<-read_csv("meta/lates-rad-sra-info.txt")
+rad %>% group_by(geo_loc_name_country) %>% summarize(Count=n())
+```
+can download like https://sra-pub-run-odp.s3.amazonaws.com/sra/DRR111125/DRR111125
+
+putting in data/rad-raw
+
+```{sh, eval=FALSE}
+cat ../../meta/lates-rad-sra-info.txt | cut -d ',' -f 1 | while read line; do wget https://sra-pub-run-odp.s3.amazonaws.com/sra/$line/$line; done;
+```

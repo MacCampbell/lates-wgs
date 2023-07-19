@@ -272,7 +272,7 @@ PlotAdmix("outputs/101/47-K5-2.qopt", m47)
 ```
 With GLs, no doIBS
 
-```{sh}
+```{sh, eval=FALSE}
 srun -p high -t 1:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 -bam bamlists/47.bamlist -r NC_066833.1 \
 -minInd 42 -GL 1 -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna -minMaf 0.05 \
@@ -293,3 +293,4 @@ srun -p high -t 01:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -li
 ```{r}
 PlotAdmix("outputs/101/47-gl-K2.qopt", m47)
 ```
+
