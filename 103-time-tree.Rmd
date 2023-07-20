@@ -1,0 +1,67 @@
+---
+title: "103-time-tree"
+output: html_document
+date: "2023-07-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(treeio)
+library(ape)
+library(ggtree)
+library(ggrepel)
+```
+
+Using two calibration points:     
+		OG =  offsetexp(48,62.4)     
+		Centropomidae = offsetexp(48.6,63.18)     
+		
+		Could include
+`>ISZA081-21|Lates mariae|COI-5P
+CGGAATAGTGGGCACAGCCCTAAGCCTACTCATCCGAGCGGAACTTAGCCAACCTGGCGCACTCCTAGGAGACGACCAGATCTATAACGTAATTGTTACTGCCCACGCTTTCGTAATAATTTTCTTTATAGTAATACCAATTATGATCGGAGGCTTTGGAAACTGACTTATCCCGCTAATAATCGGAGCCCCAGACATAGCATTCCCTCGAATAAATAACATGAGTTTCTGACTCCTTCCACCATCTTTCCTGCTTCTCCTAGCTTCTTCTGGGGTAGAAGCCGGAGCTGGAACCGGTTGAACTGTATATCCGCCACTCGCTGGAAACCTAGCCCATGCTGGAGCATCCGTTGACCTAACCATCTTTTCCCTTCACTTAGCAGGAATTTCCTCAATTCTCGGGGCCATTAACTTTATTACTACCATCTTCAATATGAAACCGGCTGCTGTGTCTATATATCAAATTCCTCTGTTCGTCTGAGCAGTGTTAATTACAGCTGTACTACTCCTTCTTTCCCTCCCAGTCTTAGCCGCTGGTATTACAATACTTCTTACAGACCGAAATCTAAATACAGCATTCTTTGACCCCG`
+		
+		
+```{r}
+tree<-read.beast("data/mtdna/dating/lates-date.con.tre") 
+tm<-read_csv("meta/tree-meta.csv")
+```
+
+```{r}
+t<-ggtree(tree) %>% ggtree::rotate(22) %<+% tm 
+nodes<-t$data %>% filter(isTip==FALSE) %>% filter(x > 41) %>% filter(node %in% c(21,22))
+extras<-t$data %>% filter(isTip==TRUE)
+
+t + 
+  geom_text(data=t$data %>% filter(isTip==FALSE), aes(x=x, y=y,label=node)) +
+  geom_tiplab(size=4, aes(x=x+1,label=Tip), fontface = 3) 
+```
+
+```{r}
+t +
+  geom_range(range='age_0.95HPD', color='grey', alpha=.7, size=2) +
+  geom_text(data=nodes, aes(x=x-3, y=y+.5, label=round(as.numeric(age_median),2)), fontface="bold") +
+  geom_tiplab(size=4, aes(x=x+1,label=Tip), fontface = 3) + 
+  geom_tiplab(size=4, aes(x=x+14,label=Additional), fontface = 1) + 
+  geom_cladelab(node=17, label="Centropomidae", offset=19) +
+  geom_cladelab(node=15, label="Outgroups", offset=19) +
+  theme_tree2()+
+  geom_vline(xintercept=c(1.6,11.6,21.6,31.6,41.6), lty=2, lwd=0.5, alpha=0.5) +
+  scale_x_continuous(name="\nTime in Millions of Years Ago", breaks=c(1.6,11.6,21.6,31.6,41.6,51.6), 
+                     labels=c(50,40,30,20,10,0),
+                     limits=c(-5,90))  +
+  theme(axis.text.x = element_text(face="bold",size=12)) +
+  theme(axis.title.x = element_text(size=14))
+
+ggsave("outputs/103/time-tree.pdf")
+  
+```
+
+95%hpd    
+```{r}
+age<-t$data %>% filter(node %in% c(21,22)) %>% select(age_0.95HPD)
+age$age_0.95HPD
+```

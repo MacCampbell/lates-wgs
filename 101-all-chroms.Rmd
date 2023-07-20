@@ -39,6 +39,7 @@ srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -li
 srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 3 -o outputs/101/58-K3 &
 srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 4 -o outputs/101/58-K4 &
 srun -p high -t 07:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 5 -o outputs/101/58-K5 &
+
 ```
 
 	-> Number of sites retained after filtering: 7437516     
@@ -223,7 +224,7 @@ ggplot(covs) +
   ggtitle("Genome-Wide PCA of L. calcarifer WGS Data") +
   theme(plot.title = element_text(hjust=0.5, face="bold"))
 
-ggsave("outputs/101/lates-c-genome-wide-pca-12-oz-png-asia.jpeg")
+ggsave("outputs/101/lates-c-genome-wide-pca-12-oz-png-asia-maf20.jpeg")
 ```
 ```{r}
 ggplot(covs) +

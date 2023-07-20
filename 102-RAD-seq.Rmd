@@ -18,12 +18,41 @@ This data set includes the raw ddRAD-seq sequencing reads of Asian seabass, whic
 
 ```{r}
 rad<-read_csv("meta/lates-rad-sra-info.txt")
-rad %>% group_by(geo_loc_name_country) %>% summarize(Count=n())
+sites<-rad %>% group_by(geo_loc_name_country, Lat_Lon) %>% summarize(Count=n())
+sites
 ```
 can download like https://sra-pub-run-odp.s3.amazonaws.com/sra/DRR111125/DRR111125
 
 putting in data/rad-raw
 
 ```{sh, eval=FALSE}
-cat ../../meta/lates-rad-sra-info.txt | cut -d ',' -f 1 | while read line; do wget https://sra-pub-run-odp.s3.amazonaws.com/sra/$line/$line; done;
+cat ../../meta/lates-rad-sra-info.txt | cut -d ',' -f 1 | while read line; do wget https://sra-pub-run-odp.s3.amazonaws.com/sra/$line/$line	; done;
 ```
+
+Splitting, without readids for BWA
+
+fastq-dump --outdir rad-split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip rad-raw/DRR111126
+
+ `for f in rad-raw/DRR*; do echo $f; fastq-dump --outdir rad-split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip $f; done;  `   
+ 
+ 
+## Align    
+
+`(base) maccamp@farm:~/lates-wgs/data/rad-split$ ls | grep pass_1 | perl -pe 's/.fastq.gz//g' > forward`     
+`(base) maccamp@farm:~/lates-wgs/data/rad-split$ ls | grep pass_2 | perl -pe 's/.fastq.gz//g' > reverse`     
+`(base) maccamp@farm:~/lates-wgs/data/rad-split$ ls | grep pass_2 | perl -pe 's/_pass_1.fastq.gz//g' > name`      
+
+Should be able to join with rad df from the name
+
+`(base) maccamp@farm:~/lates-wgs/data/rad-split$ paste forward reverse name  > to-align.txt`     
+`bash ../../doAlign-zipped.sh to-align.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz `
+
+## QC
+
+### Normalize?
+
+## AUW vs AUE/PNG
+
+This fish are pretty similar. But, can I identify SNPS to separate this phylogroup from everyone else, then, separate AU from PNG?  The WGS data can be used to validate.
+
+
