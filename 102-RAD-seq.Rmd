@@ -35,12 +35,21 @@ fastq-dump --outdir rad-split --skip-technical --read-filter pass --dumpbase --s
 
  `for f in rad-raw/DRR*; do echo $f; fastq-dump --outdir rad-split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip $f; done;  `   
  
- 
+This of course would take forever!
+
+`for f in ../rad-raw/DRR*; do echo fastq-dump --outdir ./ --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip $f >> split-commands.sh; done;`
+
+`module load parallel`
+`srun -p high -t 1-00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 parallel -j 12 < split-commands.sh`   
+
+Running 12 parallel tasks on one node, note the high node actually uses a Parallel (CPU) node with 512 GB RAM, 128 cores/256 threads, 2 TB /scratch
+
+
 ## Align    
 
 `(base) maccamp@farm:~/lates-wgs/data/rad-split$ ls | grep pass_1 | perl -pe 's/.fastq.gz//g' > forward`     
 `(base) maccamp@farm:~/lates-wgs/data/rad-split$ ls | grep pass_2 | perl -pe 's/.fastq.gz//g' > reverse`     
-`(base) maccamp@farm:~/lates-wgs/data/rad-split$ ls | grep pass_2 | perl -pe 's/_pass_1.fastq.gz//g' > name`      
+`(base) maccamp@farm:~/lates-wgs/data/rad-split$ ls | grep pass_1 | perl -pe 's/_pass_1.fastq.gz//g' > name`      
 
 Should be able to join with rad df from the name
 
