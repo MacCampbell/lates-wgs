@@ -21,6 +21,9 @@ rad<-read_csv("meta/lates-rad-sra-info.txt")
 sites<-rad %>% group_by(geo_loc_name_country, Lat_Lon) %>% summarize(Count=n())
 sites
 ```
+13.38 S 127.04 E West Australia
+18.41 S 146.64 E East Australia   
+
 can download like https://sra-pub-run-odp.s3.amazonaws.com/sra/DRR111125/DRR111125
 
 putting in data/rad-raw
@@ -44,6 +47,10 @@ This of course would take forever!
 
 Running 12 parallel tasks on one node, note the high node actually uses a Parallel (CPU) node with 512 GB RAM, 128 cores/256 threads, 2 TB /scratch
 
+Getting the missing files
+fastq-dump --outdir rad-split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip rad-raw/DRR111273.sralite.1
+~/lates-wgs/data/rad-split$ ln -s DRR111273.sralite.1_pass_1.fastq.gz DRR111273_pass_1.fastq.gz
+~/lates-wgs/data/rad-split$ ln -s DRR111273.sralite.1_pass_2.fastq.gz DRR111273_pass_2.fastq.gz
 
 ## Align    
 
@@ -54,9 +61,86 @@ Running 12 parallel tasks on one node, note the high node actually uses a Parall
 Should be able to join with rad df from the name
 
 `(base) maccamp@farm:~/lates-wgs/data/rad-split$ paste forward reverse name  > to-align.txt`     
-`bash ../../doAlign-zipped.sh to-align.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz `
+`bash ../../doAlign-rad-zipped.sh to-align.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz `
+`bash ../../doAlign-rad-zipped.sh straggler.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz `
+
+Visualize read counts.     
+
+```{r}
+files<-list.files(path="outputs/102", patter="*.stats", full.names = TRUE)
+reads<-lapply(files, read.csv, header=FALSE, col.names=c("Run","Aligned","Filtered","Coverage"))
+reads<-bind_rows(reads)
+``` 
+
+```{r}
+meta<-left_join(rad,reads) %>% mutate(Location=paste0(geo_loc_name_country, "-",Lat_Lon)) %>%
+  mutate(Pop=ifelse(Location=="Australia-13.38 S 127.04 E", "AUW",
+             ifelse(Location=="Australia-18.41 S 146.64 E", "AUE",
+         ifelse(Location=="Papua New Guinea-9.42 S 140.93 E", "PNG",
+         ifelse(Location=="Indonesia-1.66 S 104.87 E", "INA",
+         ifelse(Location=="Malaysia-3.35 N 103.64 E", "MAL",
+         ifelse(Location=="Thailand-12.62 N 101.15 E","THA", geo_loc_name_country
+         )))))))
+meta <- meta %>% mutate(Path=paste0("bams/",Run,".sort.flt.bam"))
+```
+
+```{r}
+min(meta$Filtered)
+meta %>% filter(geo_loc_name_country=="Thailand") %>% select(Run, Filtered) %>% arrange(Filtered) %>% tail()
+
+```
+DRR111273 missing, only available as SRALITE. Downloading, splitting, aligning
+
+```{r}
+ggplot(meta) +
+  geom_histogram(aes(x=Filtered, fill=Pop)) +
+  scale_fill_viridis_d(option="turbo") +
+  theme_bw() +
+  ylab("Count") +
+  xlab("Filtered Read Number") +
+  theme(panel.grid=element_blank())
+```
+
+
+```{r}
+ggplot(meta) +
+  geom_histogram(aes(x=Coverage, fill=Pop)) +
+  scale_fill_viridis_d(option="turbo") +
+  theme_bw() +
+  ylab("Count") +
+  theme(panel.grid=element_blank())
+```
 
 ## QC
+
+Look at Chrom1 only and Oz+PNG
+```{r}
+oz<-meta %>% filter(Pop %in% c("AUE","AUW","PNG"))
+min(oz$Filtered)
+oz %>% group_by(Pop) %>% summarize(Count=n())
+write_tsv(oz %>% select(Path), file="bamlists/oz.bamlist", col_names = FALSE)
+
+ggplot(oz) +
+  geom_histogram(aes(x=Filtered, fill=Pop)) +
+  scale_fill_viridis_d(option="turbo") +
+  theme_bw() +
+  ylab("Count") +
+  xlab("Filtered Read Number") +
+  theme(panel.grid=element_blank())
+```
+61 samples @ 75 percent missing
+
+```{r}
+srun -p high -t 1:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/oz.bamlist -r NC_066833.1 \
+-refgenome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 46 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/102/oz-ibs > outputs/102/oz-ibs.out 2> outputs/102/oz-ibs.err &
+```
+
+
 
 ### Normalize?
 
