@@ -114,8 +114,14 @@ ggplot(meta) +
 ## QC
 
 Look at Chrom1 only and Oz+PNG
+
+samples from paper    
 ```{r}
-oz<-meta %>% filter(Pop %in% c("AUE","AUW","PNG")) # %>% filter(Filtered > 2e6)
+samples<-read_csv("outputs/105/samples", col_names = c("Isolate"))
+```
+
+```{r}
+oz<-meta %>% filter(Pop %in% c("AUE","AUW","PNG"))  %>% filter(Isolate %in% samples$Isolate)
 min(oz$Filtered)
 
 oz %>% group_by(Pop) %>% summarize(Count=n())
@@ -131,7 +137,7 @@ ggplot(oz) +
   theme(panel.grid=element_blank()) +
   xlim(0,max(oz$Filtered))
 ```
-61 samples @ 75 percent missing
+54 samples @ 75 percent missing
 -r NC_066833.1 \
 -rf genome/lates-lgs.txt
 
@@ -141,17 +147,13 @@ AUW 23
 PNG 18
 AUE 14
 
-samples from paper    
-```{r}
-samples<-read_csv("outputs/105/samples", col_names = c("Isolate"))
-oz %>% filter(Isolate %in% samples$Isolate)
-```
+
 
 ```{sh, eval=FALSE}
 srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 -bam bamlists/oz.bamlist -rf genome/lates-lgs.txt \
 -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--minInd 46 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-minInd 41 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/102/oz-ibs > outputs/102/oz-ibs.out 2> outputs/102/oz-ibs.err &
@@ -159,7 +161,7 @@ srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 -bam bamlists/oz.bamlist -r NC_066833.1 \
 -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--minInd 55 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-minInd 49 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/102/oz-ibs-90 > outputs/102/oz-ibs.out 2> outputs/102/oz-ibs.err &
@@ -168,7 +170,7 @@ srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 -bam bamlists/oz.bamlist -r NC_066833.1 \
 -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--minInd 55 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-minInd 49 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.10 \
 -out outputs/102/oz-ibs-90-maf1 > outputs/102/oz-ibs.out 2> outputs/102/oz-ibs.err &
@@ -177,7 +179,7 @@ srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 -bam bamlists/oz.bamlist -r NC_066833.1 \
 -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--minInd 55 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-minInd 49 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.20 \
 -out outputs/102/oz-ibs-90-maf2 > outputs/102/oz-ibs.out 2> outputs/102/oz-ibs.err &
@@ -191,7 +193,7 @@ srun -p high -t 01:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -li
 srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 -bam bamlists/oz.bamlist -rf genome/lates-lgs.txt \
 -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--minInd 46 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-minInd 41 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -minMaf 0.05 \
 -out outputs/102/oz-gl > outputs/102/oz-gl.out 2> outputs/102/oz-gl.err &
@@ -239,7 +241,7 @@ Call SNPs
 
 ```{sh, eval=FALSE}
 srun -t 12:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
--minInd 55 \
+-minInd 49 \
 -bam bamlists/oz.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -rf genome/lates-lgs.txt -out outputs/102/snps-oz  \
 -minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
@@ -346,10 +348,14 @@ ggplot(mds)+
   theme_bw()
 ```
 
-### Normalize?
+## Get samples from Wang et al.
 
-## AUW vs AUE/PNG
+```{r}
+somesamples<-read_tsv("outputs/105/all-samples.txt", col_names = c("Isolate"))
 
-This fish are pretty similar. But, can I identify SNPS to separate this phylogroup from everyone else, then, separate AU from PNG?  The WGS data can be used to validate.
+wang<-meta %>% filter((Isolate %in% somesamples$Isolate))
+wang %>% group_by(Pop) %>% summarize(Count=n())
+```
+There is a mismatch between what is reported and what there is. One AUW is dropped and not reported in the genepop file.    
 
-
+The wang df is 130 samples, expecting 131.   
