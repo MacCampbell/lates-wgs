@@ -1,0 +1,97 @@
+---
+title: "105-existing-snps"
+output: html_document
+date: "2023-07-26"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(adegenet)
+```
+
+```{r}
+data<-read.genepop(file="outputs/105/oz-genotypes.gen", ncode = 3)
+```
+
+PCA    
+```{r}
+popvector<-gsub("sample_30","AUE",data@pop)
+popvector<-gsub("sample_60","PNG", popvector)
+popvector<-gsub("sample_84","AUW", popvector)
+
+popvector
+```
+
+```{r}
+data@pop<-as.factor(popvector)
+data@pop
+```
+
+
+PCA?
+
+```{r}
+x<-tab(data,freq=TRUE,NA.method="mean")
+pca<-dudi.pca(x,center=TRUE,scale=FALSE, scannf = FALSE, nf =3)
+```
+
+```{r}
+pcadf<-pca$li %>% as_tibble()
+pcadf$Pop<-data@pop
+eig<- pca$eig
+sum<-(eig/(sum(eig)))*100
+```
+
+```{r}
+ggplot(pcadf) +
+  geom_point(aes(x=Axis1, y=Axis2, fill=Pop), pch=21)+
+  scale_fill_viridis_d() +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  xlab(paste0("PC1 ", round(sum[1],2),"%")) +
+  ylab(paste0("PC2 ", round(sum[2],2),"%"))
+
+```
+
+
+What values separate PNG from Oz?   
+
+```{r}
+popvector2<-gsub("AUE","AUS",data@pop)
+popvector2<-gsub("AUW","AUS", popvector2)
+
+d2<-data
+d2@pop<-as.factor(popvector2)
+```
+
+```{r}
+dapc<-dapc(d2, d2@pop, n.pca = 45, n.da = 1)
+```
+
+```{r}
+scatter(dapc)
+
+```
+
+```{r}
+loads<-dapc$var.contr
+ldf<-as_tibble(loads)
+ldf$SNP<-rownames(loads)
+tops<-ldf %>% arrange(-LD1) %>% top_n(20, LD1)
+tops
+```
+```{r}
+d3<-d2[loc=c("50046_35","93345_10","342846_62"),]
+
+loci<-d3@tab %>% as_tibble()
+loci$Ind<-rownames(d3@tab)
+loci$Pop<-d3@pop
+loci<-relocate(loci, Pop, Ind)
+loci <-arrange(loci,Pop)
+```
+
+

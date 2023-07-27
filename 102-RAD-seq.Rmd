@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 
 ```{r}
 library(tidyverse)
+library(ggrepel)
+library(viridis)
 ```
 PRJDB3890    
 Wang et al. (2016) data     
@@ -86,10 +88,8 @@ meta <- meta %>% mutate(Path=paste0("bams/",Run,".sort.flt.bam"))
 
 ```{r}
 min(meta$Filtered)
-meta %>% filter(geo_loc_name_country=="Thailand") %>% select(Run, Filtered) %>% arrange(Filtered) %>% tail()
 
 ```
-DRR111273 missing, only available as SRALITE. Downloading, splitting, aligning
 
 ```{r}
 ggplot(meta) +
@@ -115,10 +115,12 @@ ggplot(meta) +
 
 Look at Chrom1 only and Oz+PNG
 ```{r}
-oz<-meta %>% filter(Pop %in% c("AUE","AUW","PNG"))
+oz<-meta %>% filter(Pop %in% c("AUE","AUW","PNG")) # %>% filter(Filtered > 2e6)
 min(oz$Filtered)
+
 oz %>% group_by(Pop) %>% summarize(Count=n())
 write_tsv(oz %>% select(Path), file="bamlists/oz.bamlist", col_names = FALSE)
+
 
 ggplot(oz) +
   geom_histogram(aes(x=Filtered, fill=Pop)) +
@@ -126,21 +128,223 @@ ggplot(oz) +
   theme_bw() +
   ylab("Count") +
   xlab("Filtered Read Number") +
-  theme(panel.grid=element_blank())
+  theme(panel.grid=element_blank()) +
+  xlim(0,max(oz$Filtered))
 ```
 61 samples @ 75 percent missing
+-r NC_066833.1 \
+-rf genome/lates-lgs.txt
 
+Wang et al reports
+
+AUW 23
+PNG 18
+AUE 14
+
+samples from paper    
 ```{r}
-srun -p high -t 1:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
--bam bamlists/oz.bamlist -r NC_066833.1 \
--refgenome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+samples<-read_csv("outputs/105/samples", col_names = c("Isolate"))
+oz %>% filter(Isolate %in% samples$Isolate)
+```
+
+```{sh, eval=FALSE}
+srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
+-bam bamlists/oz.bamlist -rf genome/lates-lgs.txt \
+-ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 46 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/102/oz-ibs > outputs/102/oz-ibs.out 2> outputs/102/oz-ibs.err &
+
+srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
+-bam bamlists/oz.bamlist -r NC_066833.1 \
+-ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 55 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/102/oz-ibs-90 > outputs/102/oz-ibs.out 2> outputs/102/oz-ibs.err &
+# 6893 snps
+
+srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
+-bam bamlists/oz.bamlist -r NC_066833.1 \
+-ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 55 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.10 \
+-out outputs/102/oz-ibs-90-maf1 > outputs/102/oz-ibs.out 2> outputs/102/oz-ibs.err &
+#3782 snps
+
+srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
+-bam bamlists/oz.bamlist -r NC_066833.1 \
+-ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 55 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.20 \
+-out outputs/102/oz-ibs-90-maf2 > outputs/102/oz-ibs.out 2> outputs/102/oz-ibs.err &
+#2181
+
+#ngs admix    
+srun -p high -t 01:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/102/oz-ibs.beagle.gz -K 2 -o outputs/101/oz-K2 &
+srun -p high -t 01:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/102/oz-ibs.beagle.gz -K 3 -o outputs/101/oz-K3 &
+
+## GLS
+srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
+-bam bamlists/oz.bamlist -rf genome/lates-lgs.txt \
+-ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 46 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-minMaf 0.05 \
+-out outputs/102/oz-gl > outputs/102/oz-gl.out 2> outputs/102/oz-gl.err &
+
 ```
 
 
+	-> Number of sites retained after filtering: 10237 on chrom1
+	
+	Genome-Wide 286267     
+	
+
+```{r}
+pcm<-oz
+m <- as.matrix(read.table("outputs/102/oz-ibs-90-maf1.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+```
+
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(pcm) %>% filter(Isolate %in% samples$Isolate)
+
+text12<-covs %>% select(Run, Pop, V1, V2) %>%
+  group_by(Pop) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Pop, shape=Pop), alpha=0.75) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Pop), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d() +
+  scale_shape_manual(values=c(21,22,23))
+```
+
+Looks like Wang et al. Dropped some samples at some point. 
+
+Call SNPs
+
+```{sh, eval=FALSE}
+srun -t 12:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 55 \
+-bam bamlists/oz.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf genome/lates-lgs.txt -out outputs/102/snps-oz  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/102/snps-oz.out 2> outputs/102/snps-oz.err &
+```
+
+50,391 variants 
+
+As .plink file. Convert to VCF and then get differences in freqs with vcftools?    
+AUE	14			
+AUW	29	 		
+PNG	18	
+
+Are any SNPs different in PNG but not Oz?
+
+```{r}
+sub<-oz %>% filter(Isolate %in% samples$Isolate)
+write_tsv(oz %>% select(Run), col_names = FALSE, file="bamlists/oz-sample-names.txt")
+write_tsv(sub%>% filter(Pop %in% c("AUE","AUW")) %>% select(Run), file="outputs/102/oz.txt", col_names = FALSE)
+write_tsv(sub %>% filter(Pop %in% c("PNG")) %>% select(Run), file="outputs/102/png.txt", col_names = FALSE)
+
+```
+
+```{sh, eval=FALSE}
+plink --tped outputs/102/snps-oz.tped --tfam outputs/102/snps-oz.tfam --out outputs/102/snps-oz.binary --recode --allow-extra-chr --noweb
+plink --ped outputs/102/snps-oz.binary.ped --map outputs/102/snps-oz.binary.map --recode vcf --allow-extra-chr -out outputs/102/snps-oz-samples-recode
+
+bcftools reheader --samples bamlists/oz-sample-names.txt -o outputs/102/oz.renamed.vcf outputs/102/snps-oz-samples-recode.vcf
+
+#impute?
+
+bcftools view -S outputs/102/oz.txt outputs/102/oz.renamed.vcf > outputs/102/oz-fish.vcf
+bcftools view -S outputs/102/png.txt outputs/102/oz.renamed.vcf > outputs/102/png.vcf
+
+vcftools --vcf outputs/102/oz-fish.vcf  --freq --out outputs/102/oz-fish
+vcftools --vcf outputs/102/png.vcf --freq --out outputs/102/png-fish
+
+
+```
+
+
+```{r}
+freq1<-read_tsv("outputs/102/oz-fish.frq", skip = 1, col_names = FALSE) %>% 
+  rename(Chromosome=X1, Position=X2, NAllelesOzr=X3, NOz=X4, Major=X5, Minor=X6) %>%
+  separate(Major, into=c("Major","MajorFrequencyOz"), sep=":") %>% separate(Minor, into=c("Minor","MinorFrequencyOz"), sep=":")
+  
+freq1$MajorFrequencyOz<-as.numeric(freq1$MajorFrequencyOz)
+freq1$MinorFrequencyOz<-as.numeric(freq1$MinorFrequencyOz)
+
+freq2<-read_tsv("outputs/102/png-fish.frq", skip = 1, col_names = FALSE) %>% 
+  rename(Chromosome=X1, Position=X2, NAlleles=X3, N=X4, Major=X5, Minor=X6)%>%
+  separate(Major, into=c("Major","MajorFrequency"), sep=":") %>% 
+  separate(Minor, into=c("Minor","MinorFrequency"), sep=":")
+freq2$MajorFrequency<-as.numeric(freq2$MajorFrequency)
+freq2$MinorFrequency<-as.numeric(freq2$MinorFrequency)
+
+comb<-left_join(freq2, freq1)
+
+merge<-comb %>% mutate(AbsoluteDifference=abs(MajorFrequencyOz-MajorFrequency)) %>% 
+  select(Chromosome, Position, Major, Minor, MajorFrequency, MinorFrequency, MajorFrequencyOz, MinorFrequencyOz, AbsoluteDifference, N, NOz) %>% 
+  filter(N > 10, NOz > 10) %>% arrange(-AbsoluteDifference)
+
+write_csv(merge,"outputs/102/oz-png-differences.csv")
+
+merge
+```
+
+Local PCA in outputs/102/vcf   
+
+```{sh, eval=FALSE}
+cat lates-lgs.txt  | while read line; do bcftools view -Ob -r $line oz.renamed.vcf.gz > $line.bcf; done;
+for f in *.bcf; do bcftools index $f; done;
+```
+
+```{r}
+samples<-oz %>% select(Run) %>% rename(ID=Run)
+
+population<-oz %>% select(Pop) %>% rename(population=Pop)
+
+table<-cbind(samples, population)
+write.table(table, "outputs/102/vcf/sample_info.tsv", quote = TRUE, row.names = FALSE, sep="\t")
+```
+
+./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/102/vcf -t snp -s 20 -m 4 -I /Users/mac/github/lates-wgs/outputs/102/vcf/sample_info.tsv -j 1501
+
+```{r}
+mds<-read_csv("outputs/102/mds_coords.csv")
+#make tidy
+tidymds<-mds %>% gather(MDS, Value, 3:6)
+MDS1<-filter(tidymds, MDS=="MDS1") %>% rename(MDS1=MDS) %>% rename(Value1=Value)
+MDS2<-filter(tidymds, MDS=="MDS2") %>% rename(MDS2=MDS) %>% rename(Value2=Value)
+MDS3<-filter(tidymds, MDS=="MDS3") %>% rename(MDS3=MDS) %>% rename(Value3=Value)
+MDS4<-filter(tidymds, MDS=="MDS4") %>% rename(MDS4=MDS) %>% rename(Value4=Value)
+```
+
+```{r}
+ggplot(mds)+
+  geom_point(aes(x=MDS1, y=MDS2), alpha=0.75) +
+  theme_bw()
+```
+```{r}
+ggplot(mds)+
+  geom_point(aes(x=MDS1, y=MDS3), alpha=0.75) +
+  theme_bw()
+```
 
 ### Normalize?
 
