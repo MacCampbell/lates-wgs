@@ -122,6 +122,8 @@ samples<-read_csv("outputs/105/samples", col_names = c("Isolate"))
 
 ```{r}
 oz<-meta %>% filter(Pop %in% c("AUE","AUW","PNG"))  %>% filter(Isolate %in% samples$Isolate)
+
+write_csv(oz %>% select(Isolate, Pop) %>% arrange(Pop, Isolate), file="meta/oz-meta.csv")
 min(oz$Filtered)
 
 oz %>% group_by(Pop) %>% summarize(Count=n())
@@ -147,16 +149,19 @@ AUW 23
 PNG 18
 AUE 14
 
+sample_183 is not published as a biosample and missing from AUW.   
 
-
+-rf genome/lates-lgs.txt
 ```{sh, eval=FALSE}
 srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
--bam bamlists/oz.bamlist -rf genome/lates-lgs.txt \
+-bam bamlists/oz.bamlist -r NC_066833.1 \
 -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 41 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/102/oz-ibs > outputs/102/oz-ibs.out 2> outputs/102/oz-ibs.err &
+# 10190 sites
+
 
 srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 -bam bamlists/oz.bamlist -r NC_066833.1 \
@@ -165,7 +170,7 @@ srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/102/oz-ibs-90 > outputs/102/oz-ibs.out 2> outputs/102/oz-ibs.err &
-# 6893 snps
+# 6770 sites
 
 srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 -bam bamlists/oz.bamlist -r NC_066833.1 \
@@ -174,7 +179,7 @@ srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.10 \
 -out outputs/102/oz-ibs-90-maf1 > outputs/102/oz-ibs.out 2> outputs/102/oz-ibs.err &
-#3782 snps
+#3809 sites 
 
 srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 -bam bamlists/oz.bamlist -r NC_066833.1 \
@@ -183,11 +188,12 @@ srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.20 \
 -out outputs/102/oz-ibs-90-maf2 > outputs/102/oz-ibs.out 2> outputs/102/oz-ibs.err &
-#2181
+#2191 sites
+
 
 #ngs admix    
-srun -p high -t 01:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/102/oz-ibs.beagle.gz -K 2 -o outputs/101/oz-K2 &
-srun -p high -t 01:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/102/oz-ibs.beagle.gz -K 3 -o outputs/101/oz-K3 &
+srun -p high -t 01:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/102/oz-ibs.beagle.gz -K 2 -o outputs/102/oz-K2 &
+srun -p high -t 01:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/102/oz-ibs.beagle.gz -K 3 -o outputs/102/oz-K3 &
 
 ## GLS
 srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
@@ -208,7 +214,7 @@ srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 
 ```{r}
 pcm<-oz
-m <- as.matrix(read.table("outputs/102/oz-ibs-90-maf1.covMat"))
+m <- as.matrix(read.table("outputs/102/oz-ibs.covMat"))
 eig <- eigen(m)
 var<-eig$values/sum(eig$values)
 cumvar<-cumsum(eig$values)/sum(eig$values)
@@ -219,7 +225,7 @@ head(cumvar)
 
 
 ```{r}
-covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(pcm) %>% filter(Isolate %in% samples$Isolate)
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(pcm) 
 
 text12<-covs %>% select(Run, Pop, V1, V2) %>%
   group_by(Pop) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
@@ -233,6 +239,64 @@ ggplot(covs) +
   theme(panel.grid=element_blank()) +
   scale_fill_viridis_d() +
   scale_shape_manual(values=c(21,22,23))
+```
+
+
+
+```{r, echo=FALSE}
+PlotAdmix<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Last col empty
+q<-q[1:length(colnames(q))-1]
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Pop) %>% mutate(Index=1:n())
+df$Pop<-factor(df$Pop, levels=unique(df$Pop))
+
+rdf<-df %>% dplyr::select(Pop, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Pop) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Pop,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1, alpha=0.8) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  theme(legend.position = "") +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Pop) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  scale_fill_viridis_d(option="magma")
+
+}
+```
+
+```{r}
+PlotAdmix("outputs/102/oz-K2.qopt", oz)
+```
+
+```{r}
+PlotAdmix("outputs/102/oz-K3.qopt", oz)
 ```
 
 Looks like Wang et al. Dropped some samples at some point. 
@@ -356,6 +420,23 @@ somesamples<-read_tsv("outputs/105/all-samples.txt", col_names = c("Isolate"))
 wang<-meta %>% filter((Isolate %in% somesamples$Isolate))
 wang %>% group_by(Pop) %>% summarize(Count=n())
 ```
-There is a mismatch between what is reported and what there is. One AUW is dropped and not reported in the genepop file.    
+There is a mismatch between what is reported and what there is. One AUW is dropped and not reported in the genepop file (sample_183)  
 
 The wang df is 130 samples, expecting 131.   
+
+
+```{r}
+write_tsv(wang %>% select(Path), col_names = FALSE, file="bamlists/130.bamlist")
+```
+
+How does a single chrom look?
+
+```{sh, eval=FALSE}
+srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
+-bam bamlists/130.bamlist -r NC_066833.1 \
+-ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 98 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/102/wang-ibs > outputs/102/wang-ibs.out 2> outputs/102/wang-ibs.err &
+```
