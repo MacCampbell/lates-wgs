@@ -440,3 +440,62 @@ srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/102/wang-ibs > outputs/102/wang-ibs.out 2> outputs/102/wang-ibs.err &
 ```
+
+11771 snps on chrom01    
+```{r}
+pcm<-wang
+m <- as.matrix(read.table("outputs/102/wang-ibs.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+```
+
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(pcm) 
+
+text12<-covs %>% select(Run, Pop, V1, V2) %>%
+  group_by(Pop) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Pop), pch=21, alpha=0.75) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Pop), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="H") 
+```
+
+Pretty much what we expected.    
+
+Call snps for local PCA    
+
+```{sh, eval=FALSE}
+srun -t 36:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 117 \
+-bam bamlists/130.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf genome/lates-lgs.txt -out outputs/102/snps-wang  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/102/snps-wang.out 2> outputs/102/snps-wang.err &
+```
+
+      
+### What about the main Asian Seabass cluster?
+```{r}
+write_tsv(wang %>% filter(Pop %in% c("INA","MAL","THA")) %>% select(Path), col_names = FALSE, file="bamlists/76.bamlist")
+
+```
+
+```{sh, eval=FALSE}
+srun -p high -t 3:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 16  \
+-bam bamlists/76.bamlist -r NC_066833.1 \
+-ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 57 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/102/76-ibs > outputs/102/76-ibs.out 2> outputs/102/76-ibs.err &
+```
