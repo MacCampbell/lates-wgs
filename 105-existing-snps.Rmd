@@ -13,8 +13,13 @@ library(tidyverse)
 library(adegenet)
 ```
 
-```{r}
+```{r, eval=FALSE}
 data<-read.genepop(file="outputs/105/oz-genotypes.gen", ncode = 3)
+save(data, file="outputs/105/oz-genotypes.rda")
+```
+
+```{r}
+load("outputs/105/oz-genotypes.rda")
 ```
 
 PCA    
@@ -32,7 +37,7 @@ data@pop
 ```
 
 
-PCA?
+PCA of global variation     
 
 ```{r}
 x<-tab(data,freq=TRUE,NA.method="mean")
@@ -74,18 +79,24 @@ dapc<-dapc(d2, d2@pop, n.pca = 45, n.da = 1)
 
 ```{r}
 scatter(dapc)
-
 ```
 
+Loadings      
 ```{r}
 loads<-dapc$var.contr
 ldf<-as_tibble(loads)
 ldf$SNP<-rownames(loads)
-tops<-ldf %>% arrange(-LD1) %>% top_n(20, LD1)
+
+
+tops<-ldf %>% arrange(-LD1) %>% top_n(40, LD1)
+tops$locus<-gsub(".0\\d\\d$","",tops$SNP)
 tops
 ```
+
+Pull out top snps and plot those as a PCA.    
+
 ```{r}
-d3<-d2[loc=c("50046_35","93345_10","342846_62"),]
+d3<-d2[loc=unique(tops$locus),]
 
 loci<-d3@tab %>% as_tibble()
 loci$Ind<-rownames(d3@tab)
@@ -93,5 +104,28 @@ loci$Pop<-d3@pop
 loci<-relocate(loci, Pop, Ind)
 loci <-arrange(loci,Pop)
 ```
+
+
+```{r}
+x<-tab(d3,freq=TRUE,NA.method="mean")
+pca<-dudi.pca(x,center=TRUE,scale=FALSE, scannf = FALSE, nf =3)
+
+pcadf<-pca$li %>% as_tibble()
+pcadf$Pop<-data@pop
+eig<- pca$eig
+sum<-(eig/(sum(eig)))*100
+
+ggplot(pcadf) +
+  geom_point(aes(x=Axis1, y=Axis2, fill=Pop), pch=21)+
+  scale_fill_viridis_d() +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  xlab(paste0("PC1 ", round(sum[1],2),"%")) +
+  ylab(paste0("PC2 ", round(sum[2],2),"%"))
+
+```
+
+
+Existing SNPs now separate PNG from AUE/AUW with 20 SNPs, as well as separating the AUE/AUW with 40 snps     
 
 

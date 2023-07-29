@@ -1,0 +1,24 @@
+---
+title: "106-separate-clusters"
+output: html_document
+date: "2023-07-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library("tidyverse")
+library("viridis")
+```
+
+
+Basic idea, set up a set of diagnostic loci to separate:
+
+(1) Western Seabass from Eastern Seabass-> Note, nothing to test against here with WGS.
+(2) Use RADseq data to come up with a set of 'diagnostic' loci to separate OZ+PNG from Everybody Else. Check against WGS data.
+(3) Separate Oz+PNG with called loci (e.g. 105-existing-snps.Rmd).  Test against WGS data, calculate allelic frequencies.
+
+Note to self, should think about multi-snp haplotypes to do this and call variants with something indel aware. Maybe FreeBayes      
+
