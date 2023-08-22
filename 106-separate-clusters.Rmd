@@ -11,6 +11,9 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```{r}
 library("tidyverse")
 library("viridis")
+library("vcfR")
+library("adegenet")
+library("poppr")
 ```
 
 
@@ -22,3 +25,314 @@ Basic idea, set up a set of diagnostic loci to separate:
 
 Note to self, should think about multi-snp haplotypes to do this and call variants with something indel aware. Maybe FreeBayes      
 
+Starting with (3), 102 I called snps:
+
+```{sh, eval=FALSE}
+srun -t 36:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 117 \
+-bam bamlists/130.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf genome/lates-lgs.txt -out outputs/102/snps-wang  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/102/snps-wang.out 2> outputs/102/snps-wang.err &
+```
+
+retrieve meta.    
+
+
+```{r}
+meta<-read_csv("meta/wang.csv")
+write_tsv(meta %>% select(Run), col_names=FALSE, file="bamlists/130-sample-names.txt")
+write_tsv(meta %>% filter(Pop %in% c("AUW","AUE","PNG")) %>% select(Run), col_names=FALSE, file="bamlists/oz-png-names.txt")
+ozpng<-meta %>% filter(Pop %in% c("AUW","AUE","PNG"))
+meta
+```
+
+Have .geno file and plink-formatted file. making .vcf 99040 snps in plink file.  Looks to have run through all chroms
+
+```{sh, eval=FALSE}
+
+plink --tped snps-wang.tped --tfam snps-wang.tfam  --out plink-binary --recode --allow-extra-chr --noweb
+plink --ped plink-binary.ped --map plink-binary.map --recode vcf --allow-extra-chr -out plink
+bgzip plink.vcf 
+tabix plink.vcf.gz
+bcftools view plink.vcf.gz --regions NC_066833.1  > chrom01.vcf
+
+```
+
+Not pruning, cause multi-snp haplotypes.    
+
+```{r, eval=FALSE}
+vcf<-read.vcfR(file="outputs/106/plink.vcf")
+genind<-vcfR2genind(vcf)
+genind@pop<-factor(meta$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
+save(genind, file="outputs/102/plink-genind.rda")
+```
+
+```{r, eval=FALSE}
+vcf<-read.vcfR(file="outputs/106/chrom01.vcf")
+genind<-vcfR2genind(vcf)
+genind@pop<-factor(meta$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
+save(genind, file="outputs/102/chrom01-genind.rda")
+```
+```{r}
+load("outputs/102/chrom01-genind.rda")
+```
+
+Looking at chrom01
+```{r}
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+plot(pca1$li)
+
+```
+
+Plotting again
+```{r}
+df<-pca1$li
+df<-df %>% bind_cols(meta)
+eig<-pca1$eig/sum(pca1$eig)*100
+```
+
+```{r}
+ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Pop), pch=21) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%"))
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d()
+
+```
+
+
+
+Looks sane. Filtering to AUE, AUW, PNG and maf of 0.1 
+
+```{sh, eval=FALSE}
+bcftools reheader --samples  bamlists/130-sample-names.txt  -o outputs/106/renamed.vcf.gz outputs/106/plink.vcf.gz
+bcftools view -S bamlists/oz-png-names.txt outputs/106/renamed.vcf.gz | bcftools view -q 0.10:minor  > outputs/106/oz-png-maf01.vcf
+```
+19,200 variants   
+
+```{r, eval=FALSE}
+vcf<-read.vcfR(file="outputs/106/oz-png-maf01.vcf")
+goz<-vcfR2genind(vcf)
+goz@pop<-factor(ozpng$Pop, levels=c("AUW","AUE","PNG"))
+save(goz, file="outputs/106/ozpng-genind.rda")
+```
+
+```{r}
+load("outputs/106/ozpng-genind.rda")
+```
+
+
+```{r}
+gen<-goz
+X <- tab(gen, NA.method="mean")
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(ozpng)
+eig<-pca1$eig/sum(pca1$eig)*100
+
+ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Pop), pch=21) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%"))
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d()
+
+```
+
+Looks like expected, including hints at structure in AUW.     
+
+
+What values separate PNG from Oz?   
+
+```{r}
+popvector2<-gsub("AUE","AUS",gen@pop)
+popvector2<-gsub("AUW","AUS", popvector2)
+
+d2<-gen
+d2@pop<-as.factor(popvector2)
+```
+
+Looks to be the same as published snps here with n.pca
+```{r}
+dapc<-dapc(d2, d2@pop, n.pca = 45, n.da = 1)
+```
+
+```{r}
+scatter(dapc)
+```
+
+Loadings      
+```{r}
+loads<-dapc$var.contr
+ldf<-as_tibble(loads)
+ldf$SNP<-rownames(loads)
+
+
+tops<-ldf %>% arrange(-LD1) %>% top_n(40, LD1)
+tops$locus<-gsub(".\\d$","",tops$SNP)
+tops$Chrom<-gsub("_\\d+$","",tops$locus)
+tops$Site<-gsub("NC_\\d+_\\d_","",tops$locus)
+tops
+```
+```{r}
+ggplot(ldf %>% arrange(-LD1) %>% mutate(Position=1:n())) +
+  geom_point(aes(x=Position, y=LD1)) +
+  geom_vline(xintercept = 40)+
+  xlim(0,100)
+```
+
+Pull out top snps and plot those as a PCA.    
+
+```{r}
+d3<-d2[loc=unique(tops$locus),]
+
+loci<-d3@tab %>% as_tibble()
+loci$Ind<-rownames(d3@tab)
+loci$Pop<-d3@pop
+loci<-relocate(loci, Pop, Ind)
+loci <-arrange(loci,Pop)
+```
+
+
+```{r}
+x<-tab(d3,freq=TRUE,NA.method="mean")
+pca<-dudi.pca(x,center=TRUE,scale=FALSE, scannf = FALSE, nf =3)
+
+pcadf<-pca$li %>% as_tibble()
+pcadf$Pop<-gen@pop
+eig<- pca$eig
+sum<-(eig/(sum(eig)))*100
+
+ggplot(pcadf) +
+  geom_point(aes(x=Axis1, y=Axis2, fill=Pop), pch=21)+
+  scale_fill_viridis_d() +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  xlab(paste0("PC1 ", round(sum[1],2),"%")) +
+  ylab(paste0("PC2 ", round(sum[2],2),"%"))
+
+```
+
+Looks like we can place all these clusters with the SNPS
+
+```{r}
+tops2<-tops %>% select(locus, Chrom, Site) %>% group_by(Chrom) %>% summarize(Count=n())
+unique(tops2$Chrom)
+```
+
+20 snps on 13 chroms
+30 snps on 14 chroms
+Distribution      
+```{r}
+ggplot(tops2) + 
+  geom_bar(aes(x=Chrom, y=Count), stat='identity') +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1))
+
+```
+
+
+Check to see if any are spatially close
+
+```{r}
+locs<-tops
+locs$Site<-as.numeric(locs$Site)
+locs %>% select(locus,Chrom,Site) %>% unique() %>% group_by(Chrom) %>% arrange(Chrom, -Site) %>% mutate(Lag=lag(Site)) %>%
+  mutate(Diff=abs(Site-Lag)) %>% na.omit()
+```
+
+Far apart.
+
+
+Signal from these loci     
+
+```{r,eval=FALSE}
+kstat<-find.clusters(d3, n.pca=20) # n.clust=3)
+save(kstat, file="outputs/106/kstat.rda")
+```
+```{r}
+load("outputs/106/kstat.rda")
+bic<-kstat$Kstat %>% as_tibble() %>% rename(BIC=value) %>% mutate(K=1:n())
+ggplot(bic, aes(x=K, y=BIC)) +
+  geom_line() +
+  geom_point() +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  #ggtitle("BIC Scores from K Means Clustering of Diversity Loci") +
+  ylab("BIC\n") +
+  xlab("\nK") +
+ # theme(plot.title=element_text(hjust=0.5, size=14, face="bold")) +
+  theme(axis.title=element_text(size=12)) +
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10), labels=c("1","2","3","4","5","6","7","8","9","10")) +
+  theme(axis.title = element_text(size=12, face="bold")) +
+  theme(axis.text = element_text(size=10))
+```
+
+
+Now, let's look assignments    
+
+```{r}
+dft<-as.data.frame(table(pop(gen), kstat$grp)) %>% as_tibble() %>%
+  rename(Location=Var1, Assignment=Var2, Number=Freq)
+
+ggplot(dft, aes(y=Location, x=Assignment)) +
+  theme(axis.title.y = element_text(size = rel(2))) +
+  theme(axis.title.x = element_text(size = rel(2))) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(x="\nInferred Group", y="Sampling Location\n") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+  theme(text=element_text(family='Times')) +
+  theme(axis.text.x= element_text(face="bold", size=10, vjust = 0.5)) +
+  theme(axis.text.y= element_text(face="bold", size=10)) +
+  geom_point(aes(x=Assignment, y=Location, size=Number)) +
+  geom_text(aes(x=Assignment, y=Location, label=Number), color="white", size=3) +
+  scale_size_area(limits=c(1,25), breaks=c(0,5,10,15,20,25))
+
+```
+
+
+100% assignment probs!!!    
+
+Write loci for a Table of allele freqs and to check against WGS data.     
+
+```{r}
+t1<-tops %>% mutate(Loci=paste0(Chrom,":",Site)) %>% select(Loci) %>% unique()
+t1$Loci<-gsub("_1:",".1:",t1$Loci)
+t1
+write_tsv(t1,"meta/top-site-list.tsv", col_names = FALSE)
+```
+
+
+## Validate with WGS data
+
+```{r}
+m2<-read_csv("meta/58.csv")
+m2$Region<-factor(m2$Region, levels=c("Queensland","Northern Territory","Papua New Guinea",
+                                              "Indonesia","Philippines","Vietnam","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
+
+wop<-m2 %>% filter(Region %in% c("Queensland","Northern Territory","Papua New Guinea")) 
+wop %>% group_by(Region) %>% summarize(Count=n())
+
+write_tsv(wop %>% select(Path), file="bamlists/17.bamlist", col_names = FALSE)
+```
+
+```{sh, eval=FALSE}
+srun -t 12:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 16 -bam bamlists/17.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf genome/lates-lgs.txt -sites meta/top-site-list.tsv -out outputs/102/snps-wgs  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/102/snps-wgs.out 2> outputs/102/snps-wgs.err &
+```
+
+min maf doesn't do anything, but leaving it in

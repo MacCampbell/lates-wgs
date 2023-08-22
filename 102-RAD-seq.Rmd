@@ -426,6 +426,8 @@ The wang df is 130 samples, expecting 131.
 
 
 ```{r}
+write_csv(wang, file="meta/wang.csv")
+
 write_tsv(wang %>% select(Path), col_names = FALSE, file="bamlists/130.bamlist")
 ```
 
@@ -485,6 +487,7 @@ srun -t 36:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 
       
 ### What about the main Asian Seabass cluster?
+
 ```{r}
 write_tsv(wang %>% filter(Pop %in% c("INA","MAL","THA")) %>% select(Path), col_names = FALSE, file="bamlists/76.bamlist")
 
