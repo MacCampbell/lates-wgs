@@ -306,8 +306,8 @@ ggplot(dft, aes(y=Location, x=Assignment)) +
 Write loci for a Table of allele freqs and to check against WGS data.     
 
 ```{r}
-t1<-tops %>% mutate(Loci=paste0(Chrom,":",Site)) %>% select(Loci) %>% unique()
-t1$Loci<-gsub("_1:",".1:",t1$Loci)
+t1<-tops %>% select(Chrom,Site) %>% unique()
+t1$Chrom<-gsub("_1$",".1",t1$Chrom)
 t1
 write_tsv(t1,"meta/top-site-list.tsv", col_names = FALSE)
 ```
