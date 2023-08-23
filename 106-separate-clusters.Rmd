@@ -14,6 +14,7 @@ library("viridis")
 library("vcfR")
 library("adegenet")
 library("poppr")
+library("ggrepel")
 ```
 
 
@@ -303,15 +304,86 @@ ggplot(dft, aes(y=Location, x=Assignment)) +
 
 100% assignment probs!!!    
 
-Write loci for a Table of allele freqs and to check against WGS data.     
+Write loci for a Table to get allele freqs from each pop and to check against WGS data.     
 
 ```{r}
 t1<-tops %>% select(Chrom,Site) %>% unique()
 t1$Chrom<-gsub("_1$",".1",t1$Chrom)
+t1<- t1 %>% arrange(Chrom)
 t1
 write_tsv(t1,"meta/top-site-list.tsv", col_names = FALSE)
 ```
 
+`(base) Macs-MacBook-Pro-2:meta mac$ angsd sites index top-site-list.tsv `   
+
+```{r}
+d4<-d3
+d4@pop<-gen@pop
+
+poppr(d4)
+```
+
+(d4 to look at three pops)
+```{r}
+d5<-genind2genpop(d4)
+```
+```{r}
+adf<-d5@tab %>% as_tibble()
+adf$Pop<-rownames(d5@tab)
+
+adf<-adf %>% relocate(Pop) %>% pivot_longer(2:41)
+adf$Chrom<-gsub("_\\d+\\.\\d$","",adf$name)
+adf$Chrom<-gsub("_1$",".1",adf$Chrom)
+adf$Site<-gsub("NC_\\d+_1_","",adf$name)
+adf$Site<-gsub("\\.\\d$","",adf$Site)
+adf$Locus<-gsub("NC_\\d+_1_","",adf$name)
+adf$Locus<-gsub("^\\d+\\.","",adf$Locus)
+adf
+```
+
+```{r}
+adf2<-adf %>% group_by(Pop,Chrom,Site) %>% mutate(TotalAlleles=sum(value)) %>%
+  ungroup() %>% group_by(Pop, Chrom, Site, Locus) %>% mutate(AF=value/TotalAlleles)
+
+#dropping total allleles column that tells us a bit about missingness
+adf3<-adf2 %>% select(Pop, Chrom, Site, Locus, TotalAlleles, AF) %>% filter(Locus==0) %>% ungroup() %>%
+  select(-Locus, -TotalAlleles) %>% pivot_wider(names_from = c("Pop"), values_from = c("AF")) %>% arrange(Chrom, Site)
+#with three pops
+adf4<-adf3 %>%  mutate(Marker=1:n()) %>% relocate(Chrom, Site, Marker) %>% pivot_longer(4:6, names_to = "Population",values_to = "AF")
+
+#Two pop version
+#adf4<-adf3 %>% mutate(Difference=abs(PNG-AUS)) %>% arrange(-Difference) %>% mutate(Marker=1:n()) %>% relocate(Chrom, Site, Marker, Difference) %>% pivot_longer(5:6, names_to = "Population",values_to = "AF")
+
+adf4
+```
+As major allele freqs
+```{r}
+ggplot(adf4) +
+  geom_bar(aes(x=Marker, y=AF, fill=Population), color="black",stat = 'identity') +
+  facet_grid(Population~.) +
+  theme_bw() +
+  scale_fill_viridis_d() +
+  theme(panel.grid = element_blank())
+```
+```{r}
+ggplot(adf4) +
+  geom_point(aes(x=Marker, y=AF, fill=Population), pch=21) +
+  geom_line(aes(x=Marker, y=AF, color=Population), alpha=0.75) +
+  theme_bw() +
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
+  theme(panel.grid = element_blank())
+```
+
+For two pops
+```{r, eval=FALSE}
+ggplot(adf4) +
+  geom_point(aes(x=Marker, y=Difference))+
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  ylim(0,1)
+```
+NC_066836_1_17592689, NC_066853_1_2248175.0 are the highest in terms of DAPC loadings (marker 2,17 here, showing low PNG AF). Two ways to visualize this plot more clearly.    
 
 ## Validate with WGS data
 
@@ -327,12 +399,144 @@ wop %>% group_by(Region) %>% summarize(Count=n())
 write_tsv(wop %>% select(Path), file="bamlists/17.bamlist", col_names = FALSE)
 ```
 
+Had to move site list and index in genome dir 
 ```{sh, eval=FALSE}
 srun -t 12:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
--minInd 15 -bam bamlists/17.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--rf genome/lates-lgs.txt -sites meta/top-site-list.tsv -out outputs/106/snps-wgs  \
+-minInd 9 -bam bamlists/17.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf genome/lates-lgs.txt -sites genome/top-site-list.tsv -out outputs/106/snps-wgs  \
 -minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/106/snps-wgs.out 2> outputs/106/snps-wgs.err &
+
+srun -t 12:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 9 -bam bamlists/17.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf genome/lates-lgs.txt -sites genome/top-site-list.tsv -out outputs/106/snps-wgs-geno4  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 4 -doPost 1 -postCutoff 0.9   > outputs/106/snps-wgs-geno4.out 2> outputs/106/snps-wgs-geno4.err &
 ```
 
 min maf doesn't do anything, but leaving it in
+
+	-> Number of sites retained after filtering: 12 with minInd 15
+	-> 
+hmmm...
+
+```{sh, eval=FALSE}
+plink --tped snps-wgs.tped --tfam snps-wgs.tfam  --out snps-wgs-binary --recode --allow-extra-chr --noweb
+plink --ped snps-wgs-binary.ped --map snps-wgs-binary.map --recode vcf --allow-extra-chr -out snps-wgs
+```
+
+
+```{r, eval=FALSE}
+vcfwgs<-read.vcfR(file="outputs/106/snps-wgs.vcf")
+wgs<-vcfR2genind(vcfwgs)
+wgs@pop<-factor(wop$Region, levels=c("Northern Territory","Papua New Guinea", "Queensland"))
+wgs
+```
+```{r}
+X <- tab(wgs, NA.method="mean")
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(wop)
+eig<-pca1$eig/sum(pca1$eig)*100
+
+ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Region), pch=21) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%"))
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d()
+
+```
+
+
+Combining
+
+```{r}
+d4<-d3[loc=unique(wgs@loc.fac),]
+d4@pop<-gen@pop
+comb<-repool(d4,wgs)
+
+```
+
+```{r}
+X <- tab(comb, NA.method="mean")
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df$Pop<-comb@pop
+df<-df %>% mutate(DataType=ifelse(Pop %in% c("AUW","AUE","PNG"), "RADSeq","WGS"))
+eig<-pca1$eig/sum(pca1$eig)*100
+```
+
+```{r}
+ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Pop, shape=DataType)) +
+  theme_bw() +
+  scale_shape_manual(values = c(21,23)) +
+   xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+
+
+
+```
+
+Neat! Combined with existing samples the 12 loci separate the fish into groups.
+
+
+```{r}
+kstat<-find.clusters(comb, n.pca=12,n.clust=2)
+
+
+dft<-as.data.frame(table(pop(comb), kstat$grp)) %>% as_tibble() %>%
+  rename(Location=Var1, Assignment=Var2, Number=Freq)
+
+ggplot(dft, aes(y=Location, x=Assignment)) +
+  theme(axis.title.y = element_text(size = rel(2))) +
+  theme(axis.title.x = element_text(size = rel(2))) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(x="\nInferred Group", y="Sampling Location\n") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+  theme(text=element_text(family='Times')) +
+  theme(axis.text.x= element_text(face="bold", size=10, vjust = 0.5)) +
+  theme(axis.text.y= element_text(face="bold", size=10)) +
+  geom_point(aes(x=Assignment, y=Location, size=Number)) +
+  geom_text(aes(x=Assignment, y=Location, label=Number), color="white", size=3) +
+  scale_size_area(limits=c(1,30), breaks=c(1,10,20,30))
+
+```
+71 Individauls
+```{r}
+d1<-dapc(comb, kstat$grp, n.pca=12, n.da=2)
+
+post<-d1$posterior %>% as_tibble()
+post$Pop<-comb@pop
+post$Ind<-rownames(comb@tab)
+post<-post %>% mutate(DataType=ifelse(Pop %in% c("AUW","AUE","PNG"), "RADSeq","WGS")) %>% relocate(DataType,Pop, Ind) 
+post$Pop<-factor(post$Pop, levels=c("AUW","Northern Territory","AUE","Queensland","PNG","Papua New Guinea"))
+post <- post %>% arrange(Pop) %>% mutate(Individual=1:n()) %>% relocate(Individual)
+
+post<- post %>%  pivot_longer(5:6, names_to = "Cluster", values_to = "Posterior")
+post
+```
+```{r}
+ggplot(post) +
+  geom_col(aes(x=Individual,y=Posterior, fill=Cluster), color="NA", size = 0, width = 1, alpha=0.8) +
+  scale_fill_viridis_d() +
+ # coord_flip() +
+  facet_grid(.~Pop, scales = "free", space = "free") +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  theme(axis.ticks.x = element_blank())+
+  theme(axis.text.x = element_blank())
+  
+```
+
+Pretty good!  Is missing data a problem? Basically one missassignment with WGS
+
+Individual 4_1 doesn't have missing data with 12 snps.  

@@ -1,0 +1,17 @@
+---
+title: "107-random-forest"
+output: html_document
+date: "2023-08-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(vcfR)
+library(tidyverse)
+library(snpR)
+```
+
+Placeholder to use SNPR to use Random Forest to identify SNPs separating Oz+PNG
