@@ -1,0 +1,110 @@
+---
+title: "107-RADseq-Fst"
+output: html_document
+date: "2023-08-24"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(vcfR)
+library(snpR)
+```
+
+Read in pruned data and calculate pairwise Fst
+
+```{r}
+meta<-read_csv("meta/wang.csv")
+meta$Pop<-factor(meta$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
+meta %>% group_by(Pop, Lat_Lon) %>% summarize(Count=n(), Reads=mean(Filtered))
+```
+
+Make snpR object
+
+```{r, eval=FALSE}
+sample_meta<-meta %>% select(Run,Pop) %>% mutate(Group=ifelse(Pop=="AUW","1",
+                                                        ifelse(Pop=="AUE","2",
+                                                        ifelse(Pop=="PNG","3",
+                                                        ifelse(Pop=="INA","4",
+                                                        ifelse(Pop=="MAL","5",
+                                                        ifelse(Pop=="THA","6","0")))))))
+
+my.dat <- import.snpR.data("outputs/106/plink-pruned.vcf", sample.meta = sample_meta)
+```
+
+```{r}
+x<-calc_pairwise_fst(my.dat, "Group")
+groupfst<-get.snpR.stats(x, "Group", "fst")
+#this is weighted means
+mg<-groupfst$fst.matrix$Group
+sample_meta %>% group_by(Pop, Group) %>% summarize(Count=n())
+```
+
+```{r}
+df<-as.tibble(mg)
+ddf<-df %>% pivot_longer(cols=2:6, names_to = "Population 2", values_to = "Fst") %>% rename("Population 1"=p1)
+ddf
+```
+
+```{r}
+fst<-ggplot(ddf %>% na.omit()) +
+  geom_raster(aes(y=`Population 1`, x=`Population 2`, fill=Fst)) +
+  geom_text(aes(y=`Population 1`, x=`Population 2`, label=sprintf("%.3f", Fst)), color="white", fontface="bold") +
+  scale_fill_viridis_c(option="cividis", direction=-1, alpha=1) +
+  xlab("\nPopulation") +
+  ylab("Population\n") +
+  theme_bw() +
+  theme(panel.background = element_blank()) +
+  theme(panel.grid = element_blank()) +
+  scale_x_discrete(labels=c("AUE","PNG","INA","MAL","THA")) +
+  scale_y_discrete(labels=c("AUW","AUE","PNG","INA","MAL")) +
+  theme(axis.text=element_text(size=12)) +
+  theme(axis.title = element_text(size=14, face="bold")) +
+  ggtitle("A") +
+  theme(plot.title=element_text(size=16, face="bold"))
+fst
+ggsave("outputs/107/radseq-fst.jpeg")
+```
+
+
+## Theta, Pi
+```{r}
+picalc<-calc_pi(my.dat,"Group")
+pi<-get.snpR.stats(picalc,"Group","pi")
+pidf<-pi$single %>% as_tibble() 
+pidf
+```
+```{r}
+pidf %>% group_by(subfacet,CHROM) %>% summarize(meanpi=mean(pi)) %>% ungroup() %>% group_by(subfacet) %>%
+  summarize(MedianPi=median(meanpi))
+```
+
+```{r}
+piplot<-ggplot(pidf %>% group_by(subfacet,CHROM) %>% summarize(meanpi=mean(pi))) +
+  geom_boxplot(aes(x=subfacet,y=meanpi, fill=subfacet), alpha=0.75) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  ylab("Pi\n") +
+  xlab("\nPopulation")+
+  scale_x_discrete(labels=c("AUW","AUE","PNG","INA","MAL","THA")) +
+ # theme(axis.text.x = element_text(angle=45, hjust=1)) +
+#  scale_fill_manual(values=alpha(c("red","black","blue"),0.75)) +
+  xlab("\nPopulation") +
+  theme(legend.position = "") +
+  scale_fill_viridis_d(option="H") +
+  ggtitle("B") +
+  theme(plot.title=element_text(size=16, face="bold"))+
+  theme(axis.title = element_text(size=14, face="bold"))
+
+
+piplot
+```
+
+
+```{r}
+ggarrange(fst+theme(legend.position = "none"), piplot+  theme(axis.text=element_text(size=12)), ncol=1)
+ggsave("outputs/107/combined-fst-pi.jpeg", height=8, width=7)
+```

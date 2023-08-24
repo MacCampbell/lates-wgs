@@ -15,6 +15,7 @@ library("vcfR")
 library("adegenet")
 library("poppr")
 library("ggrepel")
+library("ggpubr")
 ```
 
 
@@ -48,6 +49,11 @@ ozpng<-meta %>% filter(Pop %in% c("AUW","AUE","PNG"))
 meta
 ```
 
+```{r}
+meta$Pop<-factor(meta$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
+meta %>% group_by(Pop, Lat_Lon) %>% summarize(Count=n(), Reads=mean(Filtered))
+```
+
 Have .geno file and plink-formatted file. making .vcf 99040 snps in plink file.  Looks to have run through all chroms
 
 ```{sh, eval=FALSE}
@@ -58,12 +64,13 @@ bgzip plink.vcf
 tabix plink.vcf.gz
 bcftools view plink.vcf.gz --regions NC_066833.1  > chrom01.vcf
 
+bcftools +prune -l 0.20 -w 10000 plink.vcf.gz > plink-pruned.vcf.gz
 ```
 
 Not pruning, cause multi-snp haplotypes.    
 
 ```{r, eval=FALSE}
-vcf<-read.vcfR(file="outputs/106/plink.vcf")
+vcf<-read.vcfR(file="outputs/106/plink-pruned.vcf")
 genind<-vcfR2genind(vcf)
 genind@pop<-factor(meta$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
 save(genind, file="outputs/102/plink-genind.rda")
@@ -76,10 +83,11 @@ genind@pop<-factor(meta$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
 save(genind, file="outputs/102/chrom01-genind.rda")
 ```
 ```{r}
-load("outputs/102/chrom01-genind.rda")
+#load("outputs/102/chrom01-genind.rda")
+load("outputs/102/plink-genind.rda")
 ```
 
-Looking at chrom01
+Looking at chrom01, then all chroms
 ```{r}
 gen<-genind
 X <- tab(gen, NA.method="mean")
@@ -94,27 +102,69 @@ Plotting again
 df<-pca1$li
 df<-df %>% bind_cols(meta)
 eig<-pca1$eig/sum(pca1$eig)*100
+df$Population<-factor(df$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
+
+eig
 ```
 
 ```{r}
-ggplot(df) + 
-  geom_point(aes(x=Axis1, y=Axis2, fill=Pop), pch=21) +
+pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Population), pch=21, alpha=0.75, cex=2) +
   theme_bw() +
-  xlab(paste0("PC1 ",round(eig[1],2), "%"))
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
   ylab(paste0("PC2 ",round(eig[2],2), "%")) +
   theme(panel.grid = element_blank()) +
-  scale_fill_viridis_d()
-
+  scale_fill_viridis_d(option="H")
+pc12
+ggsave("outputs/106/pcs12.jpeg")
 ```
 
+```{r}
+pc13<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis3, fill=Population), pch=21, alpha=0.75, cex=2) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC3 ",round(eig[3],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H")
+pc13
+```
 
+```{r}
+eigs<-eig %>% as_tibble() %>% head(n=5) %>% rename(Variance=value) %>%
+  mutate(PC=1:n())
+e<-ggplot(eigs, aes(x=PC, y=Variance)) +
+  geom_bar(stat="identity") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_x_continuous(breaks=c(1,2,3,4,5)) +
+  ylab("% Variance\n") +
+  xlab("\nPC") + 
+  theme(axis.title=element_text(size=14, face="bold")) +
+  theme(axis.text=element_text(size=12))
+e
+```
+
+```{r}
+ggarrange(pc12+theme(legend.position = "") + ggtitle("A") + theme(plot.title=element_text(size=14, face="bold")),
+          pc13+ggtitle("B") + theme(plot.title=element_text(size=14, face="bold")), widths=c(1,1.3))
+ggsave("outputs/106/combined-radseqpcs.pdf", width=8, height=3.75)
+```
 
 Looks sane. Filtering to AUE, AUW, PNG and maf of 0.1 
 
 ```{sh, eval=FALSE}
 bcftools reheader --samples  bamlists/130-sample-names.txt  -o outputs/106/renamed.vcf.gz outputs/106/plink.vcf.gz
 bcftools view -S bamlists/oz-png-names.txt outputs/106/renamed.vcf.gz | bcftools view -q 0.10:minor  > outputs/106/oz-png-maf01.vcf
+
+
+bcftools reheader --samples  bamlists/130-sample-names.txt  -o outputs/106/renamed-pruned.vcf.gz outputs/106/plink-pruned.vcf.gz
+bcftools view -S bamlists/oz-png-names.txt outputs/106/renamed-pruned.vcf.gz | bcftools view -q 0.10:minor  > outputs/106/oz-png-pruned-maf01.vcf
+
+
 ```
+
+
 19,200 variants   
 
 ```{r, eval=FALSE}
@@ -128,6 +178,9 @@ save(goz, file="outputs/106/ozpng-genind.rda")
 load("outputs/106/ozpng-genind.rda")
 ```
 
+```{r}
+cols<-viridis(6, option="H")
+```
 
 ```{r}
 gen<-goz
@@ -138,13 +191,16 @@ df<-pca1$li
 df<-df %>% bind_cols(ozpng)
 eig<-pca1$eig/sum(pca1$eig)*100
 
+df$Population<-factor(df$Pop, levels=c("AUW","AUE","PNG"))
 ggplot(df) + 
-  geom_point(aes(x=Axis1, y=Axis2, fill=Pop), pch=21) +
+  geom_point(aes(x=Axis1, y=Axis2, fill=Population), pch=21, cex=2, alpha=0.75) +
   theme_bw() +
-  xlab(paste0("PC1 ",round(eig[1],2), "%"))
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
   ylab(paste0("PC2 ",round(eig[2],2), "%")) +
   theme(panel.grid = element_blank()) +
-  scale_fill_viridis_d()
+  scale_fill_manual(values=cols[1:3])
+
+ggsave("outputs/106/ozpng-pcs12.jpeg")
 
 ```
 

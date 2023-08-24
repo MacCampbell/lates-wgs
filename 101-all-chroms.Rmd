@@ -11,14 +11,17 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```{r}
 library(tidyverse)
 library(ggrepel)
+library(ggpubr)
 ``` 
 
 ```{r}
 m2<-read_csv("meta/58.csv")
-m2$Region<-factor(m2$Region, levels=c("Queensland","Northern Territory","Papua New Guinea",
+m2$Region<-factor(m2$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
                                               "Indonesia","Philippines","Vietnam","Cambodia","Thailand",
                                               "India Eastern Coast","India Western Coast"))
-m2 %>% group_by(Region) %>% summarize(Count=n())
+m2 <-m2 %>% mutate(Lineage=ifelse(Region %in% c("Northern Territory","Queensland","Papua New Guinea"),"AUS+PNG",
+                                                ifelse(Region %in% c("India Eastern Coast","India Western Coast"),"IND","SEA")))
+m2 %>% group_by(Region) %>% summarize(Count=n(), Cov=mean(Coverage))
 ```
 
 ## 58 sample, all chroms
@@ -79,21 +82,57 @@ ggplot(covs) +
 
 ggsave("outputs/101/lates-c-genome-wide-pca-12.jpeg")
 ```
+For figure  
 
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta) 
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+pc12<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Region, shape=Lineage), size=2, alpha=0.75) +
+#  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "none")
+
+pc12
+```
 ```{r}
 text13<-covs  %>% select(Run, Region, V1, V3) %>%
   group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
 
-ggplot(covs) +
-  geom_point(aes(x=V1, y=V3, fill=Region), pch=21, alpha=0.75) +
-  geom_text_repel(data=text13, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+pc13<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V3, fill=Region, shape=Lineage), size=2, alpha=0.75) +
+ # geom_text_repel(data=text13, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
   xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
   ylab(paste("PC3", " ", round((100*var[3]),2), "%", sep = "")) +
   theme_bw() +
   theme(panel.grid = element_blank()) +
-  scale_fill_viridis_d(option="turbo")
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+
+pc13
 ```
 
+```{r}
+ggarrange(pc12,pc13,ncol=2,widths=c(1,1.45))
+ggsave("outputs/101/combined-wgspcs.pdf", width=9, height=4)
+
+```
+
+Making 
 ### Visualize admixture plots
 
 ```{r, echo=FALSE}

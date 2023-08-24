@@ -225,7 +225,7 @@ Visualize covMat
 
 ```{r}
 meta<-m2
-m <- as.matrix(read.table("outputs/100/58-ibs-90-3.covMat"))
+m <- as.matrix(read.table("outputs/100/58-ibs-90.covMat"))
 eig <- eigen(m)
 var<-eig$values/sum(eig$values)
 cumvar<-cumsum(eig$values)/sum(eig$values)

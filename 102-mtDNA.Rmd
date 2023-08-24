@@ -66,3 +66,5 @@ Li et al. 16S
 L04 100% identical to D32 Australia: Darwin Harbour, Darwin
 L05 96.38% identical to D32, similar to Malaysian seq.
 L07 99.85% similar to D32, see DQ010541
+
+

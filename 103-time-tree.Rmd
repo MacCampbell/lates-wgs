@@ -24,15 +24,15 @@ Using two calibration points:
 `>ISZA081-21|Lates mariae|COI-5P
 CGGAATAGTGGGCACAGCCCTAAGCCTACTCATCCGAGCGGAACTTAGCCAACCTGGCGCACTCCTAGGAGACGACCAGATCTATAACGTAATTGTTACTGCCCACGCTTTCGTAATAATTTTCTTTATAGTAATACCAATTATGATCGGAGGCTTTGGAAACTGACTTATCCCGCTAATAATCGGAGCCCCAGACATAGCATTCCCTCGAATAAATAACATGAGTTTCTGACTCCTTCCACCATCTTTCCTGCTTCTCCTAGCTTCTTCTGGGGTAGAAGCCGGAGCTGGAACCGGTTGAACTGTATATCCGCCACTCGCTGGAAACCTAGCCCATGCTGGAGCATCCGTTGACCTAACCATCTTTTCCCTTCACTTAGCAGGAATTTCCTCAATTCTCGGGGCCATTAACTTTATTACTACCATCTTCAATATGAAACCGGCTGCTGTGTCTATATATCAAATTCCTCTGTTCGTCTGAGCAGTGTTAATTACAGCTGTACTACTCCTTCTTTCCCTCCCAGTCTTAGCCGCTGGTATTACAATACTTCTTACAGACCGAAATCTAAATACAGCATTCTTTGACCCCG`
 		
-		
+		Expanding to 20M genes for better ESS values (>>200)
 ```{r}
-tree<-read.beast("data/mtdna/dating/lates-date.con.tre") 
+tree<-read.beast("data/mtdna/dating/summary/lates-date.con.tre") 
 tm<-read_csv("meta/tree-meta.csv")
 ```
 
 ```{r}
-t<-ggtree(tree) %>% ggtree::rotate(22) %<+% tm 
-nodes<-t$data %>% filter(isTip==FALSE) %>% filter(x > 41) %>% filter(node %in% c(21,22))
+t<-ggtree(tree) %>% ggtree::rotate(17)  %>% ggtree::rotate(18) %>% ggtree::rotate(20) %<+% tm 
+nodes<-t$data %>% filter(isTip==FALSE) %>% filter(x > 41) %>% filter(node %in% c(19,20))
 extras<-t$data %>% filter(isTip==TRUE)
 
 t + 
@@ -46,8 +46,8 @@ t +
   geom_text(data=nodes, aes(x=x-3, y=y+.5, label=round(as.numeric(age_median),2)), fontface="bold") +
   geom_tiplab(size=4, aes(x=x+1,label=Tip), fontface = 3) + 
   geom_tiplab(size=4, aes(x=x+14,label=Additional), fontface = 1) + 
-  geom_cladelab(node=17, label="Centropomidae", offset=19) +
-  geom_cladelab(node=15, label="Outgroups", offset=19) +
+  geom_cladelab(node=16, label="Centropomidae", offset=19) +
+  geom_cladelab(node=25, label="Outgroups", offset=19) +
   theme_tree2()+
   geom_vline(xintercept=c(1.6,11.6,21.6,31.6,41.6), lty=2, lwd=0.5, alpha=0.5) +
   scale_x_continuous(name="\nTime in Millions of Years Ago", breaks=c(1.6,11.6,21.6,31.6,41.6,51.6), 
@@ -57,11 +57,12 @@ t +
   theme(axis.title.x = element_text(size=14))
 
 ggsave("outputs/103/time-tree.pdf")
-  
+ggsave("outputs/103/time-tree.jpeg")
+
 ```
 
 95%hpd    
 ```{r}
-age<-t$data %>% filter(node %in% c(21,22)) %>% select(age_0.95HPD)
+age<-t$data %>% filter(node %in% c(19,20)) %>% select(age_0.95HPD)
 age$age_0.95HPD
 ```
