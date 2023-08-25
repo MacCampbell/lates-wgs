@@ -1,0 +1,122 @@
+---
+title: "109-diagnostic-loci"
+output: html_document
+date: "2023-08-24"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, outputs=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(ggpubr)
+```
+
+Have 130 samples in outputs/106/renamed.vcf.gz 
+
+Need SEA list and AUS+PNG lists to calculate freqs    
+
+
+```{r}
+meta<-read_csv("meta/wang.csv")
+meta$Pop<-factor(meta$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
+meta %>% group_by(Pop, Lat_Lon) %>% summarize(Count=n(), Reads=mean(Filtered))
+```
+
+```{r}
+sea<-meta %>% filter(Pop %in% c("INA","MAL","THA"))
+poz<-meta %>% filter(Pop %in% c("AUW","AUE","PNG"))
+```
+
+```{r}
+sea %>% select(Run) %>% write_tsv("outputs/109/sea.txt", col_names = FALSE)
+poz %>% select(Run) %>% write_tsv("outputs/109/poz.txt", col_names = FALSE)
+```
+
+
+```{sh, eval=FALSE}
+bcftools view -S outputs/109/sea.txt outputs/106/renamed.vcf.gz > outputs/109/sea.vcf
+bcftools view -S outputs/109/poz.txt outputs/106/renamed.vcf.gz > outputs/109/poz.vcf
+
+vcftools --vcf outputs/109/sea.vcf  --freq --out outputs/109/sea.vcf
+vcftools --vcf outputs/109/poz.vcf  --freq --out outputs/109/poz.vcf
+```
+
+
+```{r}
+freq1<-read_tsv("outputs/109/sea.vcf.frq", skip = 1, col_names = FALSE) %>% 
+  rename(Chromosome=X1, Position=X2, NAllelesSEA=X3, NSEA=X4, Major=X5, Minor=X6) %>%
+  separate(Major, into=c("Major","MajorFrequencySEA"), sep=":") %>% 
+  separate(Minor, into=c("Minor","MinorFrequencySEA"), sep=":")
+freq1$MajorFrequencySEA<-as.numeric(freq1$MajorFrequencySEA)
+freq1$MinorFrequencySEA<-as.numeric(freq1$MinorFrequencySEA)
+
+freq2<-read_tsv("outputs/109/poz.vcf.frq", skip = 1, col_names = FALSE) %>% 
+  rename(Chromosome=X1, Position=X2, NAllelesPOZ=X3, NPOZ=X4, Major=X5, Minor=X6)%>%
+  separate(Major, into=c("Major","MajorFrequencyPOZ"), sep=":") %>%
+  separate(Minor, into=c("Minor","MinorFrequencyPOZ"), sep=":")
+freq2$MajorFrequencyPOZ<-as.numeric(freq2$MajorFrequencyPOZ)
+freq2$MinorFrequencyPOZ<-as.numeric(freq2$MinorFrequencyPOZ)
+
+comb<-left_join(freq2, freq1)
+```
+
+
+```{r}
+merge<-comb %>% mutate(AbsoluteDifference=abs(MajorFrequencyPOZ-MajorFrequencySEA)) %>% 
+  select(Chromosome, Position, Major, Minor, MajorFrequencyPOZ, MinorFrequencyPOZ, MajorFrequencySEA, MinorFrequencySEA, AbsoluteDifference, NPOZ, NSEA) %>% arrange(-AbsoluteDifference)
+
+# Sample sizes
+#  filter(N > 30, NWinter > 20) 
+write_csv(merge,"outputs/106/sea-poz-freqs.csv")
+
+diffs<-merge %>% filter(AbsoluteDifference>0.95)
+
+write_csv(diffs,"Supplemental/Supplemental Table SX SEA AUS+PNG diagnostic loci.csv")
+
+diffs %>% filter(AbsoluteDifference==1.00)
+```
+
+```{r}
+nrow(diffs)
+```
+
+
+```{r}
+dhisto<-ggplot(diffs) +
+  geom_histogram(aes(x=Chromosome), stat="count") +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1, hjust=1)) +
+  ylab("Count\n") +
+  xlab("\nChromosome") +
+  theme(axis.title=element_text(size=14, face="bold")) +
+  theme(axis.text.y=element_text(size=12)) +
+  ggtitle("A") +
+  theme(plot.title=element_text(size=20, face="bold"))
+
+dhisto
+```
+
+```{r}
+ahisto<-ggplot(diffs) +
+geom_histogram(aes(x=AbsoluteDifference), bins=30) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1, hjust=1)) +
+  ylab("Count\n") +
+  xlab("\nAbsolute Difference") +
+  theme(axis.title=element_text(size=14, face="bold")) +
+  theme(axis.text=element_text(size=12)) +
+  ggtitle("B") +
+  theme(plot.title=element_text(size=20, face="bold"))
+
+ahisto
+```
+
+
+```{r}
+ggarrange(dhisto,ahisto, ncol=1)
+ggsave("outputs/109/histos.pdf", width=6, height=8)
+```

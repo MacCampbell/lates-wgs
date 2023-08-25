@@ -1,0 +1,84 @@
+---
+title: "110-diagnostic-loci-oz-png"
+output: html_document
+date: "2023-08-24"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+
+```{r}
+library(tidyverse)
+library(ggpubr)
+```
+
+Have 130 samples in outputs/106/renamed.vcf.gz 
+
+Need AUS list and PNG lists to calculate freqs    
+
+
+```{r}
+meta<-read_csv("meta/wang.csv")
+meta$Pop<-factor(meta$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
+meta %>% group_by(Pop, Lat_Lon) %>% summarize(Count=n(), Reads=mean(Filtered))
+```
+
+```{r}
+aus<-meta %>% filter(Pop %in% c("AUW","AUE"))
+png<-meta %>% filter(Pop %in% c("PNG"))
+```
+
+```{r}
+aus %>% select(Run) %>% write_tsv("outputs/110/aus.txt", col_names = FALSE)
+png %>% select(Run) %>% write_tsv("outputs/110/png.txt", col_names = FALSE)
+```
+
+
+```{sh, eval=FALSE}
+bcftools view -S outputs/110/aus.txt outputs/106/renamed.vcf.gz > outputs/110/aus.vcf
+bcftools view -S outputs/110/png.txt outputs/106/renamed.vcf.gz > outputs/110/png.vcf
+
+vcftools --vcf outputs/110/aus.vcf  --freq --out outputs/110/aus.vcf
+vcftools --vcf outputs/110/png.vcf  --freq --out outputs/110/png.vcf
+```
+
+
+```{r}
+freq1<-read_tsv("outputs/110/aus.vcf.frq", skip = 1, col_names = FALSE) %>% 
+  rename(Chromosome=X1, Position=X2, NAllelesAUS=X3, NAUS=X4, Major=X5, Minor=X6) %>%
+  separate(Major, into=c("Major","MajorFrequencyAUS"), sep=":") %>% 
+  separate(Minor, into=c("Minor","MinorFrequencyAUS"), sep=":")
+freq1$MajorFrequencyAUS<-as.numeric(freq1$MajorFrequencyAUS)
+freq1$MinorFrequencyAUS<-as.numeric(freq1$MinorFrequencyAUS)
+
+freq2<-read_tsv("outputs/110/png.vcf.frq", skip = 1, col_names = FALSE) %>% 
+  rename(Chromosome=X1, Position=X2, NAllelesPNG=X3, NPNG=X4, Major=X5, Minor=X6)%>%
+  separate(Major, into=c("Major","MajorFrequencyPNG"), sep=":") %>%
+  separate(Minor, into=c("Minor","MinorFrequencyPNG"), sep=":")
+freq2$MajorFrequencyPNG<-as.numeric(freq2$MajorFrequencyPNG)
+freq2$MinorFrequencyPNG<-as.numeric(freq2$MinorFrequencyPNG)
+
+comb<-left_join(freq2, freq1)
+```
+
+
+```{r}
+merge<-comb %>% mutate(AbsoluteDifference=abs(MajorFrequencyPNG-MajorFrequencyAUS)) %>% 
+  select(Chromosome, Position, Major, Minor, MajorFrequencyPNG, MinorFrequencyPNG, MajorFrequencyAUS, MinorFrequencyAUS, AbsoluteDifference, NPNG, NAUS) %>% arrange(-AbsoluteDifference)
+
+# Sample sizes
+#  filter(N > 30, NWinter > 20) 
+write_csv(merge,"outputs/106/AUS-PNG-freqs.csv")
+
+diffs<-merge %>% filter(AbsoluteDifference>0.95)
+
+write_csv(diffs,"Supplemental/Supplemental Table SX AUS-PNG diagnostic loci.csv")
+
+diffs %>% filter(AbsoluteDifference==1.00)
+```
+
+```{r}
+nrow(diffs)
+```
