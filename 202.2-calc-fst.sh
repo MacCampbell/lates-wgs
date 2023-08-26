@@ -24,7 +24,7 @@ echo "#!/bin/bash
 #SBATCH -n 8
 #SBATCH --nodes=1 
 #SBATCH --partition=high
-#SBATCH ----mem=32G 
+#SBATCH --mem=32G 
 #SBATCH --time=48:00:00
 #SBATCH --output=outputs/202/${pop1}_${pop2}-%j.slurmout
 #############################################
