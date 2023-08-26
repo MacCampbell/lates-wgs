@@ -4,7 +4,7 @@
 
 
 mkdir outputs/202
-wc=$(wc -l poplists/poplist.tx | awk '{print $1}')
+wc=$(wc -l poplists/poplist.txt | awk '{print $1}')
 x=1
 while [ $x -le $wc ]
 do
