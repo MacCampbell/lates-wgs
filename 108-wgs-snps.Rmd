@@ -18,11 +18,27 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/108/snps-wgs.out 2> outputs/108/snps-wgs.err &
 ```
 
+2,920,699 variants    
+Creating a vcf
+
+```{sh, eval=FALSE}
+plink --tped snps-wgs.tped --tfam snps-wgs.tfam  --out plink-binary --recode --allow-extra-chr --noweb
+plink --ped plink-binary.ped --map plink-binary.map --recode vcf --allow-extra-chr -out plink
+bgzip plink.vcf 
+tabix plink.vcf.gz
+
+#renaming vcf
+bcftools reheader --samples bamlists/58-sample-names.txt -o outputs/108/renamed.vcf.gz outputs/108/plink.vcf.gz
+
+bcftools +prune -l 0.20 -w 10000 outputs/108/renamed.vcf.gz > outputs/108/pruned.vcf
+
+```
 
 Now we need to split and calculate frequencies     
 
 ```{r}
 library(tidyverse)
+library(snpR)
 library(ggpubr)
 ```
 
@@ -39,12 +55,14 @@ m2$Region<-factor(m2$Region, levels=c("Northern Territory","Queensland","Papua N
 m2 <-m2 %>% mutate(Lineage=ifelse(Region %in% c("Northern Territory","Queensland","Papua New Guinea"),"AUS+PNG",
                                                 ifelse(Region %in% c("India Eastern Coast","India Western Coast"),"IND","SEA")))
 m2 %>% group_by(Region) %>% summarize(Count=n(), Cov=mean(Coverage))
+
+write_tsv(m2 %>% select(Run), file="bamlists/58-sample-names.txt", col_names = FALSE)
 ```
 
 
 ```{r}
-sea<-meta %>% filter(Lineage %in% c("AUS+PNG","SEA"))
-ind<-meta %>% filter(Pop %in% c("IND"))
+sea<-m2 %>% filter(Lineage %in% c("AUS+PNG","SEA"))
+ind<-m2 %>% filter(Lineage %in% c("IND"))
 ```
 
 ```{r}
@@ -54,23 +72,29 @@ ind %>% select(Run) %>% write_tsv("outputs/108/ind.txt", col_names = FALSE)
 
 
 ```{sh, eval=FALSE}
-bcftools view -S outputs/108/sea.txt outputs/106/renamed.vcf.gz > outputs/108/sea.vcf
-bcftools view -S outputs/108/ind.txt outputs/106/renamed.vcf.gz > outputs/108/ind.vcf
+bcftools view -S outputs/108/sea.txt outputs/108/renamed.vcf.gz > outputs/108/sea.vcf
+bcftools view -S outputs/108/ind.txt outputs/108/renamed.vcf.gz > outputs/108/ind.vcf
 
+#on farm module load vcftools
 vcftools --vcf outputs/108/sea.vcf  --freq --out outputs/108/sea.vcf
 vcftools --vcf outputs/108/ind.vcf  --freq --out outputs/108/ind.vcf
 ```
 
+47 individuals in SEA
+11 in IND
 
-```{r}
-freq1<-read_tsv("outputs/108/sea.vcf.frq", skip = 1, col_names = FALSE) %>% 
+
+
+
+```{r, eval=FALSE}
+freq1<-read_tsv("outputs/108/sea.vcf.frq.gz", skip = 1, col_names = FALSE) %>% 
   rename(Chromosome=X1, Position=X2, NAllelesSEA=X3, NSEA=X4, Major=X5, Minor=X6) %>%
   separate(Major, into=c("Major","MajorFrequencySEA"), sep=":") %>% 
   separate(Minor, into=c("Minor","MinorFrequencySEA"), sep=":")
 freq1$MajorFrequencySEA<-as.numeric(freq1$MajorFrequencySEA)
 freq1$MinorFrequencySEA<-as.numeric(freq1$MinorFrequencySEA)
 
-freq2<-read_tsv("outputs/108/ind.vcf.frq", skip = 1, col_names = FALSE) %>% 
+freq2<-read_tsv("outputs/108/ind.vcf.frq.gz", skip = 1, col_names = FALSE) %>% 
   rename(Chromosome=X1, Position=X2, NAllelesIND=X3, NIND=X4, Major=X5, Minor=X6)%>%
   separate(Major, into=c("Major","MajorFrequencyIND"), sep=":") %>%
   separate(Minor, into=c("Minor","MinorFrequencyIND"), sep=":")
@@ -80,6 +104,10 @@ freq2$MinorFrequencyIND<-as.numeric(freq2$MinorFrequencyIND)
 comb<-left_join(freq2, freq1)
 ```
 
+Takes forever because we have millions of SNPs!!!
+```{r}
+load("outputs/108/merge.rda")
+```
 
 ```{r}
 merge<-comb %>% mutate(AbsoluteDifference=abs(MajorFrequencyIND-MajorFrequencySEA)) %>% 
@@ -87,22 +115,34 @@ merge<-comb %>% mutate(AbsoluteDifference=abs(MajorFrequencyIND-MajorFrequencySE
 
 # Sample sizes
 #  filter(N > 30, NWinter > 20) 
-write_csv(merge,"outputs/106/sea-aus-png-ind-freqs.csv")
+#write_csv(merge,"outputs/106/sea-aus-png-ind-freqs.csv")
+#save(merge, file="outputs/108/merge.rda")
 
 diffs<-merge %>% filter(AbsoluteDifference>0.95)
 
-write_csv(diffs,"Supplemental/Supplemental Table SX IND diagnostic loci.csv")
+write_csv(diffs %>% filter(AbsoluteDifference==1.00),"Supplemental/Supplemental Table SX IND diagnostic loci.csv")
 
 diffs %>% filter(AbsoluteDifference==1.00)
 ```
 
 ```{r}
 nrow(diffs)
+diffs %>% group_by(Chromosome) %>% summarize(Count=n()) %>% arrange(-Count)
 ```
 
+```{r}
+ggplot(merge %>% filter(Chromosome=="NC_066849.1")) +
+  geom_density2d_filled(aes(x=Position, y=AbsoluteDifference), alpha=0.75)
+```
 
 ```{r}
-dhisto<-ggplot(diffs) +
+ggplot(merge %>% filter(Chromosome=="NC_066833.1")) +
+  geom_density2d_filled(aes(x=Position, y=AbsoluteDifference), alpha=0.75)
+```
+     
+
+```{r}
+ggplot(diffs) +
   geom_histogram(aes(x=Chromosome), stat="count") +
   theme_bw() +
   theme(panel.grid = element_blank()) +
@@ -113,13 +153,30 @@ dhisto<-ggplot(diffs) +
   theme(axis.text.y=element_text(size=12)) +
   ggtitle("A") +
   theme(plot.title=element_text(size=20, face="bold"))
+```
+
+
+```{r}
+dhisto<-ggplot(diffs %>% filter(AbsoluteDifference==1.00)) +
+  geom_histogram(aes(x=Chromosome), stat="count") +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1, hjust=1)) +
+  ylab("Count\n") +
+  xlab("\nChromosome") +
+  theme(axis.title=element_text(size=14, face="bold")) +
+  theme(axis.text.y=element_text(size=12)) +
+ # ggtitle("A") +
+  theme(plot.title=element_text(size=20, face="bold"))
 
 dhisto
+
+ggsave("outputs/108/distribution-of-diagnostic-snps.jpeg")
 ```
 
 ```{r}
 ahisto<-ggplot(diffs) +
-geom_histogram(aes(x=AbsoluteDifference), bins=30) +
+geom_histogram(aes(x=AbsoluteDifference), bins=20) +
   theme_bw() +
   theme(panel.grid = element_blank()) +
   theme(axis.text.x = element_text(angle = 45, vjust=1, hjust=1)) +
@@ -138,4 +195,204 @@ ahisto
 ggarrange(dhisto,ahisto, ncol=1)
 ggsave("outputs/108/histos.pdf", width=6, height=8)
 ```
+
+
+## Prune and do some stats!
+
+
+Make snpR object....
+
+20626 variants
+
+```{r, eval=FALSE}
+sample_meta<-m2 %>% select(Run,Region,Lineage) %>% mutate(Group=ifelse(Lineage=="AUS+PNG","1",
+                                                        ifelse(Lineage=="SEA","2",
+                                                        ifelse(Lineage=="IND","3","None")))) %>%
+  mutate(Pop=ifelse(Region=="Northern Territory","1",
+                   ifelse( Region=="Queensland","2",
+                   ifelse( Region=="Papua New Guinea","3",
+                   ifelse( Region=="Indonesia","4",
+                   ifelse( Region=="Philippines","5",
+                   ifelse( Region=="Vietnam","6",
+                   ifelse( Region=="Cambodia","7",
+                   ifelse( Region=="Thailand","8",
+                   ifelse( Region=="India Eastern Coast","9",
+                   ifelse( Region=="India Western Coast","10","None")))))))))))
+
+my.dat <- import.snpR.data("outputs/108/pruned.vcf", sample.meta = sample_meta)
+```
+
+
+
+```{r}
+x<-calc_pairwise_fst(my.dat, "Group")
+groupfst<-get.snpR.stats(x, "Group", "fst")
+#this is weighted means
+mg<-groupfst$fst.matrix$Group
+sample_meta %>% group_by(Lineage, Group) %>% summarize(Count=n())
+```
+```{r}
+mg
+```
+
+#remove vietnamese inds
+
+```{r}
+m3<-m2 %>% filter(Region !="Vietnam") 
+write_tsv(m3%>%select(Run), col_names=FALSE, file="outputs/108/sub.txt")
+```
+
+```{sh, eval=FALSE}
+bcftools view -S outputs/108/sub.txt outputs/108/pruned.vcf > outputs/108/sub.vcf
+```
+
+```{r}
+sample_meta2<-m3 %>% select(Run,Region,Lineage) %>% mutate(Group=ifelse(Lineage=="AUS+PNG","1",
+                                                        ifelse(Lineage=="SEA","2",
+                                                        ifelse(Lineage=="IND","3","None")))) %>%
+  mutate(Pop=ifelse(Region=="Northern Territory","1",
+                   ifelse( Region=="Queensland","2",
+                   ifelse( Region=="Papua New Guinea","3",
+                   ifelse( Region=="Indonesia","4",
+                   ifelse( Region=="Philippines","5",
+                   ifelse( Region=="Cambodia","6",
+                   ifelse( Region=="Thailand","7",
+                   ifelse( Region=="India Eastern Coast","8",
+                   ifelse( Region=="India Western Coast","9","None"))))))))))
+
+
+my.dat2 <- import.snpR.data("outputs/108/sub.vcf", sample.meta = sample_meta2)
+
+```
+
+```{r}
+x<-calc_pairwise_fst(my.dat2, "Pop")
+groupfst<-get.snpR.stats(x, "Pop", "fst")
+#this is weighted means
+mg<-groupfst$fst.matrix$Pop
+sample_meta2 %>% group_by(Lineage, Pop) %>% summarize(Count=n())
+```
+
+
+```{r}
+df<-as.tibble(mg)
+ddf<-df %>% pivot_longer(cols=2:9, names_to = "Population 2", values_to = "Fst") %>% rename("Population 1"=p1)
+ddf$`Population 1`<-factor(ddf$`Population 1`, levels=seq(1:9))
+ddf$`Population 2`<-factor(ddf$`Population 2`, levels=seq(1:9))
+```
+
+```{r}
+fst<-ggplot(ddf %>% na.omit()) +
+  geom_raster(aes(y=`Population 1`, x=`Population 2`, fill=Fst)) +
+  geom_text(aes(y=`Population 1`, x=`Population 2`, label=sprintf("%.3f", Fst)), color="white", fontface="bold") +
+  scale_fill_viridis_c(option="cividis", direction=-1, alpha=1) +
+  xlab("\nRegion") +
+  ylab("Region\n") +
+  theme_bw() +
+  theme(panel.background = element_blank()) +
+  theme(panel.grid = element_blank()) +
+  scale_x_discrete(labels=sort(unique(sample_meta2$Region)[2:9])) +
+  scale_y_discrete(labels=sort(unique(sample_meta2$Region))) +
+  theme(axis.text=element_text(size=12)) +
+  theme(axis.text.x=element_text(angle=45, hjust=1, vjust=1)) +
+
+  theme(axis.title = element_text(size=14, face="bold")) +
+  ggtitle("A") +
+  theme(plot.title=element_text(size=16, face="bold"))
+fst
+ggsave("outputs/108/wgs-fst.jpeg")
+```
+
+
+PCA for sanity    
+```{r}
+p<-plot_clusters(my.dat2, facets = "Pop", viridis.option = "H" )
+```
+
+```{r}
+p
+```
+
+Nucleotide diversity    
+
+```{r}
+picalc<-calc_pi(my.dat2,"Pop")
+pi<-get.snpR.stats(picalc,"Pop","pi")
+pidf<-pi$single %>% as_tibble() 
+pidf
+```
+```{r}
+pidf %>% group_by(subfacet,CHROM) %>% summarize(meanpi=mean(pi)) %>% ungroup() %>% group_by(subfacet) %>%
+  summarize(MedianPi=median(meanpi))
+```
+
+```{r}
+piplot<-ggplot(pidf %>% group_by(subfacet,CHROM) %>% summarize(meanpi=mean(pi))) +
+  geom_boxplot(aes(x=subfacet,y=meanpi, fill=subfacet), alpha=0.75) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  ylab("Pi\n") +
+  xlab("\nPopulation")+
+  scale_x_discrete(labels=sort(unique(sample_meta2$Region))) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+#  scale_fill_manual(values=alpha(c("red","black","blue"),0.75)) +
+  xlab("\nRegion") +
+  theme(legend.position = "") +
+  scale_fill_viridis_d(option="magma") +
+  ggtitle("B") +
+  theme(plot.title=element_text(size=16, face="bold"))+
+  theme(axis.title = element_text(size=14, face="bold"))
+
+
+piplot
+```
+
+```{r}
+ggarrange(fst+theme(legend.position = "none"), piplot+  theme(axis.text=element_text(size=12)), ncol=1, heights=c(1.25,1))
+ggsave("outputs/108/combined-fst-pi.jpeg", height=9, width=8)
+```
+
+## Local PCA
+
+in outputs/108/vcf
+
+```{sh, eval=FALSE}
+cat lates-lgs.txt  | while read line; do bcftools view -Ob -r $line renamed.vcf.gz > $line.bcf; done;
+for f in *.bcf; do bcftools index $f; done;
+```
+
+
+```{r}
+samples<-m2 %>% select(Run) %>% rename(ID=Run)
+
+population<-m2 %>% select(Region) %>% rename(population=Region)
+
+table<-cbind(samples, population)
+write.table(table, "outputs/108/vcf/sample_info.tsv", quote = TRUE, row.names = FALSE, sep="\t")
+```
+
+
+
+./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/108/vcf -t snp -s 20 -m 4 -I /Users/mac/github/lates-wgs/outputs/108/vcf/sample_info.tsv -j 1601
+
+```{r}
+mds<-read_csv("outputs/108/mds_coords.csv")
+#make tidy
+tidymds<-mds %>% gather(MDS, Value, 3:6)
+MDS1<-filter(tidymds, MDS=="MDS1") %>% rename(MDS1=MDS) %>% rename(Value1=Value)
+MDS2<-filter(tidymds, MDS=="MDS2") %>% rename(MDS2=MDS) %>% rename(Value2=Value)
+MDS3<-filter(tidymds, MDS=="MDS3") %>% rename(MDS3=MDS) %>% rename(Value3=Value)
+MDS4<-filter(tidymds, MDS=="MDS4") %>% rename(MDS4=MDS) %>% rename(Value4=Value)
+```
+
+```{r}
+ggplot(mds)+
+  geom_point(aes(x=MDS1, y=MDS2), alpha=0.75) +
+  theme_bw()
+```
+
+```{r}
+ggplot(mds)+
+  geom_point(aes(x=MDS1, y=MDS3), alpha=0.75) +
+  theme_bw()
 

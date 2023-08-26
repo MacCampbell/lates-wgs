@@ -1,0 +1,98 @@
+---
+title: "201-mystery-chrom"
+output: html_document
+date: "2023-08-25"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(ggpubr)
+library(vcfR)
+library(adegenet)
+library(snpR)
+```
+
+NC_066849.1 has many diagnostic SNPs to separate IND from other pops. What is going on? Structural variant, dups?   
+
+Meta    
+
+```{r}
+m2<-read_csv("meta/58.csv")
+m2$Region<-factor(m2$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
+                                              "Indonesia","Philippines","Vietnam","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
+m2 <-m2 %>% mutate(Lineage=ifelse(Region %in% c("Northern Territory","Queensland","Papua New Guinea"),"AUS+PNG",
+                                                ifelse(Region %in% c("India Eastern Coast","India Western Coast"),"IND","SEA")))
+m2 %>% group_by(Region) %>% summarize(Count=n(), Cov=mean(Coverage))
+```
+
+Can look at just this with calls or with GLs
+
+GL version
+
+```{sh, eval=FALSE}
+srun -p high -t 12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/58.bamlist -r NC_066849.1\
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 44 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/201/58-ibs > outputs/201/58-ibs.out 2> outputs/201/58-ibs.err &
+
+
+srun -p high -t 02:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/201/58-ibs.beagle.gz -K 2 -o outputs/201/58-75-K2 &
+srun -p high -t 02:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/201/58-ibs.beagle.gz -K 3 -o outputs/201/58-75-K3 &
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/201/58-ibs.beagle.gz -K 4 -o outputs/201/58-75-K4 &
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/201/58-ibs.beagle.gz -K 5 -o outputs/201/58-75-K5 &
+````
+
+Can look for paralogs...
+
+## Called genos
+    
+```{sh, eval=FALSE}
+bcftools view -Ov -r NC_066849.1 outputs/108/vcf/renamed.vcf.gz > outputs/201/NC_066849.1.vcf
+
+grep "^#" outputs/108/pruned.vcf  > outputs/201/header.txt
+grep "NC_066849.1" outputs/108/pruned.vcf > outputs/201/NC_066849.1-body.txt
+cat outputs/201/header.txt outputs/201/NC_066849.1-body.txt > outputs/201/NC_066849.1-pruned.vcf
+```
+
+```{r}
+sample_meta<-m2 %>% select(Run,Region,Lineage) %>% mutate(Group=ifelse(Lineage=="AUS+PNG","1",
+                                                        ifelse(Lineage=="SEA","2",
+                                                        ifelse(Lineage=="IND","3","None")))) %>%
+  mutate(Pop=ifelse(Region=="Northern Territory","1",
+                   ifelse( Region=="Queensland","2",
+                   ifelse( Region=="Papua New Guinea","3",
+                   ifelse( Region=="Indonesia","4",
+                   ifelse( Region=="Philippines","5",
+                   ifelse( Region=="Vietnam","6",
+                   ifelse( Region=="Cambodia","7",
+                   ifelse( Region=="Thailand","8",
+                   ifelse( Region=="India Eastern Coast","9",
+                   ifelse( Region=="India Western Coast","10","None")))))))))))
+
+my.dat <- import.snpR.data("outputs/201/NC_066849.1-pruned.vcf", sample.meta = sample_meta) 
+```
+
+
+```{r}
+p<-plot_clusters(my.dat, facets = "Region", viridis.option = "H" )
+```
+
+```{r}
+p
+```
+
+
+```{r}
+ggplot(merge %>% filter(Chromosome=="NC_066849.1")) +
+  geom_density2d_filled(aes(x=Position, y=AbsoluteDifference), alpha=0.75)
+```
+
+## NGS Paralogs?

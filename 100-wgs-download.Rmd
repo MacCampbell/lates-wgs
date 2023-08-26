@@ -155,6 +155,28 @@ srun -p high -t 12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/100/58-ibs > outputs/100/58-ibs.out 2> outputs/100/58-ibs.err &
+
+
+srun -p high -t 02:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs.beagle.gz -K 2 -o outputs/100/58-75-K2 &
+srun -p high -t 02:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs.beagle.gz -K 3 -o outputs/100/58-75-K3 &
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs.beagle.gz -K 4 -o outputs/100/58-75-K4 &
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs.beagle.gz -K 5 -o outputs/100/58-75-K5 &
+
+#50 %
+srun -p high -t 12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/58.bamlist -r NC_066833.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 29 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/100/58-ibs-50 > outputs/100/58-ibs-50.out 2> outputs/100/58-ibs-50.err &
+
+
+srun -p high -t 02:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-50.beagle.gz -K 2 -o outputs/100/58-50-K2 &
+srun -p high -t 02:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-50.beagle.gz -K 3 -o outputs/100/58-50-K3 &
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-50.beagle.gz -K 4 -o outputs/100/58-50-K4 &
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/58-ibs-50.beagle.gz -K 5 -o outputs/100/58-50-K5 &
+
 ```
 
 
@@ -318,8 +340,16 @@ ggplot(rdf) +
 ```
 
 ```{r}
-PlotAdmix("outputs/100/58-K2-3.qopt", m2)
+PlotAdmix("outputs/100/58-K2-2.qopt", m2)
 ```
+```{r}
+PlotAdmix("outputs/100/58-75-K2.qopt", m2)
+```
+
+```{r}
+PlotAdmix("outputs/100/58-75-K3.qopt", m2)
+```
+
 ```{r}
 PlotAdmix("outputs/100/58-K3-3.qopt", m2)
 ```

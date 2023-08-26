@@ -1,0 +1,54 @@
+---
+title: "202-pairwise-Fst"
+output: html_document
+date: "2023-08-26"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+libary(tidyverse)
+```
+
+Calculating pairwise Fst with ANGSD
+
+_1_ SFS need things organized like so
+
+poplist
+
+bamlist for each pop
+
+meta   
+
+```{r}
+m2<-read_csv("meta/58.csv")
+m2$Region<-factor(m2$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
+                                              "Indonesia","Philippines","Vietnam","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
+
+m3<-filter(m2,Region != "Vietnam") 
+m3 %>% group_by(Region) %>% summarize(Count=n())
+```
+
+
+```{r}
+Region<-m3 %>% select(Region)
+Region$Region<-gsub(" ","", Region$Region)
+write_tsv(Region %>% unique(), file="poplists/poplist.txt", col_names = FALSE)
+
+pops<-unique(Region$Region)
+m3$pop<-gsub(" ","", m3$Region)
+```
+
+```{r}
+writeBamlist<-function(Pop, Meta) {
+  write_tsv(Meta %>% filter(pop==Pop) %>% select(Path), col_names = FALSE, file=paste0("poplists/",Pop,".bamlist"))
+  
+}
+```
+
+```{r}
+lapply(pops,writeBamlist, m3)
+```
