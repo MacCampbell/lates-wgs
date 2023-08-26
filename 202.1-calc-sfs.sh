@@ -32,7 +32,7 @@ mInd=\$((\${nInd}/2))
 #Getting sites together if needed, e.g. maccamp@farm:~/spineflower/0009$ cat selection.sites | perl -pe 's/_/:/g' > sites
 
 
-angsd -b poplists/${pop}.bamlist -anc genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna -rf -rf genome/lates-lgs.txt  -out outputs/202/${pop} -uniqueOnly 1 -remove_bads 1 -only_proper_pairs 1 -baq 2 -GL 1 -doMajorMinor 1 -doMaf 1 -minInd $mInd -nind $nInd -minMapQ 10 -minQ 20 -doSaf 2 -nThreads 8 
+angsd -b poplists/${pop}.bamlist -anc genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna -rf genome/lates-lgs.txt  -out outputs/202/${pop} -uniqueOnly 1 -remove_bads 1 -only_proper_pairs 1 -baq 2 -GL 1 -doMajorMinor 1 -doMaf 1 -minInd $mInd -nind $nInd -minMapQ 10 -minQ 20 -doSaf 2 -nThreads 8 
 realSFS outputs/202/${pop}.saf.idx > outputs/202/${pop}.sfs
 
 #Rscript 1000_scripts/plotSFS.R 0011/${pop}.sfs
