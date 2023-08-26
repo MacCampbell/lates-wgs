@@ -57,4 +57,4 @@ then sbatch 202.1-calc-sfs.sh
 
 Then to calc pairwise fst, need pairwise list.
 
-poplists/pairwise-list.txt
+poplists/pairwise-list.txt is made

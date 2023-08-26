@@ -22,8 +22,9 @@ do
 echo "#!/bin/bash
 #SBATCH --job-name=fst${x}
 #SBATCH -n 8
-#SBATCH -N 1
+#SBATCH --nodes=1 
 #SBATCH --partition=high
+#SBATCH ----mem=32G 
 #SBATCH --time=48:00:00
 #SBATCH --output=outputs/202/${pop1}_${pop2}-%j.slurmout
 #############################################
