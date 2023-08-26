@@ -52,3 +52,9 @@ writeBamlist<-function(Pop, Meta) {
 ```{r}
 lapply(pops,writeBamlist, m3)
 ```
+
+then sbatch 202.1-calc-sfs.sh
+
+Then to calc pairwise fst, need pairwise list.
+
+poplists/pairwise-list.txt
