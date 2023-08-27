@@ -19,7 +19,8 @@ echo "#!/bin/bash
 #SBATCH --job-name=sfs${x}
 #SBATCH -n 8
 #SBATCH -N 1
-#SBATCH --partition=high
+#SBATCH --partition=bigmemh
+#SBATCH --mem=96G 
 #SBATCH --time=48:00:00
 #SBATCH --output=outputs/202/${pop}-%j.slurmout
 

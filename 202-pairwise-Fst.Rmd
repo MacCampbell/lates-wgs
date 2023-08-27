@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```
 
 ```{r}
-libary(tidyverse)
+library(tidyverse)
 ```
 
 Calculating pairwise Fst with ANGSD
@@ -58,3 +58,18 @@ then sbatch 202.1-calc-sfs.sh
 Then to calc pairwise fst, need pairwise list.
 
 poplists/pairwise-list.txt is made
+
+See what we need:     
+
+```{r}
+list<-read_tsv("outputs/202/pairwise-list.txt", col_names=c("Pop1","Pop2"))
+fst<-read_tsv("outputs/202/pwfst.all", col_names=c("Pop1","Pop2","Unweighted","Weighted"))
+
+fsts<-list %>% left_join(fst)
+```
+
+Indonesia.sfs is empty
+
+realSFS Indonesia.saf.idx > Indonesia.sfs
+
+(base) maccamp@farm:~/lates-wgs/outputs/202$ srun -p bigmemh --nodes=1 --mem=96G  --time=12:00:00 realSFS Indonesia.saf.idx > Indonesia.sfs
