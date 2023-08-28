@@ -23,7 +23,7 @@ echo "#!/bin/bash
 #SBATCH --job-name=fst${x}
 #SBATCH -n 8
 #SBATCH --nodes=1 
-#SBATCH --partition=bigmemh
+#SBATCH --partition=bigmemm
 #SBATCH --mem=96G 
 #SBATCH --time=48:00:00
 #SBATCH --output=outputs/202/${pop1}_${pop2}-%j.slurmout

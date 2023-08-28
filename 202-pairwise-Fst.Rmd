@@ -28,8 +28,11 @@ m2$Region<-factor(m2$Region, levels=c("Northern Territory","Queensland","Papua N
                                               "Indonesia","Philippines","Vietnam","Cambodia","Thailand",
                                               "India Eastern Coast","India Western Coast"))
 
+m2<-m2 %>% mutate(Lineage=ifelse(Region %in% c("India Eastern Coast","India Western Coast"), "IND",
+                       ifelse(Region %in% c("Northern Territory","Queensland","Papua New Guinea"), "AUS+NG","SEA")))
+
 m3<-filter(m2,Region != "Vietnam") 
-m3 %>% group_by(Region) %>% summarize(Count=n())
+m3 %>% group_by(Lineage, Region) %>% summarize(Count=n())
 ```
 
 
@@ -53,6 +56,14 @@ writeBamlist<-function(Pop, Meta) {
 lapply(pops,writeBamlist, m3)
 ```
 
+```{r}
+writeLineage<-function(Lin, Meta) {
+  write_tsv(Meta %>% filter(Lineage==Lin) %>% select(Path), col_names = FALSE, file=paste0("poplists/",Lin,".bamlist"))
+  
+}
+lapply(c("AUS+NG","SEA","IND"),writeLineage, m3)
+
+```
 then sbatch 202.1-calc-sfs.sh
 
 Then to calc pairwise fst, need pairwise list, should be 9*(9-1)/2 = 36 options.
@@ -66,6 +77,15 @@ write.table(y, file="poplists/pairwise-list.txt", quote = FALSE, row.names = FAL
 ```
 
 poplists/pairwise-list.txt is made
+
+Also, what about main lineages?     
+
+```{r}
+x<-unique(m3$Lineage)
+y<-apply(combn(x,2),2,paste,collapse='\t')
+y
+write.table(y, file="poplists/lineage-list.txt", quote = FALSE, row.names = FALSE, col.names = FALSE)
+```
 
 Running 202.2
 
