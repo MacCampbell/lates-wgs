@@ -63,6 +63,9 @@ writeLineage<-function(Lin, Meta) {
 }
 lapply(c("AUS+NG","SEA","IND"),writeLineage, m3)
 
+Lineage<-m3 %>% select(Lineage)
+write_tsv(Lineage %>% unique(), file="poplists/poplist2.txt", col_names = FALSE)
+
 ```
 then sbatch 202.1-calc-sfs.sh
 
@@ -132,7 +135,7 @@ fstplot<-ggplot(fsts %>% arrange(Pop1)) +
 fstplot
 ```
 
-## Nucleotide diversity
+__3_ Nucleotide diversity
 
 ```{sh, eval=FALSE}
 #Get .sfs (folded)
