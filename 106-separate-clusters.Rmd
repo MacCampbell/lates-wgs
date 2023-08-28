@@ -51,6 +51,7 @@ meta
 
 ```{r}
 meta$Pop<-factor(meta$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
+meta<-meta %>% mutate(Lineage=ifelse(Pop %in% c("AUW","AUE","PNG"), "AUS+NG", "SEA"))
 meta %>% group_by(Pop, Lat_Lon) %>% summarize(Count=n(), Reads=mean(Filtered))
 ```
 
@@ -109,24 +110,28 @@ eig
 
 ```{r}
 pc12<-ggplot(df) + 
-  geom_point(aes(x=Axis1, y=Axis2, fill=Population), pch=21, alpha=0.75, cex=2) +
+  geom_point(aes(x=Axis1, y=Axis2, fill=Population, shape=Lineage), alpha=0.75, cex=2) +
   theme_bw() +
   xlab(paste0("PC1 ",round(eig[1],2), "%")) +
   ylab(paste0("PC2 ",round(eig[2],2), "%")) +
   theme(panel.grid = element_blank()) +
-  scale_fill_viridis_d(option="H")
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
 pc12
 ggsave("outputs/106/pcs12.jpeg")
 ```
 
 ```{r}
 pc13<-ggplot(df) + 
-  geom_point(aes(x=Axis1, y=Axis3, fill=Population), pch=21, alpha=0.75, cex=2) +
+  geom_point(aes(x=Axis1, y=Axis3, fill=Population, shape=Lineage), alpha=0.75, cex=2) +
   theme_bw() +
   xlab(paste0("PC1 ",round(eig[1],2), "%")) +
   ylab(paste0("PC3 ",round(eig[3],2), "%")) +
   theme(panel.grid = element_blank()) +
-  scale_fill_viridis_d(option="H")
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
 pc13
 ```
 
@@ -182,6 +187,7 @@ load("outputs/106/ozpng-genind.rda")
 cols<-viridis(6, option="H")
 ```
 
+`sprintf("%.3f", Fst))`
 ```{r}
 gen<-goz
 X <- tab(gen, NA.method="mean")
@@ -195,8 +201,8 @@ df$Population<-factor(df$Pop, levels=c("AUW","AUE","PNG"))
 totpc<-ggplot(df) + 
   geom_point(aes(x=Axis1, y=Axis2, fill=Population), pch=21, cex=2, alpha=0.75) +
   theme_bw() +
-  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
-  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  xlab(paste0("PC1 ",sprintf("%.2f",eig[1]), "%")) +
+  ylab(paste0("PC2 ",sprintf("%.2f",eig[2]), "%")) +
   theme(panel.grid = element_blank()) +
   scale_fill_manual(values=cols[1:3])
 
@@ -279,8 +285,8 @@ pca<-ggplot(pcadf) +
   geom_point(aes(x=Axis1, y=Axis2, fill=Population), pch=21, cex=2, alpha=0.75)+
   theme_bw() +
   theme(panel.grid = element_blank()) +
-  xlab(paste0("PC1 ", round(sum[1],2),"%")) +
-  ylab(paste0("PC2 ", round(sum[2],2),"%")) +
+  xlab(paste0("PC1 ",sprintf("%.2f",eig[1]), "%")) +
+  ylab(paste0("PC2 ",sprintf("%.2f",eig[2]), "%")) +
   ggtitle("C") +
   theme(plot.title = element_text(size=14, face="bold")) +
   scale_fill_manual(values=cols[1:3])

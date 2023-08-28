@@ -55,17 +55,33 @@ lapply(pops,writeBamlist, m3)
 
 then sbatch 202.1-calc-sfs.sh
 
-Then to calc pairwise fst, need pairwise list.
+Then to calc pairwise fst, need pairwise list, should be 9*(9-1)/2 = 36 options.
+
+```{r}
+#https://stackoverflow.com/questions/48961247/how-do-i-create-all-unique-pairwise-combinations-of-my-sample-dataset
+x<-unique(m3$pop)
+y<-apply(combn(x,2),2,paste,collapse='\t')
+y
+write.table(y, file="poplists/pairwise-list.txt", quote = FALSE, row.names = FALSE, col.names = FALSE)
+```
 
 poplists/pairwise-list.txt is made
 
-See what we need:     
+Running 202.2
+
+ sbatch 202.1-calc-fst.sh, seeing what we need
 
 ```{r}
-list<-read_tsv("outputs/202/pairwise-list.txt", col_names=c("Pop1","Pop2"))
+list<-read_tsv("poplists/pairwise-list.txt", col_names=c("Pop1","Pop2"))
 fst<-read_tsv("outputs/202/pwfst.all", col_names=c("Pop1","Pop2","Unweighted","Weighted"))
 
 fsts<-list %>% left_join(fst)
+fsts$Pop1<-factor(fsts$Pop1, levels=c("NorthernTerritory","Queensland","PapuaNewGuinea",
+                                              "Indonesia","Philippines","Vietnam","Cambodia","Thailand",
+                                              "IndiaEasternCoast","IndiaWesternCoast"))
+fsts$Pop2<-factor(fsts$Pop2, levels=c("NorthernTerritory","Queensland","PapuaNewGuinea",
+                                              "Indonesia","Philippines","Vietnam","Cambodia","Thailand",
+                                              "IndiaEasternCoast","IndiaWesternCoast"))
 ```
 
 Indonesia.sfs is empty
@@ -73,3 +89,40 @@ Indonesia.sfs is empty
 realSFS Indonesia.saf.idx > Indonesia.sfs
 
 (base) maccamp@farm:~/lates-wgs/outputs/202$ srun -p bigmemh --nodes=1 --mem=96G  --time=12:00:00 realSFS Indonesia.saf.idx > Indonesia.sfs
+
+
+```{r}
+fstplot<-ggplot(fsts %>% arrange(Pop1)) +
+  geom_raster(aes(y=Pop1, x=Pop2, fill=Weighted)) +
+  geom_text(aes(y=Pop1, x=Pop2, label=sprintf("%.2f", Weighted)), color="white", fontface="bold") +
+  scale_fill_viridis_c(option="cividis", direction=-1, alpha=1) +
+  xlab("\nRegion") +
+  ylab("Region\n") +
+  theme_bw() +
+  theme(panel.background = element_blank()) +
+  theme(panel.grid = element_blank()) +
+ # scale_x_discrete(labels=c("AUE","PNG","INA","MAL","THA")) +
+#  scale_y_discrete(labels=c("AUW","AUE","PNG","INA","MAL")) +
+  theme(axis.text=element_text(size=12)) +
+  theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
+  theme(axis.title = element_text(size=14, face="bold")) +
+  ggtitle("A") +
+  theme(plot.title=element_text(size=16, face="bold"))
+
+fstplot
+```
+
+## Nucleotide diversity
+
+```{sh, eval=FALSE}
+#Get .sfs (folded)
+realSFS out.saf.idx -P 24 -fold 1 > out.sfs
+realSFS saf2theta out.saf.idx -outname out -sfs out.sfs -fold 1
+#Then, Estimate for every Chromosome/scaffold
+thetaStat do_stat out.thetas.idx
+```
+
+I have .sfs in 202.1-calc-sfs.sh      
+
+
+
