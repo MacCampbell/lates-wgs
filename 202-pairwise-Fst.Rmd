@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 library(tidyverse)
 library(viridis)
 library(ggpubr)
+library(grid)
 ```
 
 Calculating pairwise Fst with ANGSD
@@ -190,5 +191,72 @@ thetaStat do_stat out.thetas.idx
 
 I have .sfs in 202.1-calc-sfs.sh      
 
+See 202.3 calculatign TW, TP, TajD etc
 
 
+
+cat poplists/poplist.txt | while read pop; do echo $pop; awk 'NR == 1 {print "Population" "\t" $0 ; next;}{print FILENAME "\t" $0 ;}' outputs/202/$pop-thetas-stat.pestPG > outputs/202/$pop-diversity.stats; done;
+
+
+done;
+awk 'NR == 1 {print "Population" "\t" $0 ; next;}{print FILENAME "\t" $0 ;}' outputs/202/Cambodia-thetas-stat.pestPG
+
+```{r}
+files<-list.files("outputs/202", pattern="*diversity.stats", full.names = TRUE)
+files
+
+stats<-lapply(files, read_tsv) %>% bind_rows()
+```
+
+```{r}
+stats2<-stats %>% select(Population, Chr, tW, tP, Tajima, nSites) 
+stats2$Population<-gsub("outputs/202/","",stats2$Population)
+stats2$Population<-gsub("-thetas-stat.pestPG","",stats2$Population)
+stats2$Population<-factor(stats2$Population, levels=c("NorthernTerritory","Queensland","PapuaNewGuinea",
+                                             "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "IndiaEasternCoast","IndiaWesternCoast"))
+stats2<-stats2 %>%
+  mutate(Lineage=ifelse(Population %in% c("IndiaEasternCoast","IndiaWesternCoast"), "IND",
+                       ifelse(Population %in% c("NorthernTerritory","Queensland","PapuaNewGuinea"), "AUS+NG","SEA")))
+
+```
+
+
+```{r}
+blank <- grid.rect(gp=gpar(col="white"))
+```
+
+```{r}
+pi<-ggplot(stats2) +
+  geom_boxplot(aes(x=Population, y=tP, fill=Lineage), outlier.size = 0.25,  alpha=0.50)  +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
+  xlab("\nSampling Region") +
+  ylab("Theta Pi\n") +
+  scale_fill_viridis_d() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  ggtitle("A") +
+  theme(plot.title = element_text(size=16, face="bold"))
+
+taj<-ggplot(stats2) +
+  geom_boxplot(aes(x=Population, y=Tajima, fill=Lineage), outlier.size = 0.25, alpha=0.50)  +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
+  xlab("\nSampling Region") +
+  ylab("Tajima's D\n") +
+  scale_fill_viridis_d() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=16, face="bold"))
+
+pi
+```
+
+```{r}
+ggarrange(pi, blank, taj, ncol=3, widths=c(5,1,5))
+
+ggsave("outputs/202/stats.pdf", width=8, height=4)
+```
+  

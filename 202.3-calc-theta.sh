@@ -35,7 +35,7 @@ mInd=\$((\${nInd}/2))
 ###angsd -b poplists/${pop}.bamlist -anc genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna -rf genome/lates-lgs.txt  -out outputs/202/${pop} -uniqueOnly 1 -remove_bads 1 -only_proper_pairs 1 -baq 2 -GL 1 -doMajorMinor 1 -doMaf 1 -minInd $mInd -nind $nInd -minMapQ 10 -minQ 20 -doSaf 2 -nThreads 8 
 ###realSFS outputs/202/${pop}.saf.idx > outputs/202/${pop}.sfs
 
-#realSFS saf2theta outputs/202/${pop}.saf.idx -outname outputs/202/${pop}-thetas -sfs outputs/202/${pop}.sfs -fold 1
+realSFS saf2theta outputs/202/${pop}.saf.idx -outname outputs/202/${pop}-thetas -sfs outputs/202/${pop}.sfs -fold 1
 thetaStat do_stat outputs/202/${pop}-thetas.thetas.idx -outnames outputs/202/${pop}-thetas-stat
 
 #Rscript 1000_scripts/plotSFS.R 0011/${pop}.sfs
