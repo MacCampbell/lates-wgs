@@ -20,7 +20,7 @@ echo "#!/bin/bash
 #SBATCH -n 8
 #SBATCH -N 1
 #SBATCH --partition=bigmemm
-#SBATCH --mem=96G 
+#SBATCH --mem=124G 
 #SBATCH --time=48:00:00
 #SBATCH --output=outputs/202/${pop}-%j.slurmout
 

@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 
 ```{r}
 library(tidyverse)
+library(viridis)
+library(ggpubr)
 ```
 
 Calculating pairwise Fst with ANGSD
@@ -98,7 +100,7 @@ Running 202.2
  sbatch 202.1-calc-fst.sh, seeing what we need
 
 ```{r}
-list<-read_tsv("poplists/pairwise-list.txt", col_names=c("Pop1","Pop2"))
+list<-read_tsv("poplists/pairwise-list.txt", col_names=c("Pop1","Pop2")) %>% mutate(Position=1:n())
 fst<-read_tsv("outputs/202/pwfst.all", col_names=c("Pop1","Pop2","Unweighted","Weighted"))
 
 fsts<-list %>% left_join(fst)
@@ -110,12 +112,17 @@ incomplete<-fsts %>% filter(is.na(Weighted)==TRUE)
 incomplete
 write_tsv(incomplete %>% select(Pop1, Pop2), col_names = FALSE, file="poplists/pairwise-list2.txt")
 ```
-```{r}
+```{r, eval=FALSE}
+
+fsts2<-fsts %>% rename(Population2=Pop1, Population1=Pop2) %>% rename(Pop2=Population2, Pop1=Population1)
+fsts3<-bind_rows(fsts,fsts2)
+fsts<-fsts3
 fsts$Pop1<-factor(fsts$Pop1, levels=c("NorthernTerritory","Queensland","PapuaNewGuinea",
-                                              "Indonesia","Philippines","Vietnam","Cambodia","Thailand",
+                                              "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
                                               "IndiaEasternCoast","IndiaWesternCoast"))
+
 fsts$Pop2<-factor(fsts$Pop2, levels=c("NorthernTerritory","Queensland","PapuaNewGuinea",
-                                              "Indonesia","Philippines","Vietnam","Cambodia","Thailand",
+                                              "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
                                               "IndiaEasternCoast","IndiaWesternCoast"))
 ```
 
@@ -124,15 +131,41 @@ Indonesia.sfs is empty, splitting into KJ anD SU
 
 oom event for thailand, need to up mem allocation (to 124 GB)
 
+Make symmetric    
+
 ```{r}
-fstplot<-ggplot(fsts %>% arrange(Pop1)) +
-  geom_raster(aes(y=Pop1, x=Pop2, fill=Weighted)) +
-  geom_text(aes(y=Pop1, x=Pop2, label=sprintf("%.2f", Weighted)), color="white", fontface="bold") +
+list2<-list %>% rename(Population2=Pop1, Population1=Pop2) %>% rename(Pop2=Population2, Pop1=Population1)
+list3<-bind_rows(list,list2)
+
+```
+
+```{r}
+list3$Pop1<-factor(list3$Pop1, levels=c("NorthernTerritory","Queensland","PapuaNewGuinea",
+                                              "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "IndiaEasternCoast","IndiaWesternCoast"))
+
+list3$Pop2<-factor(list3$Pop2, levels=c("NorthernTerritory","Queensland","PapuaNewGuinea",
+                                             "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "IndiaEasternCoast","IndiaWesternCoast"))
+
+ggplot(list3) +
+    geom_raster(aes(x=Pop1, y=Pop2, fill=Position))  +
+    theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) 
+
+```
+```{r}
+back<-viridis(n=2, option="cividis")
+```
+
+```{r}
+fstplot<-ggplot(fsts) +
+  geom_raster(aes(x=Pop1, y=Pop2, fill=Weighted)) +
+  geom_text(aes(x=Pop1, y=Pop2, label=sprintf("%.2f", Weighted)), color="white", fontface="bold") +
   scale_fill_viridis_c(option="cividis", direction=-1, alpha=1) +
   xlab("\nRegion") +
   ylab("Region\n") +
   theme_bw() +
-  theme(panel.background = element_blank()) +
+  theme(panel.background = element_rect(fill=back[1])) +
   theme(panel.grid = element_blank()) +
  # scale_x_discrete(labels=c("AUE","PNG","INA","MAL","THA")) +
 #  scale_y_discrete(labels=c("AUW","AUE","PNG","INA","MAL")) +

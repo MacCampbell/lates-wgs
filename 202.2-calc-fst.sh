@@ -7,11 +7,11 @@ mkdir outputs/202
 
 #./1000_scripts/list_to_pwcomps.pl meta/poplist > 0011/pw.list
 
-wc=$(wc -l poplists/pairwise-list.txt | awk '{print $1}')
+wc=$(wc -l poplists/pairwise-list2.txt | awk '{print $1}')
 x=1
 while [ $x -le $wc ]
 do
-	string="sed -n ${x}p outputs/202/pairwise-list.txt"
+	string="sed -n ${x}p outputs/202/pairwise-list2.txt"
 	str=$($string)
 
 	var=$(echo $str | awk -F"\t" '{print $1,$2}')
