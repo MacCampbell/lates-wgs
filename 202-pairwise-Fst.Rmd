@@ -23,15 +23,16 @@ bamlist for each pop
 meta   
 
 ```{r}
-m2<-read_csv("meta/58.csv")
+m2<-read_csv("meta/58-Indo-split.csv")
 m2$Region<-factor(m2$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
-                                              "Indonesia","Philippines","Vietnam","Cambodia","Thailand",
+                                              "Indonesia-K","Indonesia-SJ","Indonesia-SU",
+                                      "Philippines","Vietnam","Cambodia","Thailand",
                                               "India Eastern Coast","India Western Coast"))
 
 m2<-m2 %>% mutate(Lineage=ifelse(Region %in% c("India Eastern Coast","India Western Coast"), "IND",
                        ifelse(Region %in% c("Northern Territory","Queensland","Papua New Guinea"), "AUS+NG","SEA")))
 
-m3<-filter(m2,Region != "Vietnam") 
+m3<-filter(m2,! Region %in% c("Indonesia-SU","Vietnam") )
 m3 %>% group_by(Lineage, Region) %>% summarize(Count=n())
 ```
 
@@ -56,21 +57,23 @@ writeBamlist<-function(Pop, Meta) {
 lapply(pops,writeBamlist, m3)
 ```
 
+Note, not necessary to do this I think, but if so, need to include Vietnam/Indonesia for 58 inds
 ```{r}
 writeLineage<-function(Lin, Meta) {
   write_tsv(Meta %>% filter(Lineage==Lin) %>% select(Path), col_names = FALSE, file=paste0("poplists/",Lin,".bamlist"))
   
 }
-lapply(c("AUS+NG","SEA","IND"),writeLineage, m3)
+lapply(c("AUS+NG","SEA","IND"),writeLineage, m2)
 
-Lineage<-m3 %>% select(Lineage)
+Lineage<-m2 %>% select(Lineage)
 write_tsv(Lineage %>% unique(), file="poplists/poplist2.txt", col_names = FALSE)
 
 ```
 then sbatch 202.1-calc-sfs.sh
 
 Then to calc pairwise fst, need pairwise list, should be 9*(9-1)/2 = 36 options.
-
+or
+10*(10-1)/2 = 45 options
 ```{r}
 #https://stackoverflow.com/questions/48961247/how-do-i-create-all-unique-pairwise-combinations-of-my-sample-dataset
 x<-unique(m3$pop)
@@ -99,6 +102,11 @@ list<-read_tsv("poplists/pairwise-list.txt", col_names=c("Pop1","Pop2"))
 fst<-read_tsv("outputs/202/pwfst.all", col_names=c("Pop1","Pop2","Unweighted","Weighted"))
 
 fsts<-list %>% left_join(fst)
+fsts
+
+```
+
+```{r}
 fsts$Pop1<-factor(fsts$Pop1, levels=c("NorthernTerritory","Queensland","PapuaNewGuinea",
                                               "Indonesia","Philippines","Vietnam","Cambodia","Thailand",
                                               "IndiaEasternCoast","IndiaWesternCoast"))
@@ -107,12 +115,10 @@ fsts$Pop2<-factor(fsts$Pop2, levels=c("NorthernTerritory","Queensland","PapuaNew
                                               "IndiaEasternCoast","IndiaWesternCoast"))
 ```
 
-Indonesia.sfs is empty
+Indonesia.sfs is empty, splitting into KJ anD SU
 
-realSFS Indonesia.saf.idx > Indonesia.sfs
 
-(base) maccamp@farm:~/lates-wgs/outputs/202$ srun -p bigmemh --nodes=1 --mem=96G  --time=12:00:00 realSFS Indonesia.saf.idx > Indonesia.sfs
-
+oom event for thailand, need to up mem allocation (to 124 GB)
 
 ```{r}
 fstplot<-ggplot(fsts %>% arrange(Pop1)) +

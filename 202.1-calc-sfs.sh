@@ -4,11 +4,11 @@
 
 
 mkdir outputs/202
-wc=$(wc -l poplists/poplist2.txt | awk '{print $1}')
+wc=$(wc -l poplists/poplist3.txt | awk '{print $1}')
 x=1
 while [ $x -le $wc ]
 do
-	string="sed -n ${x}p poplists/poplist2.txt"
+	string="sed -n ${x}p poplists/poplist3.txt"
 	str=$($string)
 
 	var=$(echo $str | awk -F"\t" '{print $1}')

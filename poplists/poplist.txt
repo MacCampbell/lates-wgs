@@ -2,7 +2,8 @@ NorthernTerritory
 Queensland
 IndiaEasternCoast
 IndiaWesternCoast
-Indonesia
+Indonesia-K
+Indonesia-SJ
 Cambodia
 PapuaNewGuinea
 Philippines
