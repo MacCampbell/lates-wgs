@@ -105,7 +105,11 @@ fsts<-list %>% left_join(fst)
 fsts
 
 ```
-
+```{r}
+incomplete<-fsts %>% filter(is.na(Weighted)==TRUE)
+incomplete
+write_tsv(incomplete %>% select(Pop1, Pop2), col_names = FALSE, file="poplists/pairwise-list2.txt")
+```
 ```{r}
 fsts$Pop1<-factor(fsts$Pop1, levels=c("NorthernTerritory","Queensland","PapuaNewGuinea",
                                               "Indonesia","Philippines","Vietnam","Cambodia","Thailand",
