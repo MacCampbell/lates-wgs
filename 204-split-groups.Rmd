@@ -143,5 +143,5 @@ ggplot(rdf) +
 ```
 
 ```{r}
-PlotAdmix("outputs/100/58-K2-2.qopt", m2)
+PlotAdmix("outputs/204/", m2)
 ```

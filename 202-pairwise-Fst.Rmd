@@ -113,7 +113,7 @@ incomplete<-fsts %>% filter(is.na(Weighted)==TRUE)
 incomplete
 write_tsv(incomplete %>% select(Pop1, Pop2), col_names = FALSE, file="poplists/pairwise-list2.txt")
 ```
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 
 fsts2<-fsts %>% rename(Population2=Pop1, Population1=Pop2) %>% rename(Pop2=Population2, Pop1=Population1)
 fsts3<-bind_rows(fsts,fsts2)
