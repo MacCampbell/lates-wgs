@@ -1,7 +1,7 @@
 data/split/SRR3165603.sort.flt.bam
-data/split/SRR3183262.sort.flt.bam
-data/split/SRR3183263.sort.flt.bam
-data/split/SRR3183264.sort.flt.bam
-data/split/SRR3183265.sort.flt.bam
+data/downsample/SRR3183262.reduced.bam
+data/downsample/SRR3183263.reduced.bam
+data/downsample/SRR3183264.reduced.bam
+data/downsample/SRR3183265.reduced.bam
 data/split/SRR3165604.sort.flt.bam
-data/split/SRR3183266.sort.flt.bam
+data/downsample/SRR3183266.reduced.bam

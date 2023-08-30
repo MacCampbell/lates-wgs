@@ -27,6 +27,8 @@ meta
 
 ```{r}
 m2<-read_csv("meta/58-Indo-split.csv")
+bamlist<-read_tsv("bamlists/downsample-58.bamlist", col_names=c("Downsample"))
+m2$Path<-bamlist$Downsample
 m2$Region<-factor(m2$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
                                               "Indonesia-K","Indonesia-SJ","Indonesia-SU",
                                       "Philippines","Vietnam","Cambodia","Thailand",
@@ -34,6 +36,7 @@ m2$Region<-factor(m2$Region, levels=c("Northern Territory","Queensland","Papua N
 
 m2<-m2 %>% mutate(Lineage=ifelse(Region %in% c("India Eastern Coast","India Western Coast"), "IND",
                        ifelse(Region %in% c("Northern Territory","Queensland","Papua New Guinea"), "AUS+NG","SEA")))
+
 
 m3<-filter(m2,! Region %in% c("Indonesia-SU","Vietnam") )
 m3 %>% group_by(Lineage, Region) %>% summarize(Count=n())
