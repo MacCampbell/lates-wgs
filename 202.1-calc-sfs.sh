@@ -4,11 +4,11 @@
 
 
 mkdir outputs/202
-wc=$(wc -l poplists/poplist.txt | awk '{print $1}')
+wc=$(wc -l poplists/poplist2.txt | awk '{print $1}')
 x=1
 while [ $x -le $wc ]
 do
-	string="sed -n ${x}p poplists/poplist.txt"
+	string="sed -n ${x}p poplists/poplist2.txt"
 	str=$($string)
 
 	var=$(echo $str | awk -F"\t" '{print $1}')
@@ -19,9 +19,9 @@ echo "#!/bin/bash
 #SBATCH --job-name=sfs${x}
 #SBATCH -n 8
 #SBATCH -N 1
-#SBATCH --partition=bigmemm
+#SBATCH --partition=bigmemh
 #SBATCH --mem=96G 
-#SBATCH --time=48:00:00
+#SBATCH --time=18:00:00
 #SBATCH --output=outputs/202/${pop}-%j.slurmout
 
 ##############################################
