@@ -4,11 +4,11 @@
 
 
 mkdir outputs/202
-wc=$(wc -l poplists/poplist-theta.txt | awk '{print $1}')
+wc=$(wc -l poplists/poplist.txt | awk '{print $1}')
 x=1
 while [ $x -le $wc ]
 do
-	string="sed -n ${x}p poplists/poplist-theta.txt"
+	string="sed -n ${x}p poplists/poplist.txt"
 	str=$($string)
 
 	var=$(echo $str | awk -F"\t" '{print $1}')
