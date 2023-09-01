@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 library(tidyverse)
 library(ggrepel)
 library(ggpubr)
+library(ape)
 ``` 
 
 ```{r}
@@ -334,3 +335,34 @@ srun -p high -t 01:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -li
 PlotAdmix("outputs/101/47-gl-K2.qopt", m47)
 ```
 
+## Tree version
+```{r}
+name <- "outputs/100/"
+m <- as.matrix(read.table(name))
+
+#heat map
+pdf("outputs/101/clustering.pdf", width=8, height=8)
+heatmap(m, labRow = m2$Region, labCol = m2$Region, cexRow = 0.5, cexCol = 0.5)
+dev.off()
+```
+
+```{r}
+library(gplots)
+library(pheatmap)
+```
+
+```{r}
+colnames(m)<-m2$Region
+rownames(m)<-m2$Run
+annot_rows = data.frame(
+                Lineage = m2$Lineage, 
+                Region = m2$Region,
+        row.names = m2$Run
+                )
+pheatmap(m, clustering_distance_cols="manhattan", clustering_distance_rows="manhattan", annotation_row = annot_rows,
+         show_rownames = FALSE, legend = F)
+```
+
+```{r}
+plot(hclust(dist(m), "ave"))
+```
