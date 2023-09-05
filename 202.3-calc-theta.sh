@@ -47,3 +47,6 @@ rm sfs_${pop}.sh
 x=$(( $x + 1 ))
 done
 
+#summarize
+#cat poplists/poplist.txt | while read pop; do echo $pop; awk 'NR == 1 {print "Population" "\t" $0 ; next;}{print FILENAME "\t" $0 ;}' outputs/202/$pop-thetas-stat.pestPG > outputs/202/$pop-diversity.stats; done;
+

@@ -1,0 +1,84 @@
+---
+title: "206-prune"
+output: html_document
+date: "2023-09-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+Greate GL file
+
+```{sh, eval=FALSE}
+srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/downsample-58.bamlist -rf genome/lates-lgs.txt \
+-anc  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 53 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 \
+-doMajorMinor 1 -doPost 1 -doMaf 1 -SNP_pval 1e-6 \
+-minMaf 0.05 \
+-out outputs/206/58-gls-90 > outputs/206/58-gls-90.out 2> outputs/206/58-gls-90.err &
+```
+
+Looking at this: https://github.com/nt246/lcwgs-guide-tutorial/blob/main/tutorial3_ld_popstructure/markdowns/ld.md
+
+$NGSLD/ngsLD \
+--geno $BASEDIR/ngsld/MME_ANGSD_PCA_subsampled.beagle.gz \
+--pos $BASEDIR/ngsld/MME_ANGSD_PCA_subsampled.pos.gz \
+--probs \
+--n_ind 60 \
+--n_sites 1134 \
+--max_kb_dist 0 \
+--n_threads 1 \
+--out $BASEDIR/ngsld/MME_ANGSD_PCA_subsampled.ld 
+
+module load gsl
+compile ngsld
+
+can use these files
+zcat outputs/101/58-ibs-90.beagle.gz | awk 'NR % 50 == 0' | cut -f 4- | gzip  > outputs/206/subsampled.beagle.gz
+zcat outputs/101/58-ibs-90.mafs.gz | cut -f 1,2 |  awk 'NR % 50 == 0' | sed 's/:/_/g'| gzip > outputs/206/subsampled.pos.gz
+
+Still gives us 148750 sites. 
+
+Example timed out. Yikes!
+```{sh, eval=FALSE}
+module load gsl
+srun -p high -t 10:00:00 --nodes=1 --mem=32G ~/ngsLD/ngsLD \
+--geno outputs/206/subsampled.beagle.gz \
+--pos outputs/206/subsampled.pos.gz \
+--probs \
+--n_ind 58 \
+--n_sites 148750 \
+--max_kb_dist 0 \
+--n_threads 1 \
+--out outputs/206/subsampled.ld 
+```
+
+
+Ok, so let's run this across chroms and 5353399 GLS
+
+I imagine this is going to make a stupidly large ld file
+
+zcat outputs/101/58-ibs-90.beagle.gz | cut -f 4- | gzip  > outputs/206/58-gls-90-for-ngsld.beagle.gz
+
+zcat outputs/206/58-gls-90.beagle.gz | cut -f 1,2 | sed 's/:/_/g'| gzip > outputs/206/58-gls-90.pos.gz
+
+
+The docs say that we can use --rnd_sample for ld decay. So we can get this and then find a window (5Kb? to pull snps from).
+
+```{sh, eval=FALSE}
+srun -p high -t 72:00:00 --nodes=1 --mem=48G  ~/ngsLD/ngsLD \
+--geno outputs/206/58-gls-90.beagle.gz \
+--posH  outputs/206/58-gls-90.pos.gz \
+--probs \
+--n_ind 58 \
+--n_sites 5353399 \
+--max_kb_dist 50 \
+--n_threads 1 \
+--rnd_sample 0.50 \
+--out outputs/206/58-gls-90.ld 
+```
+
+
+Why not pull a snp every 10000 kb? 

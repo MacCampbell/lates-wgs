@@ -1,0 +1,175 @@
+---
+title: "205-mtDNA"
+output: html_document
+date: "2023-09-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, echo=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(pegas)
+library(ape)
+library(viridis)
+library(ggtree)
+library(phytools)
+```
+
+```{r}
+m58<-read_csv("meta/58.csv") %>% mutate(Lineage=ifelse(Region %in% c("India Eastern Coast", "India Western Coast"), "IND",
+                                                 ifelse(Region %in% c("Northern Territory","Queensland" ,"Papua New Guinea"),
+                                                                      "AUS+NG","SEA")))
+m58$Region<-factor(m58$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
+                                             "Indonesia","Philippines","Cambodia","Thailand", "Vietnam",
+                                              "India Eastern Coast","India Western Coast"))
+m58$Region
+m47<-m58 %>% filter(!Region %in% c("India Eastern Coast", "India Western Coast"))
+
+```
+Let's get sequences for mtDNA and see what they are.
+
+NC_007439.1  cds 6329..7879
+                     /gene="COX1"    
+                     
+                     
+Select alignmets and get mtdna.  
+
+
+_1_ create bam for each
+_2_ convert to consensus fasta
+_3_ getbarcode region
+
+```{sh,eval=FALSE}
+samtools view -b data/split/SRR3165618.sort.flt.bam NC_007439.1 > data/mtdna/SRR3165618-mtdna.bam
+samtools index data/mtdna/SRR3165618-mtdna.bam
+
+srun -p high --nodes=1 --mem=32G -t 00:30:00 /home/maccamp/proovread/bin/bam2cns --bam data/mtdna/SRR3165618-mtdna.bam --ref genome/NC_007439.1.fasta --prefix data/mtdna/SRR3165618-mtdna
+
+ ~/seqtk/seqtk seq -a -q20 -n N data/mtdna/SRR3165618-mtdna.fq > data/mtdna/SRR3165618-mtdna-q20.fasta
+samtools faidx data/mtdna/SRR3165618-mtdna-q20.fasta NC_007439.1:6329-7879 > data/mtdna/SRR3165618-coi.fasta
+```
+
+Seems to work.  
+
+```{sh,eval=FALSE}
+srun -p high --nodes=1 --mem=32G -t 01:30:00 cut -f 1 -d ',' meta/58.csv | while read run; do samtools view -b data/split/$run.sort.flt.bam NC_007439.1 > data/mtdna/$run-mtdna.bam; samtools index data/mtdna/$run-mtdna.bam; /home/maccamp/proovread/bin/bam2cns --bam data/mtdna/$run-mtdna.bam --ref genome/NC_007439.1.fasta --prefix data/mtdna/$run-mtdna;  ~/seqtk/seqtk seq -a -q20 -n N data/mtdna/$run-mtdna.fq > data/mtdna/$run-mtdna-q20.fasta; samtools faidx data/mtdna/$run-mtdna-q20.fasta NC_007439.1:6329-7879 > data/mtdna/$run-coi.fasta; done;
+
+#rename and consolidate.
+awk '/^>/{print ">" substr(FILENAME,1,length(FILENAME)-10); next} 1' *-coi.fasta
+```
+
+Now to merge with barcode data set!!
+
+(base) Macs-MacBook-Pro-2:mtdna mac$ cat ward-vi-renamed.afas new-coi.fasta > combined.fas
+
+(base) Macs-MacBook-Pro-2:mtdna mac$ cat ward-vi-renamed.afas new-coi.fasta > combined.fas
+
+mafft combined.fas > combined.afas`
+
+trimm 
+(base) Macs-MacBook-Pro-2:mtdna mac$ java -jar ~/BMGE-1.12/BMGE.jar -i combined.afas -t DNA -o combined.phy 
+   DNA sequence alignment combined.afas
+   before : 148 sequences / 1576 characters
+   after :  148 sequences / 655 characters  
+  
+ iqtree -s combined.phy -bb 1000 -m GTR+G --redo 
+
+Dropping outgroups
+(base) Macs-MacBook-Pro-2:mtdna mac$ cat ward-vi-renamed.fas new-coi.fasta > comb2.fas
+(base) Macs-MacBook-Pro-2:mtdna mac$ mafft comb2.fas > comb2.afas
+java -jar ~/BMGE-1.12/BMGE.jar -i comb2.afas -t DNA -o combined.phy
+143 seqs 655 characters 
+
+ iqtree -s combined.phy -bb 1000 -m GTR+G --redo 
+ 
+ also just using new seqs
+ 
+ Neat!!!
+ 
+ Now to make a network of AUS+NG and SEA inds.   
+ 
+```{r}
+Naso<-read.dna(file="data/mtdna/new-coi.afasta", format="fasta")
+Naso<-updateLabel(Naso, labels(Naso), m58$Region)
+labels(Naso)
+```
+ 
+```{r}
+#Naso<-Naso[labels(Naso) %in% m47$Region,]
+```
+
+```{r}
+NasoHaps <- haplotype(Naso)
+NasoHaps
+```
+
+```{r}
+NasoNet <- haploNet(NasoHaps)
+plot(NasoNet, size=attr(NasoNet,"freq"), fast=FALSE)
+```
+
+
+```{r}
+ind.hap<-with(
+  utils::stack(setNames(attr(NasoHaps, "index"), rownames(NasoHaps))),
+  table(hap=ind, individuals=rownames(Naso)[values])
+ )
+ind.hap
+```
+
+
+```{r}
+cols<-viridis(n=length(unique(m58$Region)), option="H")
+```
+```{r}
+plot(NasoNet, size=attr(NasoNet, "freq"), scale.ratio = .3, cex = 1, pie=ind.hap, labels = FALSE, bg=cols)
+
+#legend("topright", sort(rownames(Naso)) %>% unique(), text.col = cols)
+```
+
+```{r}
+args(pegas:::plot.haploNet)
+```
+
+## Tree
+```{r}
+tree<-read.tree("data/mtdna/new-coi.afasta.contree")
+t2<-midpoint.root(tree)
+t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 75)
+
+t<-t3
+
+t<-ggtree(t)
+
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[e$label < 90,]
+e <- e[e$label >= 75,]
+```
+
+```{r}
+t %<+% m58 +
+  geom_point(data=e,  fill="gray50", cex=2, alpha=1, pch=21) +
+  geom_point(data=d,  fill="black", cex=2, alpha=1, pch=21) +
+  geom_tippoint(aes(x=x+0.002,fill=Region, shape=Lineage), cex=3) + 
+  geom_tiplab(aes(label=Region, x=x+0.01), align = FALSE, size=3) +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(0,.1) +
+  scale_fill_viridis_d(option="H") +
+  theme(legend.position = "none") +
+  geom_treescale()
+
+ggsave("outputs/205/mtdna-phylo.pdf", width=8.5, height=11)
+
+```

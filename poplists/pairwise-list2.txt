@@ -1,9 +1,0 @@
-NorthernTerritory	Indonesia-SJ
-Queensland	Indonesia-SJ
-IndiaEasternCoast	Indonesia-SJ
-IndiaWesternCoast	Indonesia-SJ
-Indonesia-K	Indonesia-SJ
-Indonesia-SJ	Cambodia
-Indonesia-SJ	PapuaNewGuinea
-Indonesia-SJ	Philippines
-Indonesia-SJ	Thailand

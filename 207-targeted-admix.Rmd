@@ -1,0 +1,191 @@
+---
+title: "207-targeted-admix"
+output: html_document
+date: "2023-09-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+SRR3165598 and SRR3165599 have indian mtDNA types. hhmmmm
+
+```{r}
+m58<-read_csv("meta/58.csv") %>% mutate(Lineage=ifelse(Region %in% c("India Eastern Coast", "India Western Coast"), "IND",
+                                                 ifelse(Region %in% c("Northern Territory","Queensland" ,"Papua New Guinea"),
+                                                                      "AUS+NG","SEA")))
+m58$Region<-factor(m58$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
+                                             "Indonesia","Philippines","Cambodia","Thailand", "Vietnam",
+                                              "India Eastern Coast","India Western Coast"))
+bamlist<-read_tsv("bamlists/downsample-58.bamlist", col_names=c("Downsample"))
+m58$Path<-bamlist$Downsample
+m16<-m58 %>% filter(Region %in% c("Cambodia","India Eastern Coast", "India Western Coast"))
+```
+
+
+```{r}
+write_tsv(m16 %>% select(Path), file="bamlists/16-downsample.bamlist")
+
+```
+
+
+doCov and ibs
+
+```{sh, eval=FALSE}
+srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/16-downsample.bamlist -rf genome/lates-lgs.txt \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 14 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/207/16-ibs-90 > outputs/207/16-ibs-90.out 2> outputs/207/16-ibs-90.err &
+
+#ngs admix    
+srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 2 -o outputs/101/58-K2 &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 3 -o outputs/101/58-K3 &
+srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 4 -o outputs/101/58-K4 &
+srun -p high -t 07:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 5 -o outputs/101/58-K5 &
+
+```
+
+	-> Number of sites retained after filtering: 7437516     
+
+     
+### Visualize covMat     
+
+
+```{r}
+meta<-m2
+m <- as.matrix(read.table("outputs/101/58-ibs-90.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+```
+
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta)
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Region), pch=21, alpha=0.75) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("Genome-Wide PCA of L. calcarifer WGS Data") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+ggsave("outputs/101/lates-c-genome-wide-pca-12.jpeg")
+```
+For figure  
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta) 
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+pc12<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Region, shape=Lineage), size=2, alpha=0.75) +
+#  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "none")
+
+pc12
+```
+```{r}
+text13<-covs  %>% select(Run, Region, V1, V3) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
+
+pc13<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V3, fill=Region, shape=Lineage), size=2, alpha=0.75) +
+ # geom_text_repel(data=text13, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC3", " ", round((100*var[3]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+
+pc13
+```
+
+```{r}
+ggarrange(pc12,pc13,ncol=2,widths=c(1,1.45))
+ggsave("outputs/101/combined-wgspcs.pdf", width=9, height=4)
+
+```
+
+Making 
+### Visualize admixture plots
+
+```{r, echo=FALSE}
+PlotAdmix<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Last col empty
+q<-q[1:length(colnames(q))-1]
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  theme(legend.position = "") +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  scale_fill_viridis_d(option="magma")
+
+}
+```
+
+```{r}
+PlotAdmix("outputs/101/58-K2.qopt", m2)
+```
