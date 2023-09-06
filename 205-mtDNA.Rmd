@@ -173,3 +173,11 @@ t %<+% m58 +
 ggsave("outputs/205/mtdna-phylo.pdf", width=8.5, height=11)
 
 ```
+
+```{r}
+t+geom_tiplab(size=2) +
+  xlim(0,0.1) 
+
+ggsave("outputs/205/tiplabs-phylo.pdf", width=8.5, height=11)
+
+```

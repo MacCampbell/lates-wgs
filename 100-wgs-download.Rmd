@@ -455,6 +455,15 @@ srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes output
 srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/52-gls-90-down.beagle.gz -K 2 -o outputs/100/58-gls-down-K2-90 &
 srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/52-gls-90-down.beagle.gz -K 3 -o outputs/100/58-gls-down-K3-90 &
 
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/52-gls-90-down.beagle.gz -K 4 -o outputs/100/58-gls-down-K4-90 &
+srun -p high -t 05:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/100/52-gls-90-down.beagle.gz -K 5 -o outputs/100/58-gls-down-K5-90 &
+
+#trying with higher MAF
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -minMaf 0.2 -P 12 -likes outputs/100/52-gls-90-down.beagle.gz -K 2 -o outputs/100/58-gls-down-K2-90-02 &
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -minMaf 0.2 -P 12 -likes outputs/100/52-gls-90-down.beagle.gz -K 3 -o outputs/100/58-gls-down-K3-90-02 &
+
+srun -p high -t 04:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -minMaf 0.2 -P 12 -likes outputs/100/52-gls-90-down.beagle.gz -K 4 -o outputs/100/58-gls-down-K4-90-02 &
+srun -p high -t 05:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -minMaf 0.2 -P 12 -likes outputs/100/52-gls-90-down.beagle.gz -K 5 -o outputs/100/58-gls-down-K5-90-02 &
 ```
 
 211146 GLS at 75 after downsampling
@@ -468,5 +477,5 @@ PlotAdmix("outputs/100/58-gls-K2-90.qopt", m2)
 PlotAdmix("outputs/100/58-gls-down-K2-90.qopt", m2)
 ```
 ```{r}
-PlotAdmix("outputs/100/58-gls-down-K2-90", m2)
+PlotAdmix("outputs/100/58-gls-down-K3-90.qopt", m2)
 ```

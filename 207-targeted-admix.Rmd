@@ -8,7 +8,25 @@ date: "2023-09-05"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-SRR3165598 and SRR3165599 have indian mtDNA types. hhmmmm
+```{r}
+library(tidyverse)
+library(ggrepel)
+```
+
+SRR3165598 and SRR3165599 from Cambodia have indian mtDNA types. hhmmmm
+
+(base) maccamp@farm:~/lates-wgs/data/mtdna$ samtools flagstat SRR3165598-mtdna.bam
+8312 + 0 in total (QC-passed reads + QC-failed reads)
+8312 + 0 primary
+
+(base) maccamp@farm:~/lates-wgs/data/mtdna$ samtools flagstat SRR3165599-mtdna.bam
+8344 + 0 in total (QC-passed reads + QC-failed reads)
+
+(base) maccamp@farm:~/lates-wgs/data/mtdna$ samtools flagstat SRR3165600-mtdna.bam
+12227 + 0 in total (QC-passed reads + QC-failed reads)
+
+(base) maccamp@farm:~/lates-wgs/data/mtdna$ samtools flagstat SRR3183267-mtdna.bam
+12588 + 0 in total (QC-passed reads + QC-failed reads)
 
 ```{r}
 m58<-read_csv("meta/58.csv") %>% mutate(Lineage=ifelse(Region %in% c("India Eastern Coast", "India Western Coast"), "IND",
@@ -24,7 +42,7 @@ m16<-m58 %>% filter(Region %in% c("Cambodia","India Eastern Coast", "India Weste
 
 
 ```{r}
-write_tsv(m16 %>% select(Path), file="bamlists/16-downsample.bamlist")
+write_tsv(m16 %>% select(Path), file="bamlists/16-downsample.bamlist", col_names = FALSE)
 
 ```
 
@@ -41,22 +59,35 @@ srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 -out outputs/207/16-ibs-90 > outputs/207/16-ibs-90.out 2> outputs/207/16-ibs-90.err &
 
 #ngs admix    
-srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 2 -o outputs/101/58-K2 &
-srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 3 -o outputs/101/58-K3 &
-srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 4 -o outputs/101/58-K4 &
-srun -p high -t 07:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/101/58-ibs-90.beagle.gz -K 5 -o outputs/101/58-K5 &
+srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/207/16-ibs-90.beagle.gz -K 2 -o outputs/207/16-K2 &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/207/16-ibs-90.beagle.gz -K 3 -o outputs/207/16-K3 &
 
 ```
 
-	-> Number of sites retained after filtering: 7437516     
 
+Making beagle file    
+
+```{sh, eval=FALSE}
+srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/16-downsample.bamlist -rf genome/lates-lgs.txt \
+-anc  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 14 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 \
+-doMajorMinor 1 -doPost 1 -doMaf 1 -SNP_pval 1e-6 \
+-minMaf 0.05 \
+-out outputs/207/16-gls-90 > outputs/207/16-gls-90.out 2> outputs/207/16-gls-90.err &
+
+srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/207/16-gls-90.beagle.gz -K 2 -o outputs/207/16-K2-gls &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/207/16-gls-90.beagle.gz -K 3 -o outputs/207/16-K3-gls &
+```
+
+16 inds produce 5333109 sites
      
 ### Visualize covMat     
 
 
 ```{r}
-meta<-m2
-m <- as.matrix(read.table("outputs/101/58-ibs-90.covMat"))
+meta<-m16
+m <- as.matrix(read.table("outputs/207/16-ibs-90.covMat"))
 eig <- eigen(m)
 var<-eig$values/sum(eig$values)
 cumvar<-cumsum(eig$values)/sum(eig$values)
@@ -83,9 +114,7 @@ ggplot(covs) +
   ggtitle("Genome-Wide PCA of L. calcarifer WGS Data") +
   theme(plot.title = element_text(hjust=0.5, face="bold"))
 
-ggsave("outputs/101/lates-c-genome-wide-pca-12.jpeg")
 ```
-For figure  
 
 ```{r}
 covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta) 
@@ -103,7 +132,7 @@ pc12<-ggplot(covs) +
   scale_fill_viridis_d(option="turbo") +
   ggtitle("A") +
   theme(plot.title = element_text(size=14, face="bold")) +
-  scale_shape_manual(values=c(21,23,24)) +
+  scale_shape_manual(values=c(23,24)) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
   theme(legend.position = "none")
 
@@ -123,7 +152,7 @@ pc13<-ggplot(covs) +
   scale_fill_viridis_d(option="turbo") +
   ggtitle("B") +
   theme(plot.title = element_text(size=14, face="bold")) +
-  scale_shape_manual(values=c(21,23,24)) +
+  scale_shape_manual(values=c(23,24)) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) 
 
 pc13
@@ -131,7 +160,6 @@ pc13
 
 ```{r}
 ggarrange(pc12,pc13,ncol=2,widths=c(1,1.45))
-ggsave("outputs/101/combined-wgspcs.pdf", width=9, height=4)
 
 ```
 
@@ -187,5 +215,10 @@ ggplot(rdf) +
 ```
 
 ```{r}
-PlotAdmix("outputs/101/58-K2.qopt", m2)
+PlotAdmix("outputs/207/16-K2-gls.qopt", m16)
+```
+
+
+```{r}
+PlotAdmix("outputs/207/16-K3-gls.qopt", m16)
 ```
