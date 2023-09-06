@@ -468,6 +468,7 @@ srun -p high -t 05:00:00 --nodes=1 $HOME/angsd/misc/NGSadmix -minMaf 0.2 -P 12 -
 
 211146 GLS at 75 after downsampling
 200449 GLS at 90 after downsampling
+62200 GLS at 90 and 0.20 maf
 
 ```{r}
 PlotAdmix("outputs/100/58-gls-K2-90.qopt", m2)
@@ -478,4 +479,8 @@ PlotAdmix("outputs/100/58-gls-down-K2-90.qopt", m2)
 ```
 ```{r}
 PlotAdmix("outputs/100/58-gls-down-K3-90.qopt", m2)
+```
+
+```{r}
+PlotAdmix("outputs/100/58-gls-down-K3-90-02.qopt", m2)
 ```

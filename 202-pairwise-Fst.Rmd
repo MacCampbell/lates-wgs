@@ -177,8 +177,13 @@ fstplot<-ggplot(fsts) +
   theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
   theme(axis.title = element_text(size=14, face="bold")) +
   ggtitle("A") +
-  theme(plot.title=element_text(size=16, face="bold"))
-
+  theme(plot.title=element_text(size=16, face="bold")) +
+  scale_x_discrete(labels=c("Northern Territory","Queensland","Papua New Guinea",
+                                             "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast")) +
+   scale_y_discrete(labels=c("Northern Territory","Queensland","Papua New Guinea",
+                                             "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
 fstplot
 ```
 
@@ -234,25 +239,34 @@ pi<-ggplot(stats2) +
   geom_boxplot(aes(x=Population, y=tP, fill=Lineage), outlier.size = 0.25,  alpha=0.50)  +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
-  xlab("\nSampling Region") +
+  xlab("\nRegion") +
   ylab("Theta Pi\n") +
   scale_fill_viridis_d() +
   theme(legend.position = "none") +
   theme(panel.grid = element_blank()) +
-  ggtitle("A") +
-  theme(plot.title = element_text(size=16, face="bold"))
+  ggtitle("B") +
+  theme(plot.title = element_text(size=16, face="bold")) +
+  theme(axis.title = element_text(size=12, face="bold")) +
+  scale_x_discrete(labels=c("Northern Territory","Queensland","Papua New Guinea",
+                                             "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
+
 
 taj<-ggplot(stats2) +
   geom_boxplot(aes(x=Population, y=Tajima, fill=Lineage), outlier.size = 0.25, alpha=0.50)  +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
-  xlab("\nSampling Region") +
+  xlab("\nRegion") +
   ylab("Tajima's D\n") +
   scale_fill_viridis_d() +
   theme(legend.position = "none") +
   theme(panel.grid = element_blank()) +
-  ggtitle("B") +
-  theme(plot.title = element_text(size=16, face="bold"))
+  ggtitle("C") +
+  theme(plot.title = element_text(size=16, face="bold")) +
+  theme(axis.title = element_text(size=12, face="bold"))  +
+  scale_x_discrete(labels=c("Northern Territory","Queensland","Papua New Guinea",
+                                             "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
 
 pi
 ```
@@ -263,3 +277,15 @@ ggarrange(pi, blank, taj, ncol=3, widths=c(5,1,5))
 ggsave("outputs/202/stats.pdf", width=8, height=4)
 ```
   
+```{r}
+ggarrange(ggplotGrob(ggarrange(fstplot+theme(legend.position = "none"), blank, nrow=2, heights=c(5,1))),
+ggplotGrob(ggarrange(pi, blank, taj, ncol=3, widths=c(5,1,5))), nrow=2, heights = c(1,.8))
+
+ggsave("outputs/202/stats.pdf", width=8, height=10)
+ggsave("outputs/202/stats.jpeg", width=8, height=10)
+
+```
+
+```{r}
+stats2 %>% group_by(Population) %>% summarize(Pi=median(tP), Taj=median(Tajima)) 
+```

@@ -1,0 +1,130 @@
+---
+title: "208-site-lists"
+output: html_document
+date: "2023-09-06"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+I need a better way of getting admixture proportions....
+
+
+```{r}
+m2<-read_csv("meta/58.csv")
+m2$Region<-factor(m2$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
+                                              "Indonesia","Philippines","Vietnam","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
+m2 <-m2 %>% mutate(Lineage=ifelse(Region %in% c("Northern Territory","Queensland","Papua New Guinea"),"AUS+NG",
+                                                ifelse(Region %in% c("India Eastern Coast","India Western Coast"),"IND","SEA")))
+m2 %>% group_by(Region) %>% summarize(Count=n(), Cov=mean(Coverage))
+
+write_tsv(m2 %>% select(Run), file="bamlists/58-sample-names.txt", col_names = FALSE)
+```
+
+
+```{r}
+aus<-m2 %>% filter(Lineage %in% c("AUS+NG"))
+sea<-m2 %>% filter(Lineage %in% c("SEA"))
+ind<-m2 %>% filter(Lineage %in% c("IND"))
+```
+
+```{r}
+aus %>% select(Run) %>% write_tsv("outputs/208/aus.txt", col_names = FALSE)
+sea %>% select(Run) %>% write_tsv("outputs/208/sea.txt", col_names = FALSE)
+ind %>% select(Run) %>% write_tsv("outputs/208/ind.txt", col_names = FALSE)
+```
+
+aus=17
+sea=30
+ind=11
+
+```{sh, eval=FALSE}
+bcftools view -S outputs/208/aus.txt outputs/108/renamed.vcf.gz > outputs/208/aus.vcf
+bcftools view -S outputs/208/sea.txt outputs/108/renamed.vcf.gz > outputs/208/sea.vcf
+bcftools view -S outputs/208/ind.txt outputs/108/renamed.vcf.gz > outputs/208/ind.vcf
+
+#on farm module load vcftools
+vcftools --vcf outputs/208/aus.vcf  --freq --out outputs/208/aus.vcf
+vcftools --vcf outputs/208/sea.vcf  --freq --out outputs/208/sea.vcf
+vcftools --vcf outputs/208/ind.vcf  --freq --out outputs/208/ind.vcf
+```
+
+
+
+
+```{r, eval=FALSE}
+freq1<-read_tsv("outputs/208/aus.vcf.frq.gz", skip = 1, col_names = FALSE) %>% 
+  rename(Chromosome=X1, Position=X2, NAllelesAUS=X3, NAUS=X4, Major=X5, Minor=X6) %>%
+  separate(Major, into=c("Major","MajorFrequencyAUS"), sep=":") %>% 
+  separate(Minor, into=c("Minor","MinorFrequencyAUS"), sep=":")
+freq1$MajorFrequencyAUS<-as.numeric(freq1$MajorFrequencyAUS)
+freq1$MinorFrequencyAUS<-as.numeric(freq1$MinorFrequencyAUS)
+
+
+freq2<-read_tsv("outputs/208/sea.vcf.frq.gz", skip = 1, col_names = FALSE) %>% 
+  rename(Chromosome=X1, Position=X2, NAllelesSEA=X3, NSEA=X4, Major=X5, Minor=X6) %>%
+  separate(Major, into=c("Major","MajorFrequencySEA"), sep=":") %>% 
+  separate(Minor, into=c("Minor","MinorFrequencySEA"), sep=":")
+freq2$MajorFrequencySEA<-as.numeric(freq2$MajorFrequencySEA)
+freq2$MinorFrequencySEA<-as.numeric(freq2$MinorFrequencySEA)
+
+freq3<-read_tsv("outputs/208/ind.vcf.frq.gz", skip = 1, col_names = FALSE) %>% 
+  rename(Chromosome=X1, Position=X2, NAllelesIND=X3, NIND=X4, Major=X5, Minor=X6)%>%
+  separate(Major, into=c("Major","MajorFrequencyIND"), sep=":") %>%
+  separate(Minor, into=c("Minor","MinorFrequencyIND"), sep=":")
+freq3$MajorFrequencyIND<-as.numeric(freq3$MajorFrequencyIND)
+freq3$MinorFrequencyIND<-as.numeric(freq3$MinorFrequencyIND)
+
+comb<-left_join(freq1, freq2) %>% left_join(freq3)
+
+save(comb, file="outputs/208/comb.rda")
+```
+
+
+Combine and generate some metrics
+
+aus=17
+sea=30
+ind=11
+
+
+```{r, eval=FALSE}
+load("outputs/208/comb.rda")
+merge<-comb %>% mutate(AbsoluteDifferenceAUSSEA=abs(MajorFrequencyAUS-MajorFrequencySEA)) %>% 
+            mutate(AbsoluteDifferenceAUSIND=abs(MajorFrequencyAUS-MajorFrequencyIND)) %>%
+            mutate(AbsoluteDifferenceSEAIND=abs(MajorFrequencySEA-MajorFrequencyIND)) %>%             
+  select(Chromosome, Position, Major, Minor, MajorFrequencyAUS, MinorFrequencyAUS, MajorFrequencySEA, MinorFrequencySEA,
+         MajorFrequencyIND, MinorFrequencyIND, AbsoluteDifferenceAUSSEA, AbsoluteDifferenceAUSIND,
+         AbsoluteDifferenceSEAIND, NAUS, NSEA, NIND)
+  
+# Sample sizes
+#  filter(N > 30, NWinter > 20) 
+save(merge, file="outputs/208/merge.rda")
+```
+
+Control for missing data at phylogroup level.    
+```{r}
+load("outputs/208/merge.rda")
+```
+
+```{r}
+merge2<-merge %>% filter(NAUS > (0.9*2*17)) %>% filter(NSEA > (0.9*2*30)) %>% filter(NIND > (0.9*2*11))
+```
+
+
+1,470,647 variants
+```{r}
+diffs1<-merge2 %>% filter(AbsoluteDifferenceAUSIND>0.90, AbsoluteDifferenceSEAIND>0.90)
+```
+
+1285 variants
+
+```{r}
+diffs2<-merge2 %>% filter(AbsoluteDifferenceAUSSEA>0.90)
+```

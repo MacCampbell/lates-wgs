@@ -133,9 +133,31 @@ plot(NasoNet, size=attr(NasoNet, "freq"), scale.ratio = .3, cex = 1, pie=ind.hap
 args(pegas:::plot.haploNet)
 ```
 
+
+
+Adding in our reference seqs
+
+(base) Macs-MacBook-Pro-2:coi mac$ mafft new-coi-ref-seqs.fasta > new-coi-ref-seqs.afasta
+(base) Macs-MacBook-Pro-2:coi mac$ java -jar ~/BMGE-1.12/BMGE.jar -i new-coi-ref-seqs.afasta -t DNA -op trim.phy -g 0.01
+ iqtree -s trim.phy -bb 10000 -m GTR+G --redo 
+
+ iqtree -s new-coi-ref-seqs.afasta -bb 1000 -m HKY+G --redo 
+ 
+refseq meta
+
+```{r}
+Run<-c("EU189379","KJ573921","KJ573895")
+Lineage<-c("AUS+NG","SEA","IND")
+
+rm<-cbind(Run,Lineage) %>% as_tibble() 
+rm
+```
+
 ## Tree
 ```{r}
 tree<-read.tree("data/mtdna/new-coi.afasta.contree")
+#tree<-read.tree("data/coi/trim.phy.contree")
+#tree<-read.tree("data/coi/new-coi-ref-seqs.afasta.contree")
 t2<-midpoint.root(tree)
 t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 75)
 
@@ -158,11 +180,12 @@ e <- e[e$label >= 75,]
 ```
 
 ```{r}
-t %<+% m58 +
+t %<+% m58 + #bind_rows(m58, rm) +
   geom_point(data=e,  fill="gray50", cex=2, alpha=1, pch=21) +
   geom_point(data=d,  fill="black", cex=2, alpha=1, pch=21) +
   geom_tippoint(aes(x=x+0.002,fill=Region, shape=Lineage), cex=3) + 
   geom_tiplab(aes(label=Region, x=x+0.01), align = FALSE, size=3) +
+  #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
   scale_shape_manual(values=c(21,23,24)) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
   xlim(0,.1) +
@@ -181,3 +204,4 @@ t+geom_tiplab(size=2) +
 ggsave("outputs/205/tiplabs-phylo.pdf", width=8.5, height=11)
 
 ```
+
