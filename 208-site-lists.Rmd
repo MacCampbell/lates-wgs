@@ -121,6 +121,7 @@ merge2<-merge %>% filter(NAUS > (0.9*2*17)) %>% filter(NSEA > (0.9*2*30)) %>% fi
 1,470,647 variants
 ```{r}
 diffs1<-merge2 %>% filter(AbsoluteDifferenceAUSIND>0.90, AbsoluteDifferenceSEAIND>0.90)
+write_csv(diffs1, "meta/site-list-AUSSEA-IND.csv")
 ```
 
 1285 variants
@@ -128,3 +129,28 @@ diffs1<-merge2 %>% filter(AbsoluteDifferenceAUSIND>0.90, AbsoluteDifferenceSEAIN
 ```{r}
 diffs2<-merge2 %>% filter(AbsoluteDifferenceAUSSEA>0.90)
 ```
+
+70 variants
+
+```{r}
+set1<-diffs1 %>% select(Chromosome, Position)
+set2<-diffs2 %>% select(Chromosome, Position)
+complete<-bind_rows(set1,set2) %>% unique()
+```
+
+
+Can I pull these from a beagle file for ngsAdmix?
+(base) maccamp@farm:~/lates-wgs$ cat meta/site-list-AUSSEA-IND.csv  | cut -f 1,2 -d ',' | grep -v "Chrom" | perl -pe 's/,/\t/g' > outputs/208/site-list.txt
+angsd sites index site-list.txt
+
+```{sh, eval=FALSE}
+srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/downsample-58.bamlist -sites outputs/208/site-list.txt \
+-anc  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 52 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 \
+-doMajorMinor 1 -doPost 1 -doMaf 1 -SNP_pval 1e-6 \
+-minMaf 0.05 \
+-out outputs/208/58-gls-90 > outputs/208/58-gls-90.out 2> outputs/208/58-gls-90.err &
+```
+
+
