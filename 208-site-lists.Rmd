@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 
 ```{r}
 library(tidyverse)
+library(vcfR)
+library(snpR)
 ```
 
 I need a better way of getting admixture proportions....
@@ -141,6 +143,14 @@ write_tsv(complete, file="meta/complete-site-list.tsv", col_names = FALSE)
 ```
 
 ```{r}
+mystery<-diffs1 %>% filter(Chromosome =="NC_066849.1")
+ggplot(mystery) +
+  geom_point(aes(x=Position,y=MinorFrequencyIND))
+```
+
+27673719 bp long, basically genome-wide. so weird! 
+
+```{r}
 ggplot(diffs1) +
   geom_histogram(aes(x=Chromosome), stat='count')
 ```
@@ -185,9 +195,148 @@ Removing NC_066849.1
 incomplete<-complete %>% filter(Chromosome !="NC_066849.1")
 
 ggplot(incomplete) +
-  geom_histogram(aes(x=Chromosome), stat='count')
+  geom_histogram(aes(x=Chromosome), stat='count') +
+  theme(axis.text.x = element_text(angle=45, hjust=1, vjust=1))
 ```
 
 ```{r}
+nrow(diffs1 %>% select(Chromosome, Position) %>% filter(Chromosome !="NC_066849.1"))
+nrow(diffs2 %>% select(Chromosome, Position) %>% filter(Chromosome !="NC_066849.1"))
+
 write_tsv(complete %>% filter(Chromosome !="NC_066849.1"), file="meta/incomplete-site-list.tsv", col_names = FALSE)
+```
+
+(base) maccamp@farm:~/lates-wgs$ cp meta/incomplete-site-list.tsv outputs/208/
+(base) maccamp@farm:~/lates-wgs/outputs/208$ angsd sites index incomplete-site-list.tsv 
+
+```{sh, eval=FALSE}
+srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/downsample-58.bamlist -sites outputs/208/incomplete-site-list.tsv  \
+-anc  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 52 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 \
+-doMajorMinor 1 -doPost 1 -doMaf 1 -SNP_pval 1e-6 \
+-minMaf 0.05 \
+-out outputs/208/58-gls-90-inclist > outputs/208/58-gls-90-inclist.out 2> outputs/208/58-gls-90-inclist.err &
+
+
+srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/downsample-58.bamlist -sites outputs/208/incomplete-site-list.tsv  \
+-anc  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 52 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 \
+-doMajorMinor 1 -doPost 1 -doMaf 1 -SNP_pval 1e-6 \
+-minMaf 0.05 -doGeno 4 \
+-out outputs/208/58-gls-90-inclist-geno > outputs/208/58-gls-90-inclist-geno.out 2> outputs/208/58-gls-90-inclist-geno.err &
+
+srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/208/58-gls-90-inclist.beagle.gz -K 2 -o outputs/208/58-K2-gls-inclist &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/208/58-gls-90-inclist.beagle.gz -K 3 -o outputs/207/58-K3-gls-inclist &
+srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/208/58-gls-90-inclist.beagle.gz -K 4 -o outputs/207/58-K4-gls-inclist &
+```
+
+
+Can try to get things together.
+
+_1_ sample vcf to the sites of interest
+`chr\tpos format`
+
+```{sh, eval=FALSE}
+bcftools view -R meta/incomplete-site-list.tsv  outputs/108/renamed.vcf.gz > outputs/208/sites.vcf
+bcftools view -R meta/complete-site-list.tsv  outputs/108/renamed.vcf.gz > outputs/208/csites.vcf
+bcftools view -R meta/expanded-site-list.tsv  outputs/108/renamed.vcf.gz > outputs/208/esites.vcf
+
+```
+
+
+```{r}
+mm<-m58 %>% select(Run,Region,Lineage)
+#mm$Region<-gsub(" ","",mm$Region)
+mydata <- import.snpR.data("outputs/208/esites.vcf", sample.meta = mm)
+```
+
+
+```{r}
+plot_clusters(mydata, facets="Lineage")
+```
+
+```{r}
+plot_structure(mydata, facet = "Region", 
+               facet.order = c("Northern Territory","Queensland","Papua New Guinea",
+                               "Indonesia","Philippines","Cambodia","Thailand","Vietnam",
+                               "India Eastern Coast","India Western Coast"),
+               structure_path = "/Users/mac/bin/structure", k=3, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+```
+
+
+Expanded list
+
+
+```{r}
+diffs3<-merge2 %>% filter(AbsoluteDifferenceAUSIND>0.95, AbsoluteDifferenceSEAIND>0.95)
+diffs4<-merge2 %>% filter(AbsoluteDifferenceAUSSEA>0.95)
+```
+
+```{r}
+set3<-diffs3 %>% select(Chromosome, Position)
+set4<-diffs4 %>% select(Chromosome, Position)
+
+expanded<-bind_rows(set3,set4) %>% unique() %>% arrange(Chromosome, Position) %>% filter(Chromosome!="NC_066849.1")
+
+write_tsv(expanded, file="meta/expanded-site-list.tsv", col_names = FALSE)
+```
+
+## Read in all the snps
+
+merge2 has low missing dat snps. Let's get those and prune.
+MAF filter  
+bcftools view -q 0.30:minor 
+
+```{r}
+write_tsv(merge2 %>% select(Chromosome, Position), file="outputs/208/merge2.tsv", col_names = FALSE)
+```
+```{sh,eval=FALSE}
+bcftools view -R outputs/208/merge2.tsv  outputs/108/renamed.vcf.gz | bcftools +prune -l 0.20 -w 100000 > outputs/208/pruned-merge2.vcf
+#bgzip, tabix
+bcftools view -r NC_066834.1 outputs/208/pruned-merge2.vcf.gz > outputs/208/NC_066834.1.vcf
+```
+
+
+```{r}
+mydata2 <- import.snpR.data("outputs/208/pruned-merge2.vcf.gz", sample.meta = mm)
+```
+
+16,642 variants
+
+```{r}
+plot_structure(mydata2, facet = "Region", 
+               facet.order = c("Northern Territory","Queensland","Papua New Guinea",
+                               "Indonesia","Philippines","Cambodia","Thailand","Vietnam",
+                               "India Eastern Coast","India Western Coast"),
+               structure_path = "/Users/mac/bin/structure", k=2, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+```
+
+```{r}
+plot_structure(mydata2, facet = "Region", 
+               facet.order = c("Northern Territory","Queensland","Papua New Guinea",
+                               "Indonesia","Philippines","Cambodia","Thailand","Vietnam",
+                               "India Eastern Coast","India Western Coast"),
+               structure_path = "/Users/mac/bin/structure", k=3, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+
+ggsave("outputs/208/called-snps-k3.jpeg")
+```
+
+```{r}
+plot_structure(mydata2, facet = "Region", 
+               facet.order = c("Northern Territory","Queensland","Papua New Guinea",
+                               "Indonesia","Philippines","Cambodia","Thailand","Vietnam",
+                               "India Eastern Coast","India Western Coast"),
+               structure_path = "/Users/mac/bin/structure", k=4, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+
+ggsave("outputs/208/called-snps-k4.jpeg")
 ```
