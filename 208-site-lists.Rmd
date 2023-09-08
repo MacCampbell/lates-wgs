@@ -297,15 +297,24 @@ write_tsv(merge2 %>% select(Chromosome, Position), file="outputs/208/merge2.tsv"
 ```{sh,eval=FALSE}
 bcftools view -R outputs/208/merge2.tsv  outputs/108/renamed.vcf.gz | bcftools +prune -l 0.20 -w 100000 > outputs/208/pruned-merge2.vcf
 #bgzip, tabix
-bcftools view -r NC_066834.1 outputs/208/pruned-merge2.vcf.gz > outputs/208/NC_066834.1.vcf
+bcftools view outputs/208/pruned-merge2.vcf.gz -R meta/lates-lgs-reduced-regionfile.txt -i 'MAF>0.10' | bcftools view -i 'MAF < 0.40'  > outputs/208/pruned-merge2-MAF.vcf
 ```
 
 
 ```{r}
-mydata2 <- import.snpR.data("outputs/208/pruned-merge2.vcf.gz", sample.meta = mm)
+mydata2 <- import.snpR.data("outputs/208/pruned-merge2-MAF.vcf", sample.meta = mm)
 ```
 
 16,642 variants
+5,814 variants with MAF 0.1-0.4
+5583 variants dropping NC_066849.1
+
+```{r}
+plot_clusters(mydata2, facets="Region", facet.order = c("Northern Territory","Queensland","Papua New Guinea",
+                               "Indonesia","Philippines","Cambodia","Thailand","Vietnam",
+                               "India Eastern Coast","India Western Coast"),
+              viridis.option = "H")
+```
 
 ```{r}
 plot_structure(mydata2, facet = "Region", 
@@ -339,4 +348,9 @@ plot_structure(mydata2, facet = "Region",
                iterations=1000000, burnin=10000000)
 
 ggsave("outputs/208/called-snps-k4.jpeg")
+```
+
+Expect F2s in Cambodia.
+```{r}
+
 ```

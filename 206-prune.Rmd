@@ -18,6 +18,11 @@ srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 -doMajorMinor 1 -doPost 1 -doMaf 1 -SNP_pval 1e-6 \
 -minMaf 0.05 \
 -out outputs/206/58-gls-90 > outputs/206/58-gls-90.out 2> outputs/206/58-gls-90.err &
+
+# get single chrom
+(base) maccamp@farm:~/lates-wgs/outputs/206$ gunzip -c 58-gls-90.beagle.gz |head -n 1 > header.txt
+(base) maccamp@farm:~/lates-wgs/outputs/206$ gunzip -c 58-gls-90.beagle.gz | grep "NC_066834.1" > NC_066834.1.beagle
+
 ```
 
 Looking at this: https://github.com/nt246/lcwgs-guide-tutorial/blob/main/tutorial3_ld_popstructure/markdowns/ld.md
@@ -56,18 +61,19 @@ srun -p high -t 10:00:00 --nodes=1 --mem=32G ~/ngsLD/ngsLD \
 ```
 
 
-Ok, so let's run this across chroms and 5353399 GLS
+Ok, so let's run this with a single chrom, or all of them!
 
-I imagine this is going to make a stupidly large ld file
 
-zcat outputs/101/58-ibs-90.beagle.gz | cut -f 4- | gzip  > outputs/206/58-gls-90-for-ngsld.beagle.gz
+zcat outputs/206/58-gls-90.beagle.gz | cut -f 4- | gzip  > outputs/206/58-gls-90-for-ngsld.beagle.gz
 
-zcat outputs/206/58-gls-90.beagle.gz | cut -f 1,2 | sed 's/:/_/g'| gzip > outputs/206/58-gls-90.pos.gz
+zcat outputs/206/58-gls-90.mafs.gz | cut -f 1,2 | sed 's/:/_/g'| gzip > outputs/206/58-gls-90.pos.gz
 
 
 The docs say that we can use --rnd_sample for ld decay. So we can get this and then find a window (5Kb? to pull snps from).
 
 ```{sh, eval=FALSE}
+module load gsl
+
 srun -p high -t 72:00:00 --nodes=1 --mem=48G  ~/ngsLD/ngsLD \
 --geno outputs/206/58-gls-90.beagle.gz \
 --posH  outputs/206/58-gls-90.pos.gz \
@@ -81,4 +87,10 @@ srun -p high -t 72:00:00 --nodes=1 --mem=48G  ~/ngsLD/ngsLD \
 ```
 
 
-Why not pull a snp every 10000 kb? 
+Wow, that ran!
+prune_graph won't compile so trying something like this
+
+This prunes within 50000 base pairs and with R2 >= 0.3
+
+srun -p high -t 72:00:00 --nodes=1 --mem=48G  ~/ngsLD/scripts/prune_ngsLD.py  --input outputs/206/58-gls-90.ld --field_dist 3 --field_weight 7 --max_dist 50000 --min_weight 0.3  --output outputs/206/unlinked.pos
+

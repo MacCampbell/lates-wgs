@@ -1,0 +1,75 @@
+---
+title: "209-merge-vcf"
+output: html_document
+date: "2023-09-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(snpR)
+```
+
+What about merging RADseq with Indian seqs?
+
+```{r}
+rad<-read_csv("meta/wang.csv")
+rad$Pop<-factor(rad$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
+rad<-rad %>% mutate(Lineage=ifelse(Pop %in% c("AUW","AUE","PNG"), "AUS+NG","SEA"))
+```
+
+
+```{r}
+mydat <- import.snpR.data("outputs/106/plink-pruned.vcf", sample.meta = rad %>% select(Run,Pop,Lineage))
+```
+
+20,373 variants
+
+```{r}
+plot_clusters(mydat, facets="Pop", facet.order = c("AUW","AUE","PNG","INA","MAL","THA"),
+              viridis.option = "viridis")
+```
+
+```{r}
+plot_structure(mydat, facet = "Pop", 
+               facet.order = c("AUW","AUE","PNG","INA","MAL","THA"),
+               structure_path = "/Users/mac/bin/structure", k=2, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+```
+
+```{r}
+plot_structure(mydat, facet = "Pop", 
+               facet.order = c("AUW","AUE","PNG","INA","MAL","THA"),
+               structure_path = "/Users/mac/bin/structure", k=3, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+```
+
+```{r}
+plot_structure(mydat, facet = "Pop", 
+               facet.order = c("AUW","AUE","PNG","INA","MAL","THA"),
+               structure_path = "/Users/mac/bin/structure", k=4, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+```
+
+
+How to include India?
+
+"rad" has 130 samples, so 11 from india is 8.5%, so a minimum MAF of 0.05 is useful.
+
+```{r}
+ind<-read_csv("meta/58.csv") %>% filter(Region %in% c("India Eastern Coast", "India Western Coast")) %>%
+  rename(Pop=Region) %>% mutate(Lineage="IND") %>% select(Run,Pop,Lineage,Path)
+rad2<-rad %>% select(Run,Pop,Lineage,Path)
+combos<-bind_rows(ind,rad2)
+```
+
+```{r}
+write_csv(combos, file="meta/rad+ind.csv")
+write_tsv(combos %>% select(Path), file = "bamlists/141.bamlist", col_names = FALSE)
+```
