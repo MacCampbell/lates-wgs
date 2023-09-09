@@ -60,7 +60,7 @@ plot_structure(mydat, facet = "Pop",
 
 How to include India?
 
-"rad" has 130 samples, so 11 from india is 8.5%, so a minimum MAF of 0.05 is useful.
+"rad" has 130 samples, so 11 from india is 11/141=7.8%, so a minimum MAF of 0.05 is useful.
 
 ```{r}
 ind<-read_csv("meta/58.csv") %>% filter(Region %in% c("India Eastern Coast", "India Western Coast")) %>%
@@ -73,3 +73,101 @@ combos<-bind_rows(ind,rad2)
 write_csv(combos, file="meta/rad+ind.csv")
 write_tsv(combos %>% select(Path), file = "bamlists/141.bamlist", col_names = FALSE)
 ```
+
+-rf genome/lates-lgs.txt 
+```{sh, eval=FALSE}
+srun -t 36:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 -minInd 134 -r NC_066833.1 \
+-bam bamlists/141.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+ -out outputs/209/snps-comb  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/209/snps-comb.out 2> outputs/209/snps-comb.err &
+
+srun -t 36:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 -minInd 134 -rf genome/lates-lgs.txt  \
+-bam bamlists/141.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+ -out outputs/209/snps-comb-allchroms  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/209/snps-comb-allchroms.out 2> outputs/209/snps-comb-allchroms.err &
+```
+
+	-> Number of sites retained after filtering: 1299 chrom01
+
+```{sh, eval=FALSE}
+plink --tped snps-comb.tped --tfam snps-comb.tfam  --out plink-binary --recode --allow-extra-chr --noweb
+plink --ped plink-binary.ped --map plink-binary.map --recode vcf --allow-extra-chr -out plink
+bgzip plink.vcf 
+tabix plink.vcf.gz
+#bcftools view plink.vcf.gz --regions NC_066833.1  > chrom01.vcf
+
+bcftools +prune -l 0.20 -w 10000 plink.vcf.gz > plink-pruned.vcf.gz
+```
+
+
+
+```{r}
+mydat <- import.snpR.data("outputs/209/plink-pruned.vcf.gz", sample.meta = combos %>% select(Run,Pop,Lineage))
+```
+
+237 variants
+```{r}
+plot_clusters(mydat, facets="Lineage", facet.order=c("AUS+NG","SEA","IND"),
+              viridis.option = "viridis")
+
+plot_clusters(mydat, facets="Pop",
+              viridis.option = "H")
+```
+
+
+```{r}
+plot_structure(mydat, facet = "Pop", 
+               facet.order = c("AUW","AUE","PNG","INA","MAL","THA","India Eastern Coast",
+               "India Western Coast"),
+               structure_path = "/Users/mac/bin/structure", k=2, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+```
+
+```{r}
+plot_structure(mydat, facet = "Pop", 
+               facet.order = c("AUW","AUE","PNG","INA","MAL","THA","India Eastern Coast",
+               "India Western Coast"),
+               structure_path = "/Users/mac/bin/structure", k=3, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+```
+
+
+```{r}
+plot_structure(mydat, facet = "Pop", 
+               facet.order = c("AUW","AUE","PNG","INA","MAL","THA","India Eastern Coast",
+               "India Western Coast"),
+               structure_path = "/Users/mac/bin/structure", k=4, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+```
+
+
+## What about merging existing genotype calls    
+
+Can use the sites called with IND+RAD, then call those sites across data-sets. The small samples sizes are always going to be a problem with IND. 
+
+## Could downsample to 11 from each location filter for higher MAFs to reduce noise
+```{r, eval=FALSE}
+down<-combos %>% group_by(Lineage) %>% slice_sample(n=11)
+down %>% group_by(Pop) %>% summarize(Count=n())
+write_csv(down, file="meta/33.csv")
+write_tsv(down %>% select(Path), file="bamlists/33.bamlist", col_names = FALSE)
+```
+
+```{r}
+m33<-read_csv("meta/33.csv")
+```
+
+```{sh, eval=FALSE}
+srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 31 -rf genome/lates-lgs.txt \
+-bam bamlists/33.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+ -out outputs/209/snps-33  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/209/snps-33.out 2> outputs/209/snps-33.err &
+```
+
