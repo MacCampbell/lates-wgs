@@ -160,6 +160,8 @@ write_tsv(down %>% select(Path), file="bamlists/33.bamlist", col_names = FALSE)
 
 ```{r}
 m33<-read_csv("meta/33.csv")
+write_tsv(down %>% ungroup() %>% select(Path), file="bamlists/33.bamlist", col_names = FALSE)
+
 ```
 
 ```{sh, eval=FALSE}
@@ -170,4 +172,6 @@ srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/209/snps-33.out 2> outputs/209/snps-33.err &
 ```
+
+can use maf filters like bcftools view file -i 'MAF>0.10' | bcftools view -i 'MAF < 0.40'  > outputs/209/*maf.vcf
 
