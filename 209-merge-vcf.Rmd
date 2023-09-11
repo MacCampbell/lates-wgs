@@ -90,9 +90,10 @@ srun -t 36:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 ```
 
 	-> Number of sites retained after filtering: 1299 chrom01
-
+  39,927 across sites.
+  
 ```{sh, eval=FALSE}
-plink --tped snps-comb.tped --tfam snps-comb.tfam  --out plink-binary --recode --allow-extra-chr --noweb
+plink --tped snps-comb-allchroms.tped --tfam snps-comb-allchroms.tfam  --out plink-binary --recode --allow-extra-chr --noweb
 plink --ped plink-binary.ped --map plink-binary.map --recode vcf --allow-extra-chr -out plink
 bgzip plink.vcf 
 tabix plink.vcf.gz
@@ -107,7 +108,8 @@ bcftools +prune -l 0.20 -w 10000 plink.vcf.gz > plink-pruned.vcf.gz
 mydat <- import.snpR.data("outputs/209/plink-pruned.vcf.gz", sample.meta = combos %>% select(Run,Pop,Lineage))
 ```
 
-237 variants
+237 variants on chrom01, 6929 on all chroms
+      
 ```{r}
 plot_clusters(mydat, facets="Lineage", facet.order=c("AUS+NG","SEA","IND"),
               viridis.option = "viridis")
@@ -158,9 +160,18 @@ write_csv(down, file="meta/33.csv")
 write_tsv(down %>% select(Path), file="bamlists/33.bamlist", col_names = FALSE)
 ```
 
+51 sample version.  
+```{r, eval=FALSE}
+m51<-rad2 %>% group_by(Lineage) %>%  slice_sample(n=20) %>% bind_rows(ind)
+write_csv(m51, "meta/m51.csv")
+```
+
 ```{r}
 m33<-read_csv("meta/33.csv")
 write_tsv(down %>% ungroup() %>% select(Path), file="bamlists/33.bamlist", col_names = FALSE)
+
+m51<-read_csv("meta/m51.csv")
+write_tsv(m51 %>% ungroup() %>% select(Path), file="bamlists/51.bamlist", col_names = FALSE)
 
 ```
 
@@ -171,7 +182,130 @@ srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
  -out outputs/209/snps-33  \
 -minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/209/snps-33.out 2> outputs/209/snps-33.err &
+
+srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 49 -rf genome/lates-lgs.txt \
+-bam bamlists/51.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+ -out outputs/209/snps-51  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/209/snps-51.out 2> outputs/209/snps-51.err &
 ```
 
 can use maf filters like bcftools view file -i 'MAF>0.10' | bcftools view -i 'MAF < 0.40'  > outputs/209/*maf.vcf
+
+73315 SNPs
+
+```{sh, eval=FALSE}
+plink --tped snps-33.tped --tfam snps-33.tfam  --out plink-binary-33 --recode --allow-extra-chr --noweb
+plink --ped plink-binary-33.ped --map plink-binary-33.map --recode vcf --allow-extra-chr -out plink-33
+bgzip plink-33.vcf 
+tabix plink-33.vcf.gz
+
+bcftools view plink-33.vcf.gz -i 'MAF>0.10' | bcftools view -i 'MAF < 0.40' | bcftools +prune -l 0.20 -w 10000 > plink-33-pruned.vcf
+```
+
+
+
+```{r}
+mydat <- import.snpR.data("outputs/209/plink-33-pruned.vcf", sample.meta = m33 %>% select(Run,Pop,Lineage))
+```
+
+1163 variants
+```{r}
+plot_clusters(mydat, facets="Lineage", facet.order=c("AUS+NG","SEA","IND"),
+              viridis.option = "viridis")
+
+plot_clusters(mydat, facets="Pop",
+              viridis.option = "H")
+```
+
+
+```{r}
+plot_structure(mydat, facet = "Pop", 
+               facet.order = c("AUW","AUE","PNG","INA","MAL","THA","India Eastern Coast",
+               "India Western Coast"),
+               structure_path = "/Users/mac/bin/structure", k=2, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+```
+
+```{r}
+plot_structure(mydat, facet = "Pop", 
+               facet.order = c("AUW","AUE","PNG","INA","MAL","THA","India Eastern Coast",
+               "India Western Coast"),
+               structure_path = "/Users/mac/bin/structure", k=3, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+```
+
+
+```{r}
+plot_structure(mydat, facet = "Pop", 
+               facet.order = c("AUW","AUE","PNG","INA","MAL","THA","India Eastern Coast",
+               "India Western Coast"),
+               structure_path = "/Users/mac/bin/structure", k=4, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+```
+
+```{r}
+plot_structure(mydat, facet = "Pop", 
+               facet.order = c("AUW","AUE","PNG","INA","MAL","THA","India Eastern Coast",
+               "India Western Coast"),
+               structure_path = "/Users/mac/bin/structure", k=5, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+```
+Neat!!
+
+Now, with RAD+IND can we retrieve these snps?
+```{sh, eval=FALSE}
+(base) Macs-MacBook-Pro-2:209 mac$ cat plink-33-pruned.vcf  | grep -v "#" | cut -f 1,2 > plink-33-pruned-site-list.txt
+
+bcftools view -R outputs/209/plink-33-pruned-site-list.txt outputs/209/plink.vcf.gz > outputs/209/plink-restricted-sites.vcf
+```
+
+
+```{r}
+mydat <- import.snpR.data("outputs/209/plink-restricted-sites.vcf", sample.meta = combos %>% select(Run,Pop,Lineage))
+```
+
+only607 sites      
+```{r}
+plot_clusters(mydat, facets="Lineage", facet.order=c("AUS+NG","SEA","IND"),
+              viridis.option = "viridis")
+
+plot_clusters(mydat, facets="Pop",
+              viridis.option = "H")
+```
+
+```{r}
+wgs<-read_csv("meta/58.csv") %>% rename(Pop=Region) %>% 
+  mutate(Lineage=ifelse(Region %in% c("Northern Territory","Queensland","Papua New Guinea"),"AUS+NG",
+                                                ifelse(Region %in% c("India Eastern Coast","India Western Coast"),"IND","SEA"))) %>% 
+  select(Run,Pop,Lineage,Path)
+rad2<-rad %>% select(Run,Pop,Lineage,Path)
+combos2<-bind_rows(wgs,rad2)
+```
+
+188 samples. 
+```{r}
+write_csv(combos2, file="meta/rad+wgs.csv")
+write_tsv(combos2 %>% ungroup() %>% select(Path), file = "bamlists/188.bamlist", col_names = FALSE)
+```
+
+Dropping minMaf -minMaf 0.05
+
+```{sh, eval=FALSE}
+srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 178 -rf genome/lates-lgs.txt -sites outputs/209/plink-33-pruned-site-list.txt \
+-bam bamlists/188.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+ -out outputs/209/snps-188  -doGlf 2 \
+ -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/209/snps-188.out 2> outputs/209/snps-188.err &
+```
+
+This will take a hot minute.
+
+Expecting ~ca1163 SNPs
 
