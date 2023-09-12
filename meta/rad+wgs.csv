@@ -1,26 +1,26 @@
 Run,Pop,Lineage,Path
-SRR3165618,Northern Territory,SEA,data/split/SRR3165618.sort.flt.bam
-SRR3165619,Northern Territory,SEA,data/split/SRR3165619.sort.flt.bam
-SRR3165620,Northern Territory,SEA,data/split/SRR3165620.sort.flt.bam
-SRR3165621,Northern Territory,SEA,data/split/SRR3165621.sort.flt.bam
-SRR3165622,Northern Territory,SEA,data/split/SRR3165622.sort.flt.bam
-SRR3165623,Northern Territory,SEA,data/split/SRR3165623.sort.flt.bam
-SRR3165629,Queensland,SEA,data/split/SRR3165629.sort.flt.bam
-SRR3165630,Queensland,SEA,data/split/SRR3165630.sort.flt.bam
-SRR3165631,Queensland,SEA,data/split/SRR3165631.sort.flt.bam
-SRR3165632,Queensland,SEA,data/split/SRR3165632.sort.flt.bam
-SRR3165633,Queensland,SEA,data/split/SRR3165633.sort.flt.bam
-SRR3165634,Queensland,SEA,data/split/SRR3165634.sort.flt.bam
-SRR3165594,India Eastern Coast,SEA,data/split/SRR3165594.sort.flt.bam
-SRR3165595,India Eastern Coast,SEA,data/split/SRR3165595.sort.flt.bam
-SRR3183253,India Eastern Coast,SEA,data/split/SRR3183253.sort.flt.bam
-SRR3183255,India Eastern Coast,SEA,data/split/SRR3183255.sort.flt.bam
-SRR3183256,India Eastern Coast,SEA,data/split/SRR3183256.sort.flt.bam
-SRR3183257,India Eastern Coast,SEA,data/split/SRR3183257.sort.flt.bam
-SRR3183258,India Western Coast,SEA,data/split/SRR3183258.sort.flt.bam
-SRR3183259,India Western Coast,SEA,data/split/SRR3183259.sort.flt.bam
-SRR3183260,India Western Coast,SEA,data/split/SRR3183260.sort.flt.bam
-SRR3183261,India Western Coast,SEA,data/split/SRR3183261.sort.flt.bam
+SRR3165618,Northern Territory,AUS+NG,data/split/SRR3165618.sort.flt.bam
+SRR3165619,Northern Territory,AUS+NG,data/split/SRR3165619.sort.flt.bam
+SRR3165620,Northern Territory,AUS+NG,data/split/SRR3165620.sort.flt.bam
+SRR3165621,Northern Territory,AUS+NG,data/split/SRR3165621.sort.flt.bam
+SRR3165622,Northern Territory,AUS+NG,data/split/SRR3165622.sort.flt.bam
+SRR3165623,Northern Territory,AUS+NG,data/split/SRR3165623.sort.flt.bam
+SRR3165629,Queensland,AUS+NG,data/split/SRR3165629.sort.flt.bam
+SRR3165630,Queensland,AUS+NG,data/split/SRR3165630.sort.flt.bam
+SRR3165631,Queensland,AUS+NG,data/split/SRR3165631.sort.flt.bam
+SRR3165632,Queensland,AUS+NG,data/split/SRR3165632.sort.flt.bam
+SRR3165633,Queensland,AUS+NG,data/split/SRR3165633.sort.flt.bam
+SRR3165634,Queensland,AUS+NG,data/split/SRR3165634.sort.flt.bam
+SRR3165594,India Eastern Coast,IND,data/split/SRR3165594.sort.flt.bam
+SRR3165595,India Eastern Coast,IND,data/split/SRR3165595.sort.flt.bam
+SRR3183253,India Eastern Coast,IND,data/split/SRR3183253.sort.flt.bam
+SRR3183255,India Eastern Coast,IND,data/split/SRR3183255.sort.flt.bam
+SRR3183256,India Eastern Coast,IND,data/split/SRR3183256.sort.flt.bam
+SRR3183257,India Eastern Coast,IND,data/split/SRR3183257.sort.flt.bam
+SRR3183258,India Western Coast,IND,data/split/SRR3183258.sort.flt.bam
+SRR3183259,India Western Coast,IND,data/split/SRR3183259.sort.flt.bam
+SRR3183260,India Western Coast,IND,data/split/SRR3183260.sort.flt.bam
+SRR3183261,India Western Coast,IND,data/split/SRR3183261.sort.flt.bam
 SRR3165613,Indonesia,SEA,data/split/SRR3165613.sort.flt.bam
 SRR3165614,Indonesia,SEA,data/split/SRR3165614.sort.flt.bam
 SRR3165615,Indonesia,SEA,data/split/SRR3165615.sort.flt.bam
@@ -37,11 +37,11 @@ SRR3165599,Cambodia,SEA,data/split/SRR3165599.sort.flt.bam
 SRR3165600,Cambodia,SEA,data/split/SRR3165600.sort.flt.bam
 SRR3165601,Cambodia,SEA,data/split/SRR3165601.sort.flt.bam
 SRR3165602,Cambodia,SEA,data/split/SRR3165602.sort.flt.bam
-SRR3165624,Papua New Guinea,SEA,data/split/SRR3165624.sort.flt.bam
-SRR3165625,Papua New Guinea,SEA,data/split/SRR3165625.sort.flt.bam
-SRR3165626,Papua New Guinea,SEA,data/split/SRR3165626.sort.flt.bam
-SRR3165627,Papua New Guinea,SEA,data/split/SRR3165627.sort.flt.bam
-SRR3165628,Papua New Guinea,SEA,data/split/SRR3165628.sort.flt.bam
+SRR3165624,Papua New Guinea,AUS+NG,data/split/SRR3165624.sort.flt.bam
+SRR3165625,Papua New Guinea,AUS+NG,data/split/SRR3165625.sort.flt.bam
+SRR3165626,Papua New Guinea,AUS+NG,data/split/SRR3165626.sort.flt.bam
+SRR3165627,Papua New Guinea,AUS+NG,data/split/SRR3165627.sort.flt.bam
+SRR3165628,Papua New Guinea,AUS+NG,data/split/SRR3165628.sort.flt.bam
 SRR3165607,Philippines,SEA,data/split/SRR3165607.sort.flt.bam
 SRR3165608,Philippines,SEA,data/split/SRR3165608.sort.flt.bam
 SRR3165609,Philippines,SEA,data/split/SRR3165609.sort.flt.bam
@@ -56,7 +56,7 @@ SRR3165604,Thailand,SEA,data/split/SRR3165604.sort.flt.bam
 SRR3183266,Thailand,SEA,data/split/SRR3183266.sort.flt.bam
 SRR3165605,Vietnam,SEA,data/split/SRR3165605.sort.flt.bam
 SRR3165606,Vietnam,SEA,data/split/SRR3165606.sort.flt.bam
-SRR3183252,India Eastern Coast,SEA,data/split/SRR3183252.sort.flt.bam
+SRR3183252,India Eastern Coast,IND,data/split/SRR3183252.sort.flt.bam
 DRR111126,AUE,AUS+NG,bams/DRR111126.sort.flt.bam
 DRR111127,AUE,AUS+NG,bams/DRR111127.sort.flt.bam
 DRR111128,AUE,AUS+NG,bams/DRR111128.sort.flt.bam

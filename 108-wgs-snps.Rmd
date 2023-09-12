@@ -379,7 +379,8 @@ write.table(table, "outputs/108/vcf/sample_info.tsv", quote = TRUE, row.names = 
 
 (base) Macs-MacBook-Pro-2:lates-wgs mac$ 
 
-
+renamed.vcf.gz
+vcftools --gzvcf outputs/108/renamed.vcf.gz --relatedness2  --out outputs/108/relatedness2.txt
 vcftools --vcf outputs/108/pruned.vcf --relatedness2  --out outputs/108/relatedness2.txt
 
 VCFtools - 0.1.16
@@ -404,7 +405,7 @@ https://www.biostars.org/p/299569/
 info<-m58 %>% select(Run, Region)
 related<-read_tsv("outputs/108/relatedness2.txt.relatedness2") %>% filter(INDV1 !=INDV2) %>% mutate(King=abs(RELATEDNESS_PHI))
 related %>% left_join(info, by=c("INDV1"="Run")) %>%
-  left_join(info, by=c("INDV2"="Run")) %>% arrange(-King)
+  left_join(info, by=c("INDV2"="Run")) %>% arrange(-RELATEDNESS_PHI)
 ```
 (doesn't work)
 ./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/108/vcf -t snp -s 20 -m 4 -I /Users/mac/github/lates-wgs/outputs/108/vcf/sample_info.tsv -j 1601

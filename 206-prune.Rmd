@@ -92,5 +92,11 @@ prune_graph won't compile so trying something like this
 
 This prunes within 50000 base pairs and with R2 >= 0.3
 
+need pandas, updating conda, installing pandas (conda install pandas) need graph-tool ( conda install -c conda-forge graph-tool)
+
+100+ gb file, 
+
 srun -p high -t 72:00:00 --nodes=1 --mem=48G  ~/ngsLD/scripts/prune_ngsLD.py  --input outputs/206/58-gls-90.ld --field_dist 3 --field_weight 7 --max_dist 50000 --min_weight 0.3  --output outputs/206/unlinked.pos
 
+
+We now have 

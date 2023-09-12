@@ -1,0 +1,273 @@
+---
+title: "209.1-called-snps"
+output: html_document
+date: "2023-09-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(snpR)
+library(adegenet)
+library(ggrepel)
+library(ggpubr)
+```
+
+Using the called snps from 209
+
+```{sh, eval=FALSE}
+srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 178 -rf genome/lates-lgs.txt -sites outputs/209/plink-33-pruned-site-list.txt \
+-bam bamlists/188.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+ -out outputs/209/snps-188  -doGlf 2 \
+ -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/209/snps-188.out 2> outputs/209/snps-188.err &
+
+srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 178 -rf genome/lates-lgs.txt -sites outputs/209/plink-51-pruned-site-list.txt \
+-bam bamlists/188.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+ -out outputs/209/snps-188-51  -doGlf 2 \
+ -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/209/snps-188-51.out 2> outputs/209/snps-188-51.err &
+
+```
+
+
+```{r}
+m188<-read_csv("meta/rad+wgs.csv")
+m188$Pop<-factor(m188$Pop, levels=c("AUW","Northern Territory","AUE",
+                                                             "Queensland","PNG","Papua New Guinea",
+                                                             "INA","Indonesia","MAL","THA","Thailand","Cambodia",
+                                                               "Vietnam","Philippines","India Eastern Coast",
+                                                               "India Western Coast"))
+m188<-m188 %>% mutate(`Data Type` = ifelse(Pop %in% c("AUW","AUE","PNG","INA","MAL","THA"),"RADseq","WGS"))
+```
+
+
+501 snps in snps-188
+807 snps in snps-188-51
+
+```{sh, eval=FALSE}
+plink --tped snps-188.tped  --tfam snps-188.tfam  --out 188-plink-binary --recode --allow-extra-chr --noweb
+plink --ped 188-plink-binary.ped --map 188-plink-binary.map --recode vcf --allow-extra-chr -out 188-plink
+bgzip 188-plink.vcf 
+tabix 188-plink.vcf.gz
+
+plink --tped snps-188-51.tped  --tfam snps-188-51.tfam  --out 188-plink-binary-51 --recode --allow-extra-chr --noweb
+plink --ped 188-plink-binary-51.ped --map 188-plink-binary-51.map --recode vcf --allow-extra-chr -out 188-plink-51
+bgzip 188-plink-51.vcf 
+tabix 188-plink-51.vcf.gz
+```
+
+
+```{r}
+mydat <- import.snpR.data("outputs/209/188-plink.vcf.gz", sample.meta = m188 %>% select(Run,Pop,Lineage))
+mydat@sample.meta$Pop<-factor(mydat@sample.meta$Pop, levels=c("AUW","Northern Territory","AUE",
+                                                             "Queensland","PNG","Papua New Guinea",
+                                                             "INA","Indonesia","MAL","THA","Thailand","Cambodia",
+                                                               "Vietnam","Philippines","India Eastern Coast",
+                                                               "India Western Coast"))
+```
+
+
+```{r}
+plot_clusters(mydat, facets="Pop",
+              viridis.option = "H")
+```
+
+```{r}
+plot_structure(mydat, facet = "Pop", 
+               facet.order = c("AUW","Northern Territory","AUE","Queensland","PNG","Papua New Guinea",
+                               "INA","Indonesia","MAL","THA","Thailand","Cambodia",
+                               "Vietnam","Philippines","India Eastern Coast",
+               "India Western Coast"),
+               structure_path = "/Users/mac/bin/structure", k=2, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+```
+
+```{r}
+plot_structure(mydat, facet = "Pop", 
+               facet.order = c("AUW","Northern Territory","AUE","Queensland","PNG","Papua New Guinea",
+                               "INA","Indonesia","MAL","THA","Thailand","Cambodia",
+                               "Vietnam","Philippines","India Eastern Coast",
+               "India Western Coast"),
+               admixture_path  = "/Users/mac/github/dist/admixture_macosx-1.3.0/admixture", k=2, qsort=FALSE, reps = 1,
+               iterations=1000000, burnin=10000000)
+```
+
+```{r}
+plot_structure(mydat, facet = "Pop", 
+               facet.order = c("AUW","Northern Territory","AUE","Queensland","PNG","Papua New Guinea",
+                               "INA","Indonesia","MAL","THA","Thailand","Cambodia",
+                               "Vietnam","Philippines","India Eastern Coast",
+               "India Western Coast"),
+               structure_path = "/Users/mac/bin/structure", k=3, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+```
+
+```{r}
+plot_structure(mydat, facet = "Pop", 
+               facet.order = c("AUW","Northern Territory","AUE","Queensland","PNG","Papua New Guinea",
+                               "INA","Indonesia","MAL","THA","Thailand","Cambodia",
+                               "Vietnam","Philippines","India Eastern Coast",
+               "India Western Coast"),
+               structure_path = "/Users/mac/bin/structure", k=4, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
+```
+
+Stats
+
+```{r}
+
+x<-calc_pairwise_fst(mydat, "Pop")
+
+groupfst<-get.snpR.stats(x, "Pop", "fst")
+#this is weighted means   
+mg<-groupfst$fst.matrix$Pop
+
+as.tibble(mg,2)
+```
+
+
+## DAPC
+
+First, PCs
+
+```{r}
+vcf<-read.vcfR(file="outputs/209/188-plink.vcf.gz")
+genind<-vcfR2genind(vcf)
+genind@pop<-m188$Pop
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=6)
+plot(pca1$li)
+```
+
+
+```{r}
+pc<-pca1$l1 %>% as_tibble()
+pc<-pc %>% bind_cols(m188)
+
+var<-pca1$eig/(sum(pca1$eig)) *100
+pc
+```
+
+```{r}
+text<-pc %>% group_by(Pop) %>% summarize(PC1=mean(RS1), PC2=mean(RS2), PC3=mean(RS3), PC4=mean(RS4))
+pc12<-ggplot(pc) +
+  geom_point(aes(x=RS1, y=RS2, fill=Pop, shape=`Data Type`), alpha=0.8) +
+  geom_text_repel(data=text, aes(x=PC1, y=PC2, label=Pop), fontface="bold", max.overlaps = Inf, size=3) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  xlab(paste0("PC 1 ",round(var[1],2),"%")) +
+  ylab(paste0("PC 2 ",round(var[2],2),"%")) +
+  theme(legend.position = "none") +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,23))
+
+
+pc13<-ggplot(pc) +
+  geom_point(aes(x=RS1, y=RS3, fill=Pop, shape=`Data Type`), alpha=0.8) +
+  geom_text_repel(data=text, aes(x=PC1, y=PC3, label=Pop), fontface="bold", max.overlaps = Inf, size=3) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  xlab(paste0("PC 1 ",round(var[1],2),"%")) +
+  ylab(paste0("PC 3 ",round(var[3],2),"%")) +
+  theme(legend.position = "none") +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,23))
+
+ggarrange(pc12 + ggtitle("A") + theme(plot.title = element_text(size=14, face="bold")),
+          pc13 + ggtitle("B") + theme(plot.title = element_text(size=14, face="bold")), ncol=2)
+ggsave("outputs/209/pcs123.pdf", width=8, height=4)
+
+```
+
+Seems fine.  
+
+### Evidence for genetic structuring    
+```{r,eval=FALSE}
+kstat<-find.clusters(gen, n.pca=125) #.nclust=4
+save(kstat, file="outputs/209/kstat.rda")
+```
+
+
+```{r}
+load("outputs/209/kstat.rda")
+```
+
+
+```{r}
+bic<-kstat$Kstat %>% as_tibble() %>% rename(BIC=value) %>% mutate(K=1:n())
+ggplot(bic, aes(x=K, y=BIC)) +
+  geom_line() +
+  geom_point() +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  #ggtitle("BIC Scores from K Means Clustering of Diversity Loci") +
+  ylab("BIC\n") +
+  xlab("\nK") +
+ # theme(plot.title=element_text(hjust=0.5, size=14, face="bold")) +
+  theme(axis.title=element_text(size=12)) +
+  scale_x_continuous(breaks=seq(0:19), labels=seq(0:19)) +
+  theme(axis.title = element_text(size=12, face="bold")) +
+  theme(axis.text = element_text(size=10))
+  
+ggsave("outputs/209/kmeans.pdf")
+ggsave("outputs/209/kemans.jpeg")
+```
+
+Assign plot
+
+
+```{r}
+kstat<-find.clusters(gen, n.pca=125,n.clust=3)
+
+
+dft<-as.data.frame(table(pop(gen), kstat$grp)) %>% as_tibble() %>%
+  rename(Location=Var1, Assignment=Var2, Number=Freq)
+
+dft$Location<-factor(dft$Location, levels=c("AUW","Northern Territory","AUE",
+                                                             "Queensland","PNG","Papua New Guinea",
+                                                             "INA","Indonesia","MAL","THA","Thailand","Cambodia",
+                                                               "Vietnam","Philippines","India Eastern Coast",
+                                                               "India Western Coast"))
+assign<-ggplot(dft, aes(y=Location, x=Assignment)) +
+  theme(axis.title.y = element_text(size = rel(1))) +
+  theme(axis.title.x = element_text(size = rel(1))) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(x="\nInferred Group", y="Sampling Location\n") +
+  theme(text=element_text(family='Times')) +
+  theme(axis.text.x= element_text(face="bold", size=10, vjust = 0.5)) +
+  theme(axis.text.y= element_text(face="bold", size=10)) +
+  geom_point(aes(x=Assignment, y=Location, size=Number)) +
+ # geom_text(aes(x=Assignment, y=Location, label=Number), color="white", size=3) +
+  scale_size_area(limits=c(1,30), breaks=c(1,10,20,30)) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black")) 
+assign  
+
+ggsave("outputs/209/assignments.pdf", width=6, height=4)
+```
+
+```{r}
+dapc<-dapc(gen, kstat$grp, n.pca=125, n.da=5)
+```
+
+```{r}
+post<-dapc$posterior %>% as_tibble()
+post<- post %>% bind_cols(m188 %>% select(Run, Pop, Lineage)) %>% relocate(Run, Pop, Lineage)
+post2<-post %>% pivot_longer(4:6, names_to = c("Cluster"), values_to = "Posterior")
+```
+
+```{r}
+ggplot(post2) +
+  geom_col(aes(x=Run, y=Posterior, fill=Cluster))
+```
