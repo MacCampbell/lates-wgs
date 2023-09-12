@@ -350,6 +350,9 @@ plot_structure(mydata2, facet = "Region",
 ggsave("outputs/208/called-snps-k4.jpeg")
 ```
 
+## Checking relatedness
+
+ vcftools --vcf outputs/208/sea.vcf --relatedness2 --out outputs/208/sea-relate
 Expect F2s in Cambodia.
 ```{r}
 
