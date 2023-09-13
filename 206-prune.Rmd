@@ -96,7 +96,11 @@ need pandas, updating conda, installing pandas (conda install pandas) need graph
 
 100+ gb file, 
 
-srun -p high -t 72:00:00 --nodes=1 --mem=48G  ~/ngsLD/scripts/prune_ngsLD.py  --input outputs/206/58-gls-90.ld --field_dist 3 --field_weight 7 --max_dist 50000 --min_weight 0.3  --output outputs/206/unlinked.pos
+srun -p bigmemm -t 72:00:00 --nodes=1 --mem=256GB  ~/ngsLD/scripts/prune_ngsLD.py  --input outputs/206/58-gls-90.ld --field_dist 3 --field_weight 7 --max_dist 50000 --min_weight 0.3  --output outputs/206/unlinked.pos
 
 
-We now have 
+this python script is slow. Trying prune_graph program. Needs updated version of rust.
+
+conda install -c conda-forge rust
+
+srun -p bigmemh -t 24:00:00 --nodes=1 --mem=256GB ~/prune_graph/target/release/prune_graph --in outputs/206/58-gls-90.ld --weight-field column_7 --weight-filter "column_3 <= 50000 && column_7 >= 0.3" --out outputs/206/prune_graph-unlinked.pos

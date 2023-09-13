@@ -142,7 +142,8 @@ Adding in our reference seqs
  iqtree -s trim.phy -bb 10000 -m GTR+G --redo 
 
  iqtree -s new-coi-ref-seqs.afasta -bb 1000 -m HKY+G --redo 
- 
+iqtree -s new-coi.afasta -bb 10000 -m HKY+G --redo 
+
 refseq meta
 
 ```{r}
@@ -180,9 +181,9 @@ e <- e[e$label >= 75,]
 ```
 
 ```{r}
-t %<+% m58 + #bind_rows(m58, rm) +
-  geom_point(data=e,  fill="gray50", cex=2, alpha=1, pch=21) +
-  geom_point(data=d,  fill="black", cex=2, alpha=1, pch=21) +
+u<-t %<+% m58 + #bind_rows(m58, rm) +
+  geom_point(data=e,  fill="gray50", cex=3, alpha=1, pch=22) +
+  geom_point(data=d,  fill="black", cex=3, alpha=1, pch=22) +
   geom_tippoint(aes(x=x+0.002,fill=Region, shape=Lineage), cex=3) + 
   geom_tiplab(aes(label=Region, x=x+0.01), align = FALSE, size=3) +
   #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
@@ -193,15 +194,27 @@ t %<+% m58 + #bind_rows(m58, rm) +
   theme(legend.position = "none") +
   geom_treescale()
 
-ggsave("outputs/205/mtdna-phylo.pdf", width=8.5, height=11)
+u
+ggsave("outputs/205/mtdna-phylo.pdf", width=6.5, height=8)
 
 ```
 
 ```{r}
 t+geom_tiplab(size=2) +
+  geom_nodelab() +
   xlim(0,0.1) 
 
 ggsave("outputs/205/tiplabs-phylo.pdf", width=8.5, height=11)
 
 ```
 
+```{r}
+species<-read_csv("outputs/205/new-coi.afasta.Partition_1.csv", col_names=c("label","Candidate Species"))
+species
+```
+
+```{r}
+t %<+% species +
+  geom_tippoint(aes(fill=`Candidate Species`),shape=21)
+```
+  
