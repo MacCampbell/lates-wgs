@@ -296,7 +296,7 @@ srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -li
 srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/206/58-gls-90.beagle.gz -K 2 -o outputs/207/58-K2-gls &
 srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/206/58-gls-90.beagle.gz -K 3 -o outputs/207/58-K3-gls &
 srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/206/58-gls-90.beagle.gz -K 4 -o outputs/207/58-K4-gls &
-srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/206/58-gls-90.beagle.gz -K 4 -o outputs/207/58-K5-gls &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/206/58-gls-90.beagle.gz -K 5 -o outputs/207/58-K5-gls &
 
 ```
 
@@ -305,10 +305,16 @@ PlotAdmix("outputs/207/58-K2-gls.qopt", m58)
 ```
 
 ```{r}
-PlotAdmix("outputs/207/58-K3-gls.qopat", m58)
+PlotAdmix("outputs/207/58-K3-gls.qopt", m58)
+
 ```
 
 
 ```{r}
 PlotAdmix("outputs/207/58-K4-gls.qopt", m58)
+```
+
+
+```{r}
+PlotAdmix("outputs/207/58-K5-gls.qopt", m58)
 ```

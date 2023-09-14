@@ -1,0 +1,132 @@
+---
+title: "207.1-plot-admix"
+output: html_document
+date: "2023-09-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+## R Markdown
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+m<-read_csv("meta/58-Indo-split.csv")
+
+m$Region<-factor(m$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
+                                             "Indonesia-K", "Indonesia-SJ","Indonesia-SU","Philippines","Cambodia","Thailand", "Vietnam",
+                                              "India Eastern Coast","India Western Coast"))
+
+```
+
+```{r, echo=FALSE}
+PlotAdmix<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Last col empty
+q<-q[1:length(colnames(q))-1]
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  ylab("Q\n") +
+  theme(legend.position = "") +
+  theme(axis.text = element_text(size=10, face="bold")) +
+  theme(axis.title.y=element_text(size=14, face="bold")) +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  scale_fill_viridis_d(option="viridis")
+
+}
+```
+
+```{r}
+PlotAdmix("outputs/207/58-K3-gls.qopt", m)
+
+ggsave("outputs/207/k3.jpeg")
+```
+
+```{r}
+PlotAdmix("outputs/207/16-K3-gls.qopt", m16)
+ggsave("outputs/207/subset-k3.jpeg")
+
+```
+
+```{r}
+AdmixDF <- function(file, meta) {
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Last col empty
+q<-q[1:length(colnames(q))-1]
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+return(rdf)
+}
+```
+
+```{r}
+rdf<-AdmixDF("outputs/207/58-K3-gls.qopt", m)
+```
+
+```{r}
+rdf %>% filter(Region %in% c("Indonesia-K","Indonesia-SU")) %>% filter(Ancestry=="Q3") %>% summarize(MeanQ=mean(Q))
+```
+
+```{r}
+rdf %>% filter(Region %in% c("Cambodia"))
+```
+
+
+```{r}
+r16<-AdmixDF("outputs/207/16-K2-gls.qopt", m16)
+```
+
+```{r}
+r16
+```
