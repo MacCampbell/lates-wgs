@@ -267,7 +267,7 @@ t8<-ggtree(m8) %<+% m58 +
   theme(legend.position = "none") +
   scale_shape_manual(values=c(21,23,24)) 
 
-t9<-ggtree(m9) %>% ggtree::rotate(66)
+t9<-ggtree(m9) %>% ggtree::rotate(68)
 
 d8 <- t8$data
 d9 <- t9$data
@@ -328,7 +328,8 @@ srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -li
 srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/210/38-gls-90.beagle.gz -K 4 -o outputs/210/38-K4-gls &
 srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/210/38-gls-90.beagle.gz -K 5 -o outputs/210/38-K5-gls &
 ```
-```
+
+
 
 
 ```{sh, eval=FALSE}
