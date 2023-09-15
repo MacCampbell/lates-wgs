@@ -12,6 +12,8 @@ Phylogenetic network
 
 
 ```{r}
+library(phytools)
+
 library(tidyverse)
 library(ggtree)
 library(tanggle)
@@ -87,8 +89,13 @@ m2<-bind_cols(m2, bamlist)
 ```{r}
 dat<-read.dna(file="outputs/210/pruned.min4.phy")
 write.nexus.data(dat, file="outputs/210/pruned.nex")
+
 ```
 
+```{sh, eval=FALSE}
+iqtree -s pruned.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
+iqtree -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m GTR+ASC -bb 1000 --redo
+```
 
 ```{r}
 net<-read.nexus.networx("outputs/210/pruned-network.nex")
@@ -108,12 +115,122 @@ ggsave("outputs/210/wgs-network.jpeg")
 
 ```
 
-Examining Philippines, Indonesia-K
+Cophylogram with mtDNA tree?
+```{r}
+tree<-read.tree("data/mtdna/new-coi.afasta.contree")
+#tree<-read.tree("data/coi/trim.phy.contree")
+#tree<-read.tree("data/coi/new-coi-ref-seqs.afasta.contree")
+t2<-midpoint.root(tree)
+t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 75)
+
+t<-t3
+
+t<-ggtree(t)
+
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[e$label < 90,]
+e <- e[e$label >= 75,]
+```
+
+```{r}
+u<-t %<+% m58 + #bind_rows(m58, rm) +
+  geom_point(data=e,  fill="gray50", cex=3, alpha=1, pch=22) +
+  geom_point(data=d,  fill="black", cex=3, alpha=1, pch=22) +
+  geom_tippoint(aes(x=x+0.002,fill=Region, shape=Lineage), cex=3) + 
+  geom_tiplab(aes(label=Region, x=x+0.01), align = FALSE, size=3) +
+  #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(0,.1) +
+  scale_fill_viridis_d(option="H") +
+  theme(legend.position = "none") +
+  geom_treescale()
+
+u
+```
+```{r}
+ind<-m58 %>% filter(Lineage=="IND")
+tree<-read.tree("outputs/210/pruned.min4.phy.varsites.phy.contree")
+t2<-root.phylo(tree,outgroup = ind$Run)
+t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 75)
+
+t<-t3
+
+t<-ggtree(t)
+
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[e$label < 90,]
+e <- e[e$label >= 75,]
+```
+
+```{r}
+u<-t %<+% m58 + #bind_rows(m58, rm) +
+  geom_point(data=e,  fill="gray50", cex=3, alpha=1, pch=22) +
+  geom_point(data=d,  fill="black", cex=3, alpha=1, pch=22) +
+  geom_tippoint(aes(x=x+0.002,fill=Region, shape=Lineage), cex=3) + 
+  geom_tiplab(aes(label=Region, x=x+0.01), align = FALSE, size=3) +
+  #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(0,.5) +
+  scale_fill_viridis_d(option="H") +
+  theme(legend.position = "none") +
+  geom_treescale()
+
+u
+```
+```{r}
+t8<-tree<-read.tree("data/mtdna/new-coi.afasta.contree")
+
+t9<-read.tree("outputs/210/pruned.min4.phy.varsites.phy.contree")
+
+t8<-ggtree(m8)
+t9<-ggtree(m9)
+
+d8 <- t8$data
+d9 <- t9$data
+
+d8$tree <-'t8'
+d9$tree <-'t9'
+
+d9$x <- max(d9$x) - d9$x + max(d8$x) +  max(d8$x)*0.3
+pp <- t8 + geom_tree(data=d9)
+
+#set up df for lines
+dd <- bind_rows(d8, d9) %>% 
+  filter(isTip == TRUE)
+dd1 <- as_tibble(dd)
+
+pp + geom_line(data=dd1, aes(x=x, y=y, group=label), color="grey50") +
+  ggtitle("mtdna to snps comparison") +
+  geom_treescale()
+
+```
+
+## Examining Philippines, Indonesia-K
 ```{r}
 m38<-m2 %>% filter(!Region %in% c("Vietnam","Cambodia","Indonesia-SJ","Indonesia-SU","Thailand") )
 write_csv(m38, file="meta/38.csv")
 write_tsv(m38 %>% select(Downsample), file="bamlists/38-downsample.bamlst", col_names = FALSE)
-write_tsv(m38 %>% select(Path), file="bamlists/38.bamlst", col_names = FALSE)
+write_tsv(m38 %>% select(Path), file="bamlists/38.bamlist", col_names = FALSE)
 write_tsv(m38 %>% select(Run), file="bamlists/38.names", col_names = FALSE)
 
 ```
