@@ -215,8 +215,8 @@ bcftools view plink-51.vcf.gz -i 'MAF>0.10' | bcftools view -i 'MAF < 0.40' | bc
 37525 unlinked variants in plink-51.vcf
 
 ```{r}
-mydat <- import.snpR.data("outputs/209/plink-33-pruned.vcf", sample.meta = m33 %>% select(Run,Pop,Lineage))
-#mydat <- import.snpR.data("outputs/209/plink-51-pruned.vcf", sample.meta = m51 %>% select(Run,Pop,Lineage))
+#mydat <- import.snpR.data("outputs/209/plink-33-pruned.vcf", sample.meta = m33 %>% select(Run,Pop,Lineage))
+mydat <- import.snpR.data("outputs/209/plink-51-pruned.vcf", sample.meta = m51 %>% select(Run,Pop,Lineage))
 ```
 
 1163 variants in plink-33

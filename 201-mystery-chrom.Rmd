@@ -14,6 +14,7 @@ library(ggpubr)
 library(vcfR)
 library(adegenet)
 library(snpR)
+library(RColorBrewer)
 ```
 
 NC_066849.1 has many diagnostic SNPs to separate IND from other pops. What is going on? Structural variant, dups?   
@@ -88,19 +89,22 @@ p<-plot_clusters(my.dat, facets = "Region", viridis.option = "H" )
 ```{r}
 p
 ```
-
-
 ```{r}
-ggplot(merge %>% filter(Chromosome=="NC_066849.1")) +
-  geom_density2d_filled(aes(x=Position, y=AbsoluteDifference), alpha=0.75)
+plot_structure(my.dat, facet = "Region",
+               structure_path = "/Users/mac/bin/structure", k=3, qsort=FALSE, reps = 1,
+               clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
+               iterations=1000000, burnin=10000000)
 ```
 
 ## Local PCA, NGS Paralogs, or coverage??
 
-Trying local pca of  plink-33.vcf in 209
+Trying local pca of  plink-33.vcf from 209 and plink-51
 
 ```{sh, eval=FALSE}
 cat lates-lgs.txt  | while read line; do bcftools view -Ob -r $line plink-33.vcf.gz > $line.bcf; done;
+for f in *.bcf; do bcftools index $f; done;
+
+cat lates-lgs.txt  | while read line; do bcftools view -Ob -r $line plink-51.vcf.gz > $line.bcf; done;
 for f in *.bcf; do bcftools index $f; done;
 
 ```
@@ -115,18 +119,39 @@ population<-m33 %>% select(Pop) %>% rename(population=Pop)
 
 table<-cbind(samples, population)
 write.table(table, "outputs/201/plink-33/sample_info.tsv", quote = TRUE, row.names = FALSE, sep="\t")
+
+m51<-read_csv("meta/m51.csv")
+
+samples<-m51 %>% select(Run) %>% rename(ID=Run)
+
+population<-m51 %>% select(Pop) %>% rename(population=Pop)
+
+
+table<-cbind(samples, population)
+write.table(table, "outputs/201/plink-51/sample_info.tsv", quote = TRUE, row.names = FALSE, sep="\t")
+
 ```
 
-This is ~73,315 snps, so pretty dense, ~3000 snps/chrom
-
+This is ~73,315 snps with plink33, so pretty dense, ~3000 snps/chrom
+There are 37525 snps with plink 51
 
 ./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/201/plink-33 -t snp -s 20 -m 4 -I /Users/mac/github/lates-wgs/outputs/201/plink-33/sample_info.tsv -j l201
 
 ./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/201/plink-33 -t snp -s 30 -m 4 -I /Users/mac/github/lates-wgs/outputs/201/plink-33/sample_info.tsv -j l202
 
+./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/201/plink-33 -t snp -s 50 -m 4 -I /Users/mac/github/lates-wgs/outputs/201/plink-33/sample_info.tsv -j l203
+
+./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/201/plink-33 -t snp -s 100 -m 4 -I /Users/mac/github/lates-wgs/outputs/201/plink-33/sample_info.tsv -j l204
+
+./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/201/plink-51 -t snp -s 50 -m 4 -I /Users/mac/github/lates-wgs/outputs/201/plink-51/sample_info.tsv -j l205
+
+./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/201/plink-51 -t snp -s 75 -m 4 -I /Users/mac/github/lates-wgs/outputs/201/plink-51/sample_info.tsv -j l206
+
+./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/201/plink-51 -t snp -s 10 -m 4 -I /Users/mac/github/lates-wgs/outputs/201/plink-51/sample_info.tsv -j l207
+
 Using the smaller (snp20 windows first)
 ```{r}
-mds<-read_csv("outputs/201/plink-33/mds_coords.csv")
+mds<-read_csv("~/github/local_pca/templated/lostruct_results/type_snp_size_10_weights_none_jobid_l207/mds_coords.csv")
 #make tidy
 tidymds<-mds %>% gather(MDS, Value, 3:6)
 MDS1<-filter(tidymds, MDS=="MDS1") %>% rename(MDS1=MDS) %>% rename(Value1=Value)
@@ -152,6 +177,7 @@ p1<-MDS1 %>% mutate(Index=1:n())
 out <- boxplot.stats(p1$Value1)$out
 out_ind <- which(p1$Value1 %in% c(out))
 outliers<-p1[out_ind,]
+outliers
 ```
 
 ```{r}
@@ -204,4 +230,103 @@ ggplot(p2) +
   scale_color_manual(values=mycolors) +
   ylab("MDS2") +
   xlab("Chromosome")
+```
+
+```{r}
+p3<-MDS3 %>% mutate(Index=1:n())
+
+out3 <- boxplot.stats(p3$Value3)$out
+out_ind3 <- which(p3$Value3 %in% c(out3))
+outliers3<-p3[out_ind3,]
+
+chroms<-p3 %>% group_by(chrom) %>% mutate(Start=min(Index), Stop=max(Index)) %>% select(chrom,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2))
+
+#Make enough colors
+nb.cols <- nrow(chroms)
+mycolors <- colorRampPalette(brewer.pal(8, "Set1"))(nb.cols)
+
+
+ggplot(p3) +
+  geom_rect(data=chroms, aes(xmin=Start, xmax=Stop, ymin=min(p3$Value3), ymax=max(p3$Value3)), fill=mycolors, alpha=0.25) +
+  geom_point(data=p3, aes(x=Index, y=Value3, color=chrom), alpha=0.75, cex=0.5) +
+  geom_point(data=outliers3, aes(x=Index, y=Value3), color="black", cex=0.5) +
+  theme_bw() +
+  scale_x_continuous(breaks=chroms$Position, labels=chroms$chrom) +
+  theme(axis.text.x = element_text(angle=45, hjust = 1, face="bold", size=6)) +
+  theme(legend.title = element_blank()) +
+  theme(panel.grid = element_blank()) +
+  theme(legend.position = "none") +
+  scale_color_manual(values=mycolors) +
+  ylab("MDS3") +
+  xlab("Chromosome")
+```
+
+## Calculate coverage of this region
+
+```{r}
+mwgs<-read_csv("meta/58.csv") %>% filter(Run %in% c("SRR3165620","SRR3165595","SRR3183260",
+                                         "SRR3165615","SRR3165609","SRR3183265"))
+mwgs <- mwgs %>% mutate(Command = paste0("samtools depth -a -r NC_066849.1 ", Path, " > ", "outputs/201/",Run,".cov"))
+write_tsv(mwgs %>% select(Command), file="201.1-depth.sh", col_names = FALSE)
+```
+
+srun -p high -t 4:00:00 --nodes=1 --mem=48GB parallel < 201.1-depth.sh  -j 6
+
+(base) maccamp@farm:~/lates-wgs/outputs/201$ for f in *.cov; do cat $f | awk '{sum+=$3} END {print sum/NR}' > $f.avg; done; 
+
+```{r}
+mwgs %>% arrange(Run)
+```
+
+Coverage of mystery chrom is about the same!   
+
+7.42471
+7.8729
+5.94196
+5.24127
+10.9725
+22.7872
+
+Local PCA choked with the WGS data set previously.   
+
+
+# Diagnostic Snps
+
+Control for missing data at phylogroup level.    
+```{r}
+load("outputs/208/merge.rda")
+```
+
+```{r}
+merge2<-merge %>% filter(NAUS > (0.9*2*17)) %>% filter(NSEA > (0.9*2*30)) %>% filter(NIND > (0.9*2*11))
+```
+
+
+1,470,647 variants
+```{r}
+diffs1<-merge2 %>% filter(AbsoluteDifferenceAUSIND>0.90, AbsoluteDifferenceSEAIND>0.90)
+```
+
+1285 here
+
+```{r}
+ggplot(diffs1) +
+  geom_histogram(aes(x=Chromosome), stat="count") +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1, hjust=1)) +
+  ylab("Count\n") +
+  xlab("\nChromosome") +
+  theme(axis.title=element_text(size=14, face="bold")) +
+  theme(axis.text.y=element_text(size=12)) +
+  theme(plot.title=element_text(size=20, face="bold"))
+```
+
+
+
+```{r}
+ggplot(diffs1) + #%>% filter(Chromosome %in% c("NC_066849.1","NC_066850.1"))) +
+  geom_point(aes(x=Position, y=AbsoluteDifferenceAUSIND)) +
+  facet_wrap(.~Chromosome)
 ```

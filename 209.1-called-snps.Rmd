@@ -27,14 +27,31 @@ srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/209/snps-188.out 2> outputs/209/snps-188.err &
 
 srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 170 -rf genome/lates-lgs.txt -sites outputs/209/plink-33-pruned-site-list.txt \
+-bam bamlists/188.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+ -out outputs/209/snps-188-90  -doGlf 2 \
+ -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/209/snps-188-90.out 2> outputs/209/snps-188-90.err &
+
+
+srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
 -minInd 178 -rf genome/lates-lgs.txt -sites outputs/209/plink-51-pruned-site-list.txt \
 -bam bamlists/188.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
  -out outputs/209/snps-188-51  -doGlf 2 \
  -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/209/snps-188-51.out 2> outputs/209/snps-188-51.err &
 
+
+srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 170 -rf genome/lates-lgs.txt -sites outputs/209/plink-51-pruned-site-list.txt \
+-bam bamlists/188.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+ -out outputs/209/snps-188-51-90  -doGlf 2 \
+ -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/209/snps-188-51-90.out 2> outputs/209/snps-188-51-90.err &
+
 ```
 
+Making a set of 0.95% and 90% missing data.
 
 ```{r}
 m188<-read_csv("meta/rad+wgs.csv")
@@ -60,11 +77,22 @@ plink --tped snps-188-51.tped  --tfam snps-188-51.tfam  --out 188-plink-binary-5
 plink --ped 188-plink-binary-51.ped --map 188-plink-binary-51.map --recode vcf --allow-extra-chr -out 188-plink-51
 bgzip 188-plink-51.vcf 
 tabix 188-plink-51.vcf.gz
+
+
+plink --tped snps-188-90.tped  --tfam snps-188-90.tfam  --out 188-90-plink-binary --recode --allow-extra-chr --noweb
+plink --ped 188-90-plink-binary.ped --map 188-90-plink-binary.map --recode vcf --allow-extra-chr -out 188-90-plink
+bgzip 188-90-plink.vcf 
+tabix 188-90-plink.vcf.gz
+
+plink --tped snps-188-51-90.tped  --tfam snps-188-51-90.tfam  --out 188-plink-binary-51-90 --recode --allow-extra-chr --noweb
+plink --ped 188-plink-binary-51-90.ped --map 188-plink-binary-51=90.map --recode vcf --allow-extra-chr -out 188-plink-51-90
+bgzip 188-plink-51-90.vcf 
+tabix 188-plink-51-90.vcf.gz
 ```
 
 
 ```{r}
-mydat <- import.snpR.data("outputs/209/188-plink.vcf.gz", sample.meta = m188 %>% select(Run,Pop,Lineage))
+mydat <- import.snpR.data("outputs/209/188-plink-51.vcf.gz", sample.meta = m188 %>% select(Run,Pop,Lineage))
 mydat@sample.meta$Pop<-factor(mydat@sample.meta$Pop, levels=c("AUW","Northern Territory","AUE",
                                                              "Queensland","PNG","Papua New Guinea",
                                                              "INA","Indonesia","MAL","THA","Thailand","Cambodia",
@@ -109,6 +137,7 @@ plot_structure(mydat, facet = "Pop",
                clumpp_path = "/Users/mac/github/CLUMPP_MacOSX.1.1.2/CLUMPP", 
                iterations=1000000, burnin=10000000)
 ```
+
 
 ```{r}
 plot_structure(mydat, facet = "Pop", 

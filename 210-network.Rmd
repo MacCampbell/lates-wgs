@@ -1,0 +1,142 @@
+---
+title: "210-network"
+output: html_document
+date: "2023-09-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+Phylogenetic network 
+
+
+```{r}
+library(tidyverse)
+library(ggtree)
+library(tanggle)
+library(phangorn)
+library(viridis)
+library(ggpubr)
+library(ape)
+```
+
+Need an alignment. 
+
+```{r}
+m188<-read_csv("meta/rad+wgs.csv")
+m188$Pop<-factor(m188$Pop, levels=c("AUW","Northern Territory","AUE",
+                                                             "Queensland","PNG","Papua New Guinea",
+                                                             "INA","Indonesia","MAL","THA","Thailand","Cambodia",
+                                                               "Vietnam","Philippines","India Eastern Coast",
+                                                               "India Western Coast"))
+m188<-m188 %>% mutate(`Data Type` = ifelse(Pop %in% c("AUW","AUE","PNG","INA","MAL","THA"),"RADseq","WGS"))
+write_tsv(m188 %>% select(Run), file="meta/rad+wgs.names", col_names = FALSE)
+```
+
+In 209 I have some called SNPS
+
+
+```{sh, eval=FALSE}
+bcftools reheader -s meta/rad+wgs.names outputs/209/188-plink.vcf.gz | bcftools view -Ov > outputs/210/188-plink-renamed.vcf
+ ~/github/mccloud-rrt/vcf2phylip.py -i 188-plink-renamed.vcf 
+```
+
+```{r}
+dat<-read.dna(file="outputs/210/188-plink-renamed.min4.phy")
+write.nexus.data(dat, file="outputs/210/188-plink.nex")
+```
+
+
+```{r}
+net1<-read.nexus.networx("outputs/210/188-plink-network.nex")
+```
+
+```{r}
+gb<-ggsplitnet(net1)  
+gb$data<-left_join(gb$data, m188, by=c("label"="Run")) 
+
+gb + 
+  geom_tippoint(aes(shape=Lineage, fill=Pop), cex=4) +
+  scale_shape_manual(values = c(21,23,24)) +
+  scale_fill_viridis_d(option="viridis") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+
+```
+
+Let's do this with just the WGS data
+
+```{r}
+m2<-read_csv("meta/58-Indo-split.csv")
+m2$Region<-factor(m2$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
+                                              "Indonesia-K","Indonesia-SJ","Indonesia-SU",
+                                      "Philippines","Vietnam","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
+m2 <-m2 %>% mutate(Lineage=ifelse(Region %in% c("Northern Territory","Queensland","Papua New Guinea"),"AUS+NG",
+                                                ifelse(Region %in% c("India Eastern Coast","India Western Coast"), "IND",
+                                                       "SEA")))
+bamlist<-read_csv("bamlists/downsample-58.bamlist", col_names = "Downsample")
+
+m2<-bind_cols(m2, bamlist)
+```
+
+```{sh, eval=FALSE}
+ ~/github/mccloud-rrt/vcf2phylip.py -i pruned.vcf 
+```
+
+```{r}
+dat<-read.dna(file="outputs/210/pruned.min4.phy")
+write.nexus.data(dat, file="outputs/210/pruned.nex")
+```
+
+
+```{r}
+net<-read.nexus.networx("outputs/210/pruned-network.nex")
+```
+
+```{r}
+g<-ggsplitnet(net)  
+g$data<-left_join(g$data, m2, by=c("label"="Run")) 
+
+g + 
+  geom_tippoint(aes(shape=Lineage, fill=Region), cex=4, alpha=1.00) +
+  scale_shape_manual(values = c(21,23,24)) +
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+
+ggsave("outputs/210/wgs-network.jpeg")
+
+```
+
+Examining Philippines, Indonesia-K
+```{r}
+m38<-m2 %>% filter(!Region %in% c("Vietnam","Cambodia","Indonesia-SJ","Indonesia-SU","Thailand") )
+write_csv(m38, file="meta/38.csv")
+write_tsv(m38 %>% select(Downsample), file="bamlists/38-downsample.bamlst", col_names = FALSE)
+write_tsv(m38 %>% select(Path), file="bamlists/38.bamlst", col_names = FALSE)
+write_tsv(m38 %>% select(Run), file="bamlists/38.names", col_names = FALSE)
+
+```
+
+
+```{sh, eval=FALSE}
+srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 35 -bam bamlists/38.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf genome/lates-lgs.txt -out outputs/210/snps-wgs  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/210/snps-wgs.out 2> outputs/210/snps-wgs.err &
+```
+
+
+```{sh, eval=FALSE}
+plink --tped snps-wgs.tped --tfam snps-wgs.tfam  --out plink-binary --recode --allow-extra-chr --noweb
+plink --ped plink-binary.ped --map plink-binary.map --recode vcf --allow-extra-chr -out plink
+bgzip plink.vcf 
+tabix plink.vcf.gz
+
+#renaming vcf
+bcftools reheader --samples bamlists/38.names -o outputs/210/renamed.vcf.gz outputs/210/plink.vcf.gz
+
+bcftools +prune -l 0.20 -w 10000 outputs/210/renamed.vcf.gz > outputs/210/38-pruned.vcf
+
+```
