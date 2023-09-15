@@ -42,6 +42,10 @@ In 209 I have some called SNPS
 ```{sh, eval=FALSE}
 bcftools reheader -s meta/rad+wgs.names outputs/209/188-plink.vcf.gz | bcftools view -Ov > outputs/210/188-plink-renamed.vcf
  ~/github/mccloud-rrt/vcf2phylip.py -i 188-plink-renamed.vcf 
+ 
+ iqtree -s 188-plink-renamed.min4.phy -T AUTO -st DNA -m GTR+ASC -bb 1000 --redo
+ iqtree -s 188-plink-renamed.min4.phy.varsites.phy -T AUTO -st DNA -m GTR+ASC -bb 1000 --redo
+
 ```
 
 ```{r}
@@ -66,6 +70,50 @@ gb +
 
 ```
 
+```{r}
+ind<-m188 %>% filter(Lineage=="IND")
+tree<-read.tree("outputs/210/188-plink-renamed.min4.phy.varsites.phy.contree")
+t2<-root.phylo(tree,outgroup = ind$Run)
+t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 75)
+
+t<-t3
+
+t<-ggtree(t)
+
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[e$label < 90,]
+e <- e[e$label >= 75,]
+```
+
+```{r}
+u<-t %<+% m188 + #bind_rows(m58, rm) +
+  geom_point(data=e,  fill="gray50", cex=3, alpha=1, pch=22) +
+  geom_point(data=d,  fill="black", cex=3, alpha=1, pch=22) +
+  geom_tippoint(aes(x=x+0.002,fill=Region, shape=Lineage), cex=3) + 
+  geom_tiplab(aes(label=Region, x=x+0.01), align = FALSE, size=3) +
+  #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(0,.5) +
+  scale_fill_viridis_d(option="H") +
+  theme(legend.position = "none") +
+  geom_treescale(x = 0)
+
+u
+
+ggsave("outputs/210/m188-concatenated-tree.pdf", width=6, height=9)
+```
+
+
 Let's do this with just the WGS data
 
 ```{r}
@@ -80,6 +128,7 @@ m2 <-m2 %>% mutate(Lineage=ifelse(Region %in% c("Northern Territory","Queensland
 bamlist<-read_csv("bamlists/downsample-58.bamlist", col_names = "Downsample")
 
 m2<-bind_cols(m2, bamlist)
+m58<-m2
 ```
 
 ```{sh, eval=FALSE}
@@ -94,7 +143,7 @@ write.nexus.data(dat, file="outputs/210/pruned.nex")
 
 ```{sh, eval=FALSE}
 iqtree -s pruned.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
-iqtree -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m GTR+ASC -bb 1000 --redo
+iqtree -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo
 ```
 
 ```{r}
@@ -193,17 +242,32 @@ u<-t %<+% m58 + #bind_rows(m58, rm) +
   xlim(0,.5) +
   scale_fill_viridis_d(option="H") +
   theme(legend.position = "none") +
-  geom_treescale()
+  geom_treescale(x = 0)
 
 u
+
+ggsave("outputs/210/concatenated-tree.pdf", width=6, height=9)
 ```
+Now, we can draw up cophylogeny plots. Here is a way with ggtree https://arftrhmn.net/how-to-make-cophylogeny/
+
 ```{r}
-t8<-tree<-read.tree("data/mtdna/new-coi.afasta.contree")
+m8<-tree<-read.tree("data/mtdna/new-coi.afasta.contree")
+m8<-midpoint.root(m8)
+m8<-as.polytomy(m8, feature='node.label', fun=function(x) as.numeric(x) < 75)
 
-t9<-read.tree("outputs/210/pruned.min4.phy.varsites.phy.contree")
+m9<-read.tree("outputs/210/pruned.min4.phy.varsites.phy.contree")
+m9<-root.phylo(m9,outgroup = ind$Run)
+m9<-as.polytomy(m9, feature='node.label', fun=function(x) as.numeric(x) < 75)
 
-t8<-ggtree(m8)
-t9<-ggtree(m9)
+ggtree(m9) + geom_nodelab(aes(label=node))
+
+t8<-ggtree(m8) %<+% m58 +
+  geom_tippoint(aes(fill=Region, shape=Lineage)) + 
+  scale_fill_viridis_d(option="H") +
+  theme(legend.position = "none") +
+  scale_shape_manual(values=c(21,23,24)) 
+
+t9<-ggtree(m9) %>% ggtree::rotate(66)
 
 d8 <- t8$data
 d9 <- t9$data
@@ -211,7 +275,9 @@ d9 <- t9$data
 d8$tree <-'t8'
 d9$tree <-'t9'
 
-d9$x <- max(d9$x) - d9$x + max(d8$x) +  max(d8$x)*0.3
+d9$x <- max(d9$x) - d9$x + max(d8$x) +  max(d8$x)*5
+d10<-d9 %>% left_join(m58, by=c("label"="Run")) %>% filter(isTip==TRUE)
+
 pp <- t8 + geom_tree(data=d9)
 
 #set up df for lines
@@ -220,8 +286,14 @@ dd <- bind_rows(d8, d9) %>%
 dd1 <- as_tibble(dd)
 
 pp + geom_line(data=dd1, aes(x=x, y=y, group=label), color="grey50") +
-  ggtitle("mtdna to snps comparison") +
-  geom_treescale()
+  geom_point(data=d10,
+             aes(x=x, y=y, fill=Region, shape=Lineage))+
+    scale_fill_viridis_d(option="H") +
+  theme(legend.position = "none") +
+  scale_shape_manual(values=c(21,23,24))+
+  ggtitle("mtDNA to SNPs comparison")
+
+#  geom_treescale()
 
 ```
 
@@ -229,7 +301,7 @@ pp + geom_line(data=dd1, aes(x=x, y=y, group=label), color="grey50") +
 ```{r}
 m38<-m2 %>% filter(!Region %in% c("Vietnam","Cambodia","Indonesia-SJ","Indonesia-SU","Thailand") )
 write_csv(m38, file="meta/38.csv")
-write_tsv(m38 %>% select(Downsample), file="bamlists/38-downsample.bamlst", col_names = FALSE)
+write_tsv(m38 %>% select(Downsample), file="bamlists/38-downsample.bamlist", col_names = FALSE)
 write_tsv(m38 %>% select(Path), file="bamlists/38.bamlist", col_names = FALSE)
 write_tsv(m38 %>% select(Run), file="bamlists/38.names", col_names = FALSE)
 
@@ -242,6 +314,20 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -rf genome/lates-lgs.txt -out outputs/210/snps-wgs  \
 -minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/210/snps-wgs.out 2> outputs/210/snps-wgs.err &
+
+srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/38-downsample.bamlist -rf genome/lates-lgs.txt \
+-anc  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 34 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 \
+-doMajorMinor 1 -doPost 1 -doMaf 1 -SNP_pval 1e-6 \
+-minMaf 0.05 \
+-out outputs/210/38-gls-90 > outputs/210/38-gls-90.out 2> outputs/210/38-gls-90.err &
+
+srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/210/38-gls-90.beagle.gz -K 2 -o outputs/210/38-K2-gls &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/210/38-gls-90.beagle.gz -K 3 -o outputs/210/38-K3-gls &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/210/38-gls-90.beagle.gz -K 4 -o outputs/210/38-K4-gls &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/210/38-gls-90.beagle.gz -K 5 -o outputs/210/38-K5-gls &
+```
 ```
 
 
