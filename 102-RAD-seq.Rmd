@@ -326,6 +326,9 @@ sub<-oz %>% filter(Isolate %in% samples$Isolate)
 write_tsv(oz %>% select(Run), col_names = FALSE, file="bamlists/oz-sample-names.txt")
 write_tsv(sub%>% filter(Pop %in% c("AUE","AUW")) %>% select(Run), file="outputs/102/oz.txt", col_names = FALSE)
 write_tsv(sub %>% filter(Pop %in% c("PNG")) %>% select(Run), file="outputs/102/png.txt", col_names = FALSE)
+write_tsv(sub%>% filter(Pop %in% c("AUW")) %>% select(Run), file="outputs/102/auw.txt", col_names = FALSE)
+write_tsv(sub %>% filter(Pop %in% c("AUE","PNG")) %>% select(Run), file="outputs/102/aue+png.txt", col_names = FALSE)
+write_tsv(sub %>% filter(Pop %in% c("AUE")) %>% select(Run), file="outputs/102/aue.txt", col_names = FALSE)
 
 ```
 

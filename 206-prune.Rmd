@@ -19,6 +19,14 @@ srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 -minMaf 0.05 \
 -out outputs/206/58-gls-90 > outputs/206/58-gls-90.out 2> outputs/206/58-gls-90.err &
 
+srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/downsample-58.bamlist -rf genome/lates-lgs.txt \
+-anc  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 58 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 \
+-doMajorMinor 1 -doPost 1 -doMaf 1 -SNP_pval 1e-6 \
+-minMaf 0.05 \
+-out outputs/206/58-gls-100 > outputs/206/58-gls-100.out 2> outputs/206/58-gls-100.err &
+
 # get single chrom
 (base) maccamp@farm:~/lates-wgs/outputs/206$ gunzip -c 58-gls-90.beagle.gz |head -n 1 > header.txt
 (base) maccamp@farm:~/lates-wgs/outputs/206$ gunzip -c 58-gls-90.beagle.gz | grep "NC_066834.1" > NC_066834.1.beagle

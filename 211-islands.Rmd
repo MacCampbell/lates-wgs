@@ -1,0 +1,106 @@
+---
+title: "211-islands"
+output: html_document
+date: "2023-09-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+We can test what the Fst outliers are between pops.
+
+RADseq or WGS? 
+
+WGS is tempting. Running SFS pooling AUS+NG, SEA, IND individuals    
+
+
+Can get locus specific FST with plink or VCFtools e.g. 
+
+```{r}
+m2<-read_csv("meta/58-Indo-split.csv")
+m2$Region<-factor(m2$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
+                                              "Indonesia-K","Indonesia-SJ","Indonesia-SU",
+                                      "Philippines","Vietnam","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
+m2 <-m2 %>% mutate(Lineage=ifelse(Region %in% c("Northern Territory","Queensland","Papua New Guinea"),"AUS+NG",
+                                                ifelse(Region %in% c("India Eastern Coast","India Western Coast"), "IND",
+                                                       "SEA")))
+bamlist<-read_csv("bamlists/downsample-58.bamlist", col_names = "Downsample")
+
+m2<-bind_cols(m2, bamlist)
+m58<-m2
+```
+
+
+There are individuals here outputs/208/aus.txt and genotype file here  outputs/108/renamed.vcf.gz
+```{sh, eval=FALSE}
+vcftools --gzvcf outputs/108/renamed.vcf.gz --weir-fst-pop outputs/208/aus.txt --weir-fst-pop outputs/208/sea.txt --out outputs/211/aus-sea-fst.txt
+
+vcftools --vcf outputs/102/oz.renamed.vcf --weir-fst-pop outputs/102/auw.txt  --weir-fst-pop outputs/102/aue+png.txt --out outputs/211/auw-aue+png-fst.txt
+
+vcftools --vcf outputs/102/oz.renamed.vcf --weir-fst-pop outputs/102/aue.txt  --weir-fst-pop outputs/102/png.txt --out outputs/211/aue-png-fst.txt
+```
+
+For RADseq
+Weir and Cockerham mean Fst estimate: 0.065285
+Weir and Cockerham weighted Fst estimate: 0.08942
+
+With aue-png
+Weir and Cockerham mean Fst estimate: 0.02059
+Weir and Cockerham weighted Fst estimate: 0.032831
+
+
+```{r}
+fst<-read_tsv("outputs/211/auw-aue+png-fst.txt.weir.fst") 
+fst<-fst %>% filter(WEIR_AND_COCKERHAM_FST != "NaN")
+tops<-fst %>% filter(WEIR_AND_COCKERHAM_FST > 0.4) %>% group_by(CHROM) %>% summarize(Count=n()) %>% top_n(8, Count)
+tops
+```
+
+Find outliers, outlier windows, sliding windows.  
+```{r}
+fst %>% top_frac(.001,WEIR_AND_COCKERHAM_FST)
+```
+
+```{r}
+out <- boxplot.stats(fst$WEIR_AND_COCKERHAM_FST)$out
+out_ind <- which(fst$WEIR_AND_COCKERHAM_FST %in% c(out))
+```
+
+```{r}
+subf<-fst %>% filter(CHROM %in% tops$CHROM)
+
+```
+```{r}
+ggplot(subf, aes(x=POS, y=WEIR_AND_COCKERHAM_FST)) +
+  geom_point() +
+  facet_wrap(.~CHROM)
+```
+we can also compare the absolute allele frequency differences. 
+
+```{r}
+load("outputs/208/merge.rda")
+```
+
+```{r}
+merge2<-merge %>% filter(NAUS > (0.9*2*17)) %>% filter(NSEA > (0.9*2*30)) %>% filter(NIND > (0.9*2*11))
+```
+
+
+```{r}
+merge2 %>% arrange(-AbsoluteDifferenceAUSIND)
+```
+
+
+```{r}
+sub<-merge2 %>% filter(Chromosome=="NC_066850.1") %>% filter(AbsoluteDifferenceAUSIND >= 0.25)
+```
+
+```{r}
+ggplot(sub) +
+  geom_point(aes(x=Position,y=AbsoluteDifferenceAUSSEA))
+```

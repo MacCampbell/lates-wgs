@@ -141,8 +141,8 @@ points2<-points %>% filter(DataType=="WGS")
 map2 +
   geom_raster(data=range, aes(x=`Center Long`, y=`Center Lat`, fill=`Overall Probability`),alpha=0.75) +
   scale_fill_gradient(low="yellow", high="red")+
-  geom_point(data=points2, aes(x=long, y=lat), fill=points2$color, shape=points2$shape, cex=2) +
   geom_point(data=loc, aes(x=long, y=lat), fill=loc$color, shape=loc$shape, cex=2) +
+  geom_point(data=points2, aes(x=long, y=lat), fill=points2$color, shape=points2$shape, cex=2) +
   geom_text_repel(data=loc, aes(x=long, y=lat, label=text), size=2, fontface="bold") +
   coord_cartesian(xlim =c(30,180), ylim=c(-45,45)) +
   xlab("\nLongitude") +

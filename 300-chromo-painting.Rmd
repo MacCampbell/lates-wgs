@@ -1,0 +1,24 @@
+---
+title: "300-chromo-painting"
+output: html_document
+date: "2023-09-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+
+Test for recent vs ancient admixture, this seems reasonable
+https://people.maths.bris.ac.uk/~madjl/finestructure/finestructure.html
+
+conda install -c bioconda finestructure
+
+Can impute with https://mathgen.stats.ox.ac.uk/impute/impute_v2.html#whole_chroms
+
+Maybe I can make a haplo raster ?
+

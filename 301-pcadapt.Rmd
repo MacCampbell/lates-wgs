@@ -1,0 +1,486 @@
+---
+title: "301-pcadapt"
+output: html_document
+date: "2023-09-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+pcadapt    
+  
+  
+   
+   https://bcm-uga.github.io/pcadapt/articles/pcadapt.html
+```{r}
+library(tidyverse)
+library(pcadapt)
+```
+
+read in vcf of something to start. How about AUS/PNG fish, tutorial here https://bcm-uga.github.io/pcadapt/articles/pcadapt.html   
+
+We have RADseq data here  
+outputs/106/plink.vcf all samples
+
+outputs/102/oz.renamed.vcf    
+
+WGS data
+```{r}
+aus<-read_tsv("outputs/208/aus.txt", col_names = "Run")
+m<-read_csv("meta/58-Indo-split.csv")
+mnoind<-m %>% filter(! Region %in% c("India Eastern Coast","India Western Coast"))
+write_tsv(mnoind %>% select(Run), file="outputs/301/noind.txt", col_names = FALSE)
+m17<-aus %>% left_join(m)
+```
+
+
+RAD
+```{r}
+meta<-read_csv("meta/wang.csv")
+meta$Pop<-factor(meta$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
+meta<-meta %>% mutate(Lineage=ifelse(Pop %in% c("AUW","AUE","PNG"), "AUS+NG", "SEA"))
+meta %>% group_by(Pop, Lat_Lon) %>% summarize(Count=n(), Reads=mean(Filtered))
+
+analyzed<-read_csv("bamlists/130-sample-names.txt", col_names = "Run")
+meta %>% filter(Run %in% analyzed$Run)
+#All samples
+
+moz<-filter(meta,Lineage=="AUS+NG")
+write_tsv(moz %>% select(Run), file="outputs/301/oz-list.txt", col_names = FALSE)
+write_tsv(meta %>% select(Run), file="outputs/301/wang-list.txt", col_names = FALSE)
+
+```
+
+Rename, and select snps
+
+```{sh, eval=FALSE}
+bcftools reheader --samples bamlists/130-sample-names.txt -o outputs/301/reheadered.vcf.gz outputs/106/plink.vcf.gz
+bcftools view outputs/301/reheadered.vcf.gz  | bcftools +fill-tags | bcftools view -q 0.05:minor > outputs/301/wang-05.vcf
+bcftools view -S outputs/301/oz-list.txt outputs/301/reheadered.vcf.gz | bcftools +fill-tags | bcftools view -q 0.05:minor > outputs/301/oz-05-rad.vcf
+
+bcftools +prune -l 0.3 -w 10000 outputs/301/wang-05.vcf > outputs/301/wang-05-pruned.vcf
+
+```
+
+Get some wgs snps from here:
+
+outputs/208/aus.vcf   
+
+
+```{sh, eval=FALSE}
+bcftools view  outputs/208/aus.vcf | bcftools +fill-tags | bcftools view -q 0.05:minor > outputs/301/aus-05.vcf
+bcftools +prune -l 0.3 -w 10000 outputs/301/aus-05.vcf > outputs/301/aus-05-pruned.vcf
+
+bcftools view -S outputs/301/noind.txt outputs/108/pruned.vcf | bcftools +fill-tags | bcftools view -q 0.05:minor > outputs/301/noind.vcf
+
+```
+
+
+Some files to use outputs/301/oz-05-rad.vcf
+outputs/108/pruned.vcf 
+I think we should focus on pairwise comparisons, that is AUS<-> SEA and SEA <-> IND
+
+How about 
+```{r}
+path_to_file <- "outputs/301/noind.vcf"
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+Prefers bed files created by plink.
+RAD of wang et al. has 99,040 snps when called by ANGSD, but filtering by bcftools for maf of 0.05 produces 76601 snps.
+After pruning, 
+
+RAD filtered for maf of 0.05 produces 23917 snps
+WGS filtered for maf of 0.05 produces 487,507 snps
+Pruned for ld results in 3,155 snps, whoa!
+
+Pruned WGS genome-wide gives us 20,626 snps
+_1_ choose a K   
+
+```{r}
+x <- pcadapt(input = filename, K = 20) 
+```
+
+```{r}
+#plot(x, option = "screeplot")
+plot(x, option = "screeplot", K = 10)
+
+```
+
+
+```{r}
+plot(x, option = "scores", pop = mnoind$Region)
+```
+
+Examining 3 and 4 PCs
+
+```{r}
+plot(x, option = "scores", i = 3, j = 4, pop = mnoind$Region)
+```
+
+Test Statistic
+
+```{r}
+x <- pcadapt(filename, K = 3)
+summary(x)
+```
+
+```{r}
+plot(x , option = "manhattan")
+```
+
+```{r}
+plot(x, option = "qqplot")
+```
+
+```{r}
+hist(x$pvalues, xlab = "p-values", main = NULL, breaks = 50, col = "orange")
+```
+
+```{r}
+plot(x, option = "stat.distribution")
+```
+
+
+Manual suggests LD thining for snps from WGS data, but not RAD, checking for clustering around certain regions    
+```{R}
+par(mfrow = c(2, 2))
+for (i in 1:3)
+  plot(x$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```    
+```{r}
+plot(x)
+```
+
+outliers
+```{r}
+padj <- p.adjust(x$pvalues,method="BH")
+alpha <- 0.1
+outliers <- which(padj < alpha)
+length(outliers)
+```
+
+```{r}
+padj <- p.adjust(x$pvalues,method="bonferroni")
+alpha <- 0.1
+outliers <- which(padj < alpha)
+length(outliers)
+```
+
+Outliers along pcs
+
+```{r}
+snp_pc <- get.pc(x, outliers)
+snp_pc
+```
+## RADseq 
+
+```{r}
+path_to_file <- "outputs/301/oz-05-rad.vcf"
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+
+RAD filtered for maf of 0.05 produces 23917 snps
+_1_ choose a K   
+
+```{r}
+x <- pcadapt(input = filename, K = 20) 
+```
+
+```{r}
+#plot(x, option = "screeplot")
+plot(x, option = "screeplot", K = 10)
+
+```
+
+
+```{r}
+plot(x, option = "scores", pop = moz$Pop)
+```
+
+Examining 3 and 4 PCs
+
+```{r}
+plot(x, option = "scores", i = 3, j = 4, pop = moz$Pop)
+```
+
+Test Statistic
+
+```{r}
+x <- pcadapt(filename, K = 5)
+summary(x)
+```
+
+```{r}
+plot(x , option = "manhattan")
+```
+
+```{r}
+plot(x, option = "qqplot")
+```
+
+```{r}
+hist(x$pvalues, xlab = "p-values", main = NULL, breaks = 50, col = "orange")
+```
+
+```{r}
+plot(x, option = "stat.distribution")
+```
+
+
+Manual suggests LD thining for snps from WGS data, but not RAD, checking for clustering around certain regions    
+```{R}
+par(mfrow = c(2, 3))
+for (i in 1:5)
+  plot(x$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```    
+```{r}
+plot(x)
+```
+
+outliers
+```{r}
+padj <- p.adjust(x$pvalues,method="BH")
+alpha <- 0.1
+outliers <- which(padj < alpha)
+length(outliers)
+```
+
+```{r}
+padj <- p.adjust(x$pvalues,method="bonferroni")
+alpha <- 0.1
+outliers <- which(padj < alpha)
+length(outliers)
+```
+
+Find snps along axes
+
+```{r}
+snp_pc <- get.pc(x, outliers)
+snp_pc
+```
+
+
+## All WGS
+
+The easiest thing may be to use the 58 sample data set.
+
+
+```{r}
+path_to_file <- "outputs/108/pruned.vcf"
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+
+20,626 snps   
+
+_1_ choose a K   
+
+```{r}
+x <- pcadapt(input = filename, K = 20) 
+```
+
+```{r}
+#plot(x, option = "screeplot")
+plot(x, option = "screeplot", K = 10)
+
+```
+
+
+```{r}
+plot(x, option = "scores", pop = m$Region)
+```
+
+Examining 3 and 4 PCs
+
+```{r}
+plot(x, option = "scores", i = 3, j = 4, pop = m$Region)
+```
+
+Test Statistic
+
+```{r}
+x <- pcadapt(filename, K = 3)
+summary(x)
+```
+
+```{r}
+plot(x , option = "manhattan")
+```
+
+```{r}
+plot(x, option = "qqplot")
+```
+
+```{r}
+hist(x$pvalues, xlab = "p-values", main = NULL, breaks = 50, col = "orange")
+```
+
+```{r}
+plot(x, option = "stat.distribution")
+```
+
+
+Manual suggests LD thining for snps from WGS data, but not RAD, checking for clustering around certain regions    
+```{R}
+par(mfrow = c(2, 2))
+for (i in 1:3)
+  plot(x$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```    
+```{r}
+plot(x)
+```
+
+outliers
+```{r}
+padj <- p.adjust(x$pvalues,method="BH")
+alpha <- 0.1
+outliers <- which(padj < alpha)
+length(outliers)
+```
+
+```{r}
+padj <- p.adjust(x$pvalues,method="bonferroni")
+alpha <- 0.1
+outliers <- which(padj < alpha)
+length(outliers)
+```
+
+Find snps along axes
+
+```{r}
+snp_pc <- get.pc(x, outliers)
+snp_pc
+```
+
+
+## WGS fish that aren't admixed.    
+
+38 samples
+
+Pruned vcf here: outputs/210/38-pruned.vcf
+
+```{r}
+m38<-read_csv("meta/38.csv")
+m38 %>% group_by(Region) %>% summarize(Count=n())
+```
+
+
+
+```{r}
+path_to_file <- "outputs/210/38-pruned.vcf"
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+
+20,008 snps
+
+_1_ choose a K   
+
+```{r}
+x <- pcadapt(input = filename, K = 20) 
+```
+
+```{r}
+#plot(x, option = "screeplot")
+plot(x, option = "screeplot", K = 10)
+
+```
+
+
+```{r}
+plot(x, option = "scores", pop = m38$Region)
+```
+
+Examining 3 and 4 PCs
+
+```{r}
+plot(x, option = "scores", i = 1, j = 3, pop = m38$Region)
+```
+
+
+Examining 5 and 6 PCs
+
+```{r}
+plot(x, option = "scores", i = 5, j = 6, pop = m38$Region)
+```
+
+```{r}
+plot(x, option = "scores", i = 7, j = 8, pop = m38$Region)
+```
+Focusing on K=3
+
+_2_ Test Statistic
+
+
+
+```{r}
+x <- pcadapt(filename, K = 3)
+summary(x)
+```
+
+```{r}
+plot(x , option = "manhattan")
+```
+
+```{r}
+plot(x, option = "qqplot")
+```
+
+```{r}
+hist(x$pvalues, xlab = "p-values", main = NULL, breaks = 50, col = "orange")
+```
+
+```{r}
+plot(x, option = "stat.distribution")
+```
+
+
+Manual suggests LD thining for snps from WGS data, but not RAD, checking for clustering around certain regions    
+```{R}
+par(mfrow = c(2, 2))
+for (i in 1:3)
+  plot(x$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```    
+```{r}
+plot(x)
+```
+
+outliers
+```{r}
+padj <- p.adjust(x$pvalues,method="BH")
+alpha <- 0.1
+outliers <- which(padj < alpha)
+length(outliers)
+```
+
+```{r}
+padj <- p.adjust(x$pvalues,method="bonferroni")
+alpha <- 0.1
+outliers <- which(padj < alpha)
+length(outliers)
+```
+
+Find snps along axes
+
+```{r}
+snp_pc <- get.pc(x, outliers)
+snp_pc
+```
+
+What's PC1, 2 and 3 about
+
+```{r}
+plot(x, option = "scores", i = 1, j = 1, pop = m38$Region)
+```
+
+```{r}
+plot(x, option = "scores", i = 2, j = 2, pop = m38$Region)
+```
+
+
+```{r}
+plot(x, option = "scores", i = 3, j = 3, pop = m38$Region)
+```

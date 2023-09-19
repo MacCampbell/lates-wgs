@@ -13,7 +13,6 @@ Phylogenetic network
 
 ```{r}
 library(phytools)
-
 library(tidyverse)
 library(ggtree)
 library(tanggle)
@@ -21,6 +20,7 @@ library(phangorn)
 library(viridis)
 library(ggpubr)
 library(ape)
+library(snpR)
 ```
 
 Need an alignment. 
@@ -70,49 +70,6 @@ gb +
 
 ```
 
-```{r}
-ind<-m188 %>% filter(Lineage=="IND")
-tree<-read.tree("outputs/210/188-plink-renamed.min4.phy.varsites.phy.contree")
-t2<-root.phylo(tree,outgroup = ind$Run)
-t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 75)
-
-t<-t3
-
-t<-ggtree(t)
-
-t$data$Bootstrap<-as.numeric(t$data$label)
-
-d <- t$data
-d <- d[!d$isTip,]
-d$label <- as.numeric(d$label)
-d <- d[d$label >= 90,]
-
-e <- t$data
-e <- e[!e$isTip,]
-e$label <- as.numeric(e$label)
-e <- e[e$label < 90,]
-e <- e[e$label >= 75,]
-```
-
-```{r}
-u<-t %<+% m188 + #bind_rows(m58, rm) +
-  geom_point(data=e,  fill="gray50", cex=3, alpha=1, pch=22) +
-  geom_point(data=d,  fill="black", cex=3, alpha=1, pch=22) +
-  geom_tippoint(aes(x=x+0.002,fill=Region, shape=Lineage), cex=3) + 
-  geom_tiplab(aes(label=Region, x=x+0.01), align = FALSE, size=3) +
-  #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
-  scale_shape_manual(values=c(21,23,24)) +
-  guides(fill = guide_legend(override.aes = list(pch = 22))) +
-  xlim(0,.5) +
-  scale_fill_viridis_d(option="H") +
-  theme(legend.position = "none") +
-  geom_treescale(x = 0)
-
-u
-
-ggsave("outputs/210/m188-concatenated-tree.pdf", width=6, height=9)
-```
-
 
 Let's do this with just the WGS data
 
@@ -132,7 +89,11 @@ m58<-m2
 ```
 
 ```{sh, eval=FALSE}
+bcftools +prune -l 0.30 -w 10000 outputs/108/renamed.vcf.gz > outputs/210/pruned-03.vcf
+
  ~/github/mccloud-rrt/vcf2phylip.py -i pruned.vcf 
+ ~/github/mccloud-rrt/vcf2phylip.py -i pruned-03.vcf 
+
 ```
 
 ```{r}
@@ -246,7 +207,7 @@ u<-t %<+% m58 + #bind_rows(m58, rm) +
 
 u
 
-ggsave("outputs/210/concatenated-tree.pdf", width=6, height=9)
+ggsave("outputs/210/concatenated-tree-58inds.pdf", width=6, height=9)
 ```
 Now, we can draw up cophylogeny plots. Here is a way with ggtree https://arftrhmn.net/how-to-make-cophylogeny/
 
@@ -262,7 +223,7 @@ m9<-as.polytomy(m9, feature='node.label', fun=function(x) as.numeric(x) < 75)
 ggtree(m9) + geom_nodelab(aes(label=node))
 
 t8<-ggtree(m8) %<+% m58 +
-  geom_tippoint(aes(fill=Region, shape=Lineage)) + 
+  geom_tippoint(aes(fill=Region, shape=Lineage), cex=3) + 
   scale_fill_viridis_d(option="H") +
   theme(legend.position = "none") +
   scale_shape_manual(values=c(21,23,24)) 
@@ -287,14 +248,14 @@ dd1 <- as_tibble(dd)
 
 pp + geom_line(data=dd1, aes(x=x, y=y, group=label), color="grey50") +
   geom_point(data=d10,
-             aes(x=x, y=y, fill=Region, shape=Lineage))+
+             aes(x=x, y=y, fill=Region, shape=Lineage), cex=3)+
     scale_fill_viridis_d(option="H") +
   theme(legend.position = "none") +
-  scale_shape_manual(values=c(21,23,24))+
-  ggtitle("mtDNA to SNPs comparison")
+  scale_shape_manual(values=c(21,23,24))
+  #ggtitle("mtDNA to SNPs comparison")
 
 #  geom_treescale()
-
+ggsave("outputs/210/tanglegram.jpeg")
 ```
 
 ## Examining Philippines, Indonesia-K
@@ -329,9 +290,9 @@ srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -li
 srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/210/38-gls-90.beagle.gz -K 5 -o outputs/210/38-K5-gls &
 ```
 
+4593584 GLS
 
-
-
+2335358 snps
 ```{sh, eval=FALSE}
 plink --tped snps-wgs.tped --tfam snps-wgs.tfam  --out plink-binary --recode --allow-extra-chr --noweb
 plink --ped plink-binary.ped --map plink-binary.map --recode vcf --allow-extra-chr -out plink
@@ -341,6 +302,266 @@ tabix plink.vcf.gz
 #renaming vcf
 bcftools reheader --samples bamlists/38.names -o outputs/210/renamed.vcf.gz outputs/210/plink.vcf.gz
 
-bcftools +prune -l 0.20 -w 10000 outputs/210/renamed.vcf.gz > outputs/210/38-pruned.vcf
+bcftools +prune -l 0.30 -w 10000 outputs/210/renamed.vcf.gz > outputs/210/38-pruned.vcf
 
+## locally
+ ~/github/mccloud-rrt/vcf2phylip.py -i 38-pruned.vcf 
+
+```
+
+6727 variants after pruning -l 0.2, using l-.3 for 20008
+
+```{r}
+dat<-read.dna(file="outputs/210/38-pruned.min4.phy")
+write.nexus.data(dat, file="outputs/210/38-pruned.nex")
+
+```
+
+```{sh, eval=FALSE}
+iqtree -s 38-pruned.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
+iqtree -s 38-pruned.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo
+```
+1474 sites variable according to iqtree with -l 0.2 6339 with -l 0.3
+
+```{r}
+net38<-read.nexus.networx("outputs/210/38-pruned-network.nex")
+```
+
+
+```{r}
+g<-ggsplitnet(net38)  
+g$data<-left_join(g$data, m2, by=c("label"="Run")) 
+
+g + 
+  geom_tippoint(aes(shape=Lineage, fill=Region), cex=4, alpha=1.00) +
+  scale_shape_manual(values = c(21,23,24)) +
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+
+ggsave("outputs/210/wgs-38-network.jpeg")
+
+```
+
+
+```{r}
+tree<-read.tree("outputs/210/38-pruned.min4.phy.varsites.phy.contree")
+t2<-tree
+t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 75)
+t3<-midpoint.root(t3)
+
+t<-t3
+
+t<-ggtree(t)
+
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[e$label < 90,]
+e <- e[e$label >= 75,]
+```
+
+```{r}
+u<-t %<+% m58 + #bind_rows(m58, rm) +
+  geom_point(data=e,  fill="gray50", cex=3, alpha=1, pch=22) +
+  geom_point(data=d,  fill="black", cex=3, alpha=1, pch=22) +
+  geom_tippoint(aes(x=x+0.002,fill=Region, shape=Lineage), cex=3) + 
+  geom_tiplab(aes(label=Region, x=x+0.01), align = FALSE, size=3) +
+  #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(0,.5) +
+  scale_fill_viridis_d(option="H") +
+  theme(legend.position = "none") +
+  geom_treescale(x = 0)
+
+u
+
+ggsave("outputs/210/concatenated-tree.pdf", width=6, height=9)
+```
+
+
+
+Admixture   
+```{r, echo=FALSE}
+PlotAdmix<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Last col empty
+q<-q[1:length(colnames(q))-1]
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  theme(legend.position = "") +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  scale_fill_viridis_d(option="magma")
+
+}
+```
+
+```{r}
+PlotAdmix("outputs/210/38-K2-gls.qopt", m38)
+```
+
+```{r}
+PlotAdmix("outputs/210/38-K3-gls.qopt", m38)
+```
+
+
+```{r}
+PlotAdmix("outputs/210/38-K4-gls.qopt", m38)
+```
+
+
+```{r}
+mydat <- import.snpR.data("outputs/210/38-pruned.vcf", sample.meta = m38 %>% select(Run,Region,Lineage))
+mydat@sample.meta$Region<-factor(mydat@sample.meta$Region, levels=c("Northern Territory","Queensland","Papua New Guinea","Indonesia-K","Philippines","India Eastern Coast","India Western Coast"))
+```
+
+```{r}
+plot_clusters(mydat, facets="Region",
+              viridis.option = "H")
+```
+
+
+```{r}
+plot_structure(mydat, facet = "Region", 
+               facet.order = c("Northern Territory","Queensland","Papua New Guinea","Indonesia-K","Philippines","India Eastern Coast","India Western Coast"),
+              admixture_path  = "/Users/mac/github/dist/admixture_macosx-1.3.0/admixture", k=2, qsort=FALSE, reps = 1)
+```
+
+```{r}
+plot_structure(mydat, facet = "Region", 
+               facet.order = c("Northern Territory","Queensland","Papua New Guinea","Indonesia-K","Philippines","India Eastern Coast","India Western Coast"),
+              admixture_path  = "/Users/mac/github/dist/admixture_macosx-1.3.0/admixture", k=3, qsort=FALSE, reps = 1)
+```
+
+```{r}
+plot_structure(mydat, facet = "Region", 
+               facet.order = c("Northern Territory","Queensland","Papua New Guinea","Indonesia-K","Philippines","India Eastern Coast","India Western Coast"),
+              admixture_path  = "/Users/mac/github/dist/admixture_macosx-1.3.0/admixture", k=4, qsort=FALSE, reps = 1)
+```
+```{sh, eval=FALSE}
+#removing individuals with missing data
+bcftools stats -s - pruned-03.vcf | grep -E ^PSC | cut -f3,14 > missing.dat
+```
+F_Missing < 0.1 doesn't removing any snps
+
+```{r}
+missing<-read_tsv(file="outputs/210/missing.datt", col_names = c("Run","Missing")) %>% mutate(Proportion=Missing/73546)
+missing2<-missing %>% arrange(-Proportion) %>% filter(Proportion > 0.07)
+missing2$Run
+```
+
+```{sh, eval=FALSE}
+bcftools view -s ^SRR3165594,SRR3183255,SRR3165613,SRR3165612,SRR3183256,SRR3165631,SRR3165633,SRR3165620 -O z pruned-03.vcf > prune-03-filtered.vcf 
+```
+```{r}
+mydat <- import.snpR.data("outputs/210/prune-03-filtered.vcf", sample.meta = m2 %>% select(Run,Region,Lineage) %>% filter(! Run %in% missing2$Run))
+```
+
+
+```{r}
+plot_clusters(mydat, facets="Region",
+              viridis.option = "H")
+```
+
+
+```{r}
+plot_structure(mydat, facet = "Lineage", 
+               facet.order = c("AUS+NG","SEA","IND"),
+              admixture_path  = "/Users/mac/github/dist/admixture_macosx-1.3.0/admixture", k=2,
+               reps = 1)
+```
+
+```{r}
+plot_structure(mydat, facet = "Lineage", 
+               facet.order = c("AUS+NG","SEA","IND"),
+              admixture_path  = "/Users/mac/github/dist/admixture_macosx-1.3.0/admixture", k=3,
+               reps = 1)
+```
+
+```{r}
+plot_structure(mydat, facet = "Lineage", 
+               facet.order = c("AUS+NG","SEA","IND"),
+              admixture_path  = "/Users/mac/github/dist/admixture_macosx-1.3.0/admixture", k=4, 
+              
+               reps = 1)
+```
+
+```{r}
+plot_structure(mydat, facet = "Region", 
+               facet.order = c("Northern Territory","Queensland","Papua New Guinea",
+               "Indonesia-K","Indonesia-SJ","Cambodia","Philippines",
+               "Thailand","Vietnam","India Eastern Coast","India Western Coast"),
+              admixture_path  = "/Users/mac/github/dist/admixture_macosx-1.3.0/admixture", k=3, 
+              
+               reps = 1)
+```
+
+```{r}
+plot_structure(mydat, facet = "Region", 
+               facet.order = c("Northern Territory","Queensland","Papua New Guinea",
+               "Indonesia-K","Indonesia-SJ","Cambodia","Philippines",
+               "Thailand","Vietnam","India Eastern Coast","India Western Coast"),
+              admixture_path  = "/Users/mac/github/dist/admixture_macosx-1.3.0/admixture", k=4, 
+              
+               reps = 1)
+```
+
+```{r}
+plot_structure(mydat, facet = "Region", 
+               facet.order = c("Northern Territory","Queensland","Papua New Guinea",
+               "Indonesia-K","Indonesia-SJ","Cambodia","Philippines",
+               "Thailand","Vietnam","India Eastern Coast","India Western Coast"),
+              admixture_path  = "/Users/mac/github/dist/admixture_macosx-1.3.0/admixture", k=5, 
+              
+               reps = 1)
+```
+```{r}
+plot_structure(mydat, facet = "Region", 
+               facet.order = c("Northern Territory","Queensland","Papua New Guinea",
+               "Indonesia-K","Indonesia-SJ","Cambodia","Philippines",
+               "Thailand","Vietnam","India Eastern Coast","India Western Coast"),
+              admixture_path  = "/Users/mac/github/dist/admixture_macosx-1.3.0/admixture", k=6, 
+              
+               reps = 1)
 ```
