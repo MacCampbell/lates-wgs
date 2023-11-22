@@ -24,8 +24,15 @@ m58<-read_csv("meta/58.csv") %>% mutate(Lineage=ifelse(Region %in% c("India East
 m58$Region<-factor(m58$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
                                              "Indonesia","Philippines","Cambodia","Thailand", "Vietnam",
                                               "India Eastern Coast","India Western Coast"))
-m58$Region
+
 m47<-m58 %>% filter(!Region %in% c("India Eastern Coast", "India Western Coast"))
+
+m58split<-read_csv("meta/58-Indo-split.csv")
+
+m58split$Region<-factor(m58split$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
+                                             "Indonesia-K", "Indonesia-SJ", "Indonesia-SU",
+                                             "Philippines","Cambodia","Thailand", "Vietnam",
+                                              "India Eastern Coast","India Western Coast"))
 
 ```
 Let's get sequences for mtDNA and see what they are.
@@ -181,7 +188,9 @@ e <- e[e$label >= 75,]
 ```
 
 ```{r}
-u<-t %<+% m58 + #bind_rows(m58, rm) +
+m2<-m58
+m2$Region<-m58split$Region
+u<-t %<+% m2 + #bind_rows(m58, rm) +
   geom_point(data=e,  fill="gray50", cex=3, alpha=1, pch=22) +
   geom_point(data=d,  fill="black", cex=3, alpha=1, pch=22) +
   geom_tippoint(aes(x=x+0.002,fill=Region, shape=Lineage), cex=3) + 

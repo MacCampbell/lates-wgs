@@ -1,0 +1,62 @@
+---
+title: "302-new-hybrids"
+output: html_document
+date: "2023-11-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message = FALSE)
+```
+
+
+```{r}
+library(tidyverse)
+library(adegenet)
+library(pcadapt)
+library(ggpubr)
+library(dartR)
+library(vcfR)
+```
+
+```{r}
+m<-read_csv("meta/58-Indo-split.csv")
+vcf <-read.vcfR("outputs/108/pruned.vcf")
+gl<-vcfR2genlight(vcf)
+gl$pop<-as.factor(m$Region)
+```
+
+Downsample
+```{r}
+gl2<-gl[gl$pop %in% c("India Eastern Coast","India Western Coast","Cambodia","Thailand",
+                      "Vietnam","Philippines","Indonesia-K","Indonesia-SJ","Indonesia-SU"),]
+```
+
+gl2<-gl[gl$pop %in% c("India Eastern Coast","India Western Coast","Cambodia"),]
+
+
+```{r}
+glx<-gl2
+glx <- gl.compliance.check(glx)
+```
+c("Indonesia-K")
+```{r}
+hyb <- gl.nhybrids(glx, 
+p0=c("India Western Coast"), p1=c("Indonesia-K"),
+method="AvgPIC",
+nhyb.directory="~/github/newhybrids/", # Specify as necessary
+outpath="outputs/302",  # Specify as necessary, usually getwd() [= workspace]
+BurnIn=200,
+sweeps=100,
+verbose=3)
+
+```
+
+
+Can run like this: 
+
+(base) Macs-MacBook-Pro-2:newhybrids mac$ ./newhybsng -d ~/github/lates-wgs/outputs/302/nhyb.txt  --no-gui
+
+
+```{r}
+hyb
+```
