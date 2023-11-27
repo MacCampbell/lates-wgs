@@ -1,0 +1,19 @@
+Model organism or animal sample from Lates calcarifer
+
+Identifiers:	BioSample: SAMN37541109; Sample name: BD_LC_02; SRA: SRS19173540
+Organism:	Lates calcarifer
+isolate: Bakhkhali river isolate; ecotype: Euryhaline and catadromous behavior.Most of their life spent in the upper zone mainly in the freshwater river system of southern Bangladesh.During spawning season,the fish migrate to brackish water in the downstream coastal area and further into oceanic water.
+Package:	Model organism or animal; version 1.0
+Accession: SAMN37541109 ID: 37541109
+SRA
+
+Select item 37541100
+2.
+Model organism or animal sample from Lates calcarifer
+
+Identifiers:	BioSample: SAMN37541100; Sample name: BD_LC_01; SRA: SRS19136325
+Organism:	Lates calcarifer
+isolate: Bakkhali river isolate; cultivar: Wild fish; ecotype: Euryhaline and catadromous behavior.Most of their life spent in the upper zone mainly in the freshwater river system of southern Bangladesh.During spawning season,the fish migrate to brackish water in the downstream coastal area and further into oceanic water.
+
+Lates japonicus
+https://sra-pub-run-odp.s3.amazonaws.com/sra/DRR391968/DRR391968

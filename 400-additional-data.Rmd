@@ -1,0 +1,32 @@
+---
+title: "400-additional-data"
+output: html_document
+date: "2023-11-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(ggtree)
+```
+
+Adding in three more samples.
+SRS19173540, SRS19136325 from bangladesh in data/bangladesh
+
+ srun -p high -t 12:00:00 --mem=24GB fastq-dump --outdir split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip SRR26402930  
+ 
+  srun -p high -t 12:00:00 --mem=24GB fastq-dump --outdir split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip SRR26358744   
+ 
+Lates japonicus, in data/japonicus
+wget https://sra-pub-run-odp.s3.amazonaws.com/sra/DRR391968/DRR391968
+
+(base) maccamp@farm:~/lates-wgs/data/japonicus$ srun -p high -t 12:00:00 --mem=24GB fastq-dump --outdir split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip DRR391968     
+
+## Need to align to reference and compute metrics. 
+
+Also at some point retrieve mtDNA seqs.
+
+can use doAlign-zipped.sh
