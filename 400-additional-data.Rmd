@@ -23,10 +23,41 @@ SRS19173540, SRS19136325 from bangladesh in data/bangladesh
 Lates japonicus, in data/japonicus
 wget https://sra-pub-run-odp.s3.amazonaws.com/sra/DRR391968/DRR391968
 
-(base) maccamp@farm:~/lates-wgs/data/japonicus$ srun -p high -t 12:00:00 --mem=24GB fastq-dump --outdir split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip DRR391968     
+(base) maccamp@farm:~/lates-wgs/data/japonicus$ srun -p high -t 36:00:00 --mem=24GB fastq-dump --outdir split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip DRR391968     
+
+An australian fish in data/australia 
+
+SRR1973498
+ Purified DNA extracted from an Australian barramundi was sequenced at the Australian Genome Research Facility (Illumina HiSeq 2000 platform).
+ srun -p high -t 12:00:00 --mem=24GB fastq-dump --outdir split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip SRR1973498     
 
 ## Need to align to reference and compute metrics. 
 
 Also at some point retrieve mtDNA seqs.
 
-can use doAlign-zipped.sh
+can use doAlign-zipped.sh, later  linking fastqs/bams in "data/split" so I can copy path generation.
+
+(base) maccamp@farm:~/lates-wgs/data/bangladesh/split$ cat *stats
+SRR26358744,49704585,46328960,10.0176
+SRR26402930,50013614,46662535,10.0569
+
+Bangladesh samples 10X coverage, that's great!!
+
+Create new test data set for pop-gen-pca
+
+
+```{r}
+m60<-read_csv("meta/60-Indo-split copy.csv")
+m60 %>% select(Path) %>% write_tsv("bamlists/60.bamlist", col_names = FALSE)
+```
+
+Take a look at one chrom
+```{sh, eval=FALSE}
+srun -p high -t 12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/60.bamlist -r NC_066833.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 54 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/400/60-ibs-90 > outputs/400/60-ibs-90.out 2> outputs/400/60-ibs-90.err &
+```
