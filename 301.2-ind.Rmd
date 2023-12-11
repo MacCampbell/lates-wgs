@@ -1,0 +1,162 @@
+---
+title: "301.2-ind"
+output: html_document
+date: "2023-12-11"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+Make an S2 of IND fish.    
+
+```{r}
+library(tidyverse)
+library(pcadapt)
+library(ggpubr)
+library(grid)
+library(viridis)
+library(ggrepel)
+```
+
+```{r}
+cols<-viridis(12, option="H")
+```
+
+Select fish from OZ and then filter for MAF of 0.05
+
+```{r}
+m<-read_csv("meta/58-Indo-split.csv")
+
+m$Region<-factor(m$Region, levels=c("Northern Territory","Queensland",
+                                                           "Papua New Guinea","Indonesia-K",
+                                                           "Indonesia-SJ",
+                                                           "Indonesia-SU",
+                                      "Philippines","Vietnam","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
+meta<-m %>% mutate(Lineage=ifelse(Region %in% c("Northern Territory","Queensland","Papua New Guinea"),"AUS+NG",
+                                                ifelse(Region %in% c("India Eastern Coast","India Western Coast"), "IND",
+                                                       "SEA")))
+
+ind<-meta %>% filter(Lineage=="IND")
+ind %>% select(Run) %>% write_tsv("outputs/301/ind.samples", col_names = FALSE)
+```
+
+```{sh, eval=FALSE}
+bcftools view -S outputs/301/ind.samples outputs/108/pruned.vcf | bcftools +fill-tags | bcftools view -q 0.05:minor > outputs/301/ind-05.vcf
+
+```
+
+```{r}
+path_to_file <- "outputs/301/ind-05.vcf"
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+
+10812 loci
+
+_1_ choose a K   
+
+```{r}
+x <- pcadapt(input = filename, K = 5) 
+```
+
+```{r}
+#plot(x, option = "screeplot")
+panela<-plot(x, option = "screeplot", K = 5) + ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  scale_x_continuous(breaks=seq(1,5,1), labels=seq(1,5,1)) +
+  ylab("Proption of Explained Variance\n") +
+  xlab("\nPrincipal Component") +
+  theme(axis.title=element_text(size=12))
+panela
+```
+
+
+```{r}
+pcadata<-x$scores[,1:2] %>% as_tibble()
+pcadata<-pcadata %>% bind_cols(ind)
+labels<-pcadata %>% group_by(Region) %>% mutate(x=mean(V1), y=mean(V2)) %>% select(Region, x, y) %>% unique()
+```
+
+```{r}
+pcb<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V2, shape=Lineage, fill=Region), alpha=0.95) +
+  geom_text_repel(data=labels, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  scale_shape_manual(values = c(23)) +
+  scale_fill_manual(values=cols[11:12]) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  #theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 2") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+
+pcb
+```
+
+
+```{r}
+blank <- grid.rect(gp=gpar(col="white"))
+```
+
+```{r}
+ggarrange(ggarrange(panela,blank, ncol=1), pcb, ncol=2, widths = c(1,2))
+ggsave("outputs/301/pcadapt-ind.jpeg", width=8.5, height=5.5)
+
+```
+# Outliers
+
+Test Statistic
+
+```{r}
+x <- pcadapt(filename, K = 1)
+summary(x)
+```
+
+```{r}
+plot(x , option = "manhattan")
+```
+
+```{r}
+plot(x, option = "qqplot")
+```
+
+```{r}
+hist(x$pvalues, xlab = "p-values", main = NULL, breaks = 50, col = "orange")
+```
+
+```{r}
+plot(x, option = "stat.distribution")
+```
+
+
+Manual suggests LD thining for snps from WGS data, but not RAD, checking for clustering around certain regions    
+```{R}
+par(mfrow = c(2, 2))
+for (i in 1:1)
+  plot(x$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```    
+```{r}
+plot(x)
+```
+```{r}
+padj <- p.adjust(x$pvalues,method="BH")
+alpha <- 0.1
+outliers <- which(padj < alpha)
+length(outliers)
+
+snp_pc <- get.pc(x, outliers)
+snp_pc %>% group_by(PC) %>% summarize(Count=n())
+
+```
+
+```{r}
+padj <- p.adjust(x$pvalues,method="bonferroni")
+alpha <- 0.1
+outliers <- which(padj < alpha)
+length(outliers)
+```
