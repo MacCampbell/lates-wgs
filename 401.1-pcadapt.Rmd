@@ -1,0 +1,186 @@
+---
+title: "401.1-pcadapt"
+output: html_document
+date: "2023-12-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+PCAdapt of everything again
+
+```{r}
+meta<-read_csv("meta/60-Indo-split.csv")
+meta$Region<-factor(meta$Region, levels=c("Queensland","Northern Territory","Papua New Guinea",
+                                              "Indonesia-K","Indonesia-SJ","Indonesia-SU","Philippines",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India Eastern Coast","India Western Coast"))
+m<-meta
+```
+
+
+```{r}
+path_to_file <- "outputs/401/pruned.vcf"
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+
+20,626 snps   
+
+_1_ choose a K   
+
+```{r}
+x <- pcadapt(input = filename, K = 20) 
+```
+
+```{r}
+#plot(x, option = "screeplot")
+panela<-plot(x, option = "screeplot", K = 7) + ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  scale_x_continuous(breaks=seq(1,7,1), labels=seq(1,7,1)) +
+  ylab("Proption of Explained Variance\n") +
+  xlab("\nPrincipal Component") +
+  theme(axis.title=element_text(size=12))
+panela
+```
+
+
+```{r}
+plot(x, option = "scores", pop = factor(m$Region, levels=c("Northern Territory","Queensland",
+                                                           "Papua New Guinea","Indonesia-K",
+                                                           "Indonesia-SJ",
+                                                           "Indonesia-SU",
+                                      "Philippines","Vietnam","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))) 
+ 
+```
+
+Get scree plot and PCA    
+```{r}
+pcadata<-x$scores[,1:3] %>% as_tibble()
+pcadata<-pcadata %>% bind_cols(m)
+pcadata$Region<-factor(m$Region, levels=c("Northern Territory","Queensland",
+                                                           "Papua New Guinea","Indonesia-K",
+                                                           "Indonesia-SJ",
+                                                           "Indonesia-SU",
+                                      "Philippines","Vietnam","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
+pcadata<-pcadata %>% mutate(Lineage=ifelse(Region %in% c("Northern Territory","Queensland","Papua New Guinea"),"AUS+NG",
+                                                ifelse(Region %in% c("India Eastern Coast","India Western Coast"), "IND",
+                                                       "SEA")))
+```
+
+```{r}
+pcb<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V2, shape=Lineage, fill=Region), alpha=0.95) +
+  scale_shape_manual(values = c(21,23,24)) +
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 2") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+
+pcc<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V3, shape=Lineage, fill=Region), alpha=0.9) +
+  scale_shape_manual(values = c(21,23,24)) +
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 3") +
+  ggtitle("C") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+```
+
+```{r}
+blank <- grid.rect(gp=gpar(col="white"))
+```
+
+
+
+```{r}
+a<-ggplotGrob(ggarrange(panela, blank))
+bc<-ggplotGrob(ggarrange(pcb, pcc, ncol=, widths=c(1,1.5)))
+ggarrange(a,bc, ncol=1, heights=c(.5,1))
+ggsave("outputs/301/pcadapt.jpeg", width=8*1.2, height=6*1.2)
+```
+
+Examining 3 and 4 PCs
+```{r}
+plot(x, option = "scores", i = 1, j = 3, pop = m$Region)
+```
+
+get panel b and c
+
+
+```{r}
+plot(x, option = "scores", i = 3, j = 4, pop = m$Region)
+```
+
+Test Statistic
+
+```{r}
+x <- pcadapt(filename, K = 3)
+summary(x)
+```
+
+```{r}
+plot(x , option = "manhattan")
+```
+
+```{r}
+plot(x, option = "qqplot")
+```
+
+```{r}
+hist(x$pvalues, xlab = "p-values", main = NULL, breaks = 50, col = "orange")
+```
+
+```{r}
+plot(x, option = "stat.distribution")
+```
+
+
+Manual suggests LD thining for snps from WGS data, but not RAD, checking for clustering around certain regions    
+```{R}
+par(mfrow = c(2, 2))
+for (i in 1:3)
+  plot(x$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```    
+```{r}
+plot(x)
+```
+
+outliers
+```{r}
+padj <- p.adjust(x$pvalues,method="BH")
+alpha <- 0.1
+outliers <- which(padj < alpha)
+length(outliers)
+
+snp_pc <- get.pc(x, outliers)
+snp_pc %>% group_by(PC) %>% summarize(Count=n())
+
+```
+
+```{r}
+padj <- p.adjust(x$pvalues,method="bonferroni")
+alpha <- 0.1
+outliers <- which(padj < alpha)
+length(outliers)
+```
+
+Find snps along axes
+
+```{r}
+snp_pc <- get.pc(x, outliers)
+snp_pc %>% group_by(PC) %>% summarize(Count=n())
+```
+

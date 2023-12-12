@@ -28,6 +28,12 @@ srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/401/60-ibs-90 > outputs/401/60-ibs-90.out 2> outputs/401/60-ibs-90.err &
+
+srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/401/60-ibs-90.beagle.gz -K 2 -o outputs/401/60-K2 &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/401/60-ibs-90.beagle.gz -K 3 -o outputs/401/60-K3 &
+srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/401/60-ibs-90.beagle.gz -K 4 -o outputs/401/60-K4 &
+srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/401/60-ibs-90.beagle.gz -K 5 -o outputs/401/60-K5 &
+
 ```
 
 
@@ -436,6 +442,7 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -rf genome/lates-lgs.txt -out outputs/401/snps-wgs  \
 -minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/401/snps-wgs.out 2> outputs/401/snps-wgs.err &
+
 ```
 
 Creating a vcf
@@ -452,3 +459,6 @@ bcftools reheader --samples bamlists/60-sample-names.txt -o outputs/401/renamed.
 bcftools +prune -l 0.20 -w 10000 outputs/401/renamed.vcf.gz > outputs/401/pruned.vcf
 bcftools +prune -l 0.30 -w 10000 outputs/401/renamed.vcf.gz > outputs/401/pruned-03.vcf
 ```
+
+
+401 has sample lists so we can pull out things for testing again.
