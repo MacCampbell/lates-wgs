@@ -28,14 +28,28 @@ srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/401/60-ibs-90 > outputs/401/60-ibs-90.out 2> outputs/401/60-ibs-90.err &
+	
 
 srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/401/60-ibs-90.beagle.gz -K 2 -o outputs/401/60-K2 &
 srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/401/60-ibs-90.beagle.gz -K 3 -o outputs/401/60-K3 &
 srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/401/60-ibs-90.beagle.gz -K 4 -o outputs/401/60-K4 &
 srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/401/60-ibs-90.beagle.gz -K 5 -o outputs/401/60-K5 &
 
+
+srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/401/60-ibs-90.beagle.gz -K 6 -o outputs/401/60-K6 &
+
+# Generate GLS without doIBS
+srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/60.bamlist -rf genome/lates-lgs.txt \
+-anc  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 54 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 \
+-doMajorMinor 1 -doPost 1 -doMaf 1 -SNP_pval 1e-6 \
+-minMaf 0.05 \
+-out outputs/401/60-gls-90 > outputs/401/60-gls-90.out 2> outputs/401/60-gls-90.err &
+
 ```
 
+	-> Number of sites retained after filtering: 7321852 
 
 
 
@@ -47,10 +61,14 @@ meta$Region<-factor(meta$Region, levels=c("Queensland","Northern Territory","Pap
                                               "India Eastern Coast","India Western Coast"))
 
 
+min(meta$Coverage)
+max(meta$Coverage)
+mean(meta$Coverage)
+round(median(meta$Coverage),2)
+```
 
-
-
-m <- as.matrix(read.table("outputs/400/60-ibs-90.covMat"))
+```{r}
+m <- as.matrix(read.table("outputs/401/60-ibs-90.covMat"))
 eig <- eigen(m)
 var<-eig$values/sum(eig$values)
 cumvar<-cumsum(eig$values)/sum(eig$values)
@@ -88,7 +106,7 @@ text12<-covs %>% select(Run, Region, V1, V2) %>%
   group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
 
 pc12<-ggplot(covs) +
-  geom_point(aes(x=V1, y=V2, fill=Region, shape=Lineage), size=2, alpha=0.75) +
+  geom_point(aes(x=V1, y=V2, fill=Region, shape=Lineage), size=3, alpha=0.75) +
 #  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
   xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
   ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
@@ -108,7 +126,7 @@ text13<-covs  %>% select(Run, Region, V1, V3) %>%
   group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
 
 pc13<-ggplot(covs) +
-  geom_point(aes(x=V1, y=V3, fill=Region, shape=Lineage), size=2, alpha=0.75) +
+  geom_point(aes(x=V1, y=V3, fill=Region, shape=Lineage), size=3, alpha=0.75) +
  # geom_text_repel(data=text13, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
   xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
   ylab(paste("PC3", " ", round((100*var[3]),2), "%", sep = "")) +
@@ -126,6 +144,7 @@ pc13
 ```{r}
 ggarrange(pc12,pc13,ncol=2,widths=c(1,1.4))
 ggsave("outputs/401/combined-wgspcs.pdf", width=11, height=5)
+ggsave("outputs/401/combined-wgspcs.jpeg", width=11, height=5)
 
 ```
 
@@ -142,9 +161,10 @@ ggplot(csdf) +
 ylim(0,2)
 ```
 
-First no labels
+First labels     
+
 ```{r, echo=FALSE}
-PlotAdmixNoLabs<- function(file, meta) {
+PlotAdmix<- function(file, meta) {
 
 q<-read_delim(file, delim=" ", col_names=FALSE)
 #Make generic colnames
@@ -187,9 +207,9 @@ ggplot(rdf) +
   theme(legend.position = "") +
   theme(axis.text = element_text(size=10, face="bold")) +
   theme(axis.title.y=element_text(size=14, face="bold")) +
- #scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
-#  theme(axis.text.x = element_text(angle=45, hjust=1)) +
-  theme(axis.text.x=element_blank()) +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  #theme(axis.text.x=element_blank()) +
   scale_fill_viridis_d(option="viridis") +
   theme(axis.ticks.x = element_blank())
 
@@ -197,7 +217,15 @@ ggplot(rdf) +
 ```
 
 ```{r}
-PlotAdmixNoLabs("outputs/400/60-K2.qopt", meta)
+PlotAdmix("outputs/401/60-K2.qopt", meta)
+```
+
+
+```{r}
+PlotAdmix("outputs/401/60-K3.qopt", meta)
+```
+```{r}
+PlotAdmix("outputs/401/60-K4.qopt", meta)
 ```
 
 ```{r}
@@ -252,13 +280,13 @@ ggplot(rdf) +
   theme(axis.ticks.x = element_blank())
 
 }
-```
 
 
-```{r}
 k2<-PlotAdmixNoLabs2("outputs/400/60-K2.qopt", meta)
 k2
 ```
+
+
 ```{r}
 PlotAdmixNoLabs3<- function(file, meta) {
 
@@ -307,7 +335,7 @@ ggplot(rdf) +
 #  theme(axis.text.x = element_text(angle=45, hjust=1)) +
   theme(axis.text.x=element_blank()) +
   #scale_fill_viridis_d(option="viridis") +
-  scale_fill_manual(values=c("#000004BF","#3B0F70BF","#8C2981BF"))+
+  scale_fill_manual(values=c("#000004BF","#8C2981BF","#3B0F70BF"))+
   theme(axis.ticks.x = element_blank())
 
 }
@@ -363,11 +391,11 @@ ggplot(rdf) +
 #  theme(axis.text.x = element_text(angle=45, hjust=1)) +
   theme(axis.text.x=element_blank()) +
   #scale_fill_viridis_d(option="viridis") +
-  scale_fill_manual(values=c("#8C2981BF","#000004BF","#3B0F70BF","#DE4968BF"))+
+  scale_fill_manual(values=c("#8C2981BF","#000004BF","#DE4968BF","#3B0F70BF"))+
   theme(axis.ticks.x = element_blank())
 
 }
-k4<-PlotAdmixNoLabs4("outputs/207/58-K4-gls.qopt", m)
+k4<-PlotAdmixNoLabs4("outputs/401/60-K4.qopt", meta)
 k4
 ```
 
@@ -430,7 +458,7 @@ Let's plot.
 ```{r}
 ggarrange(k2,k3,k4,k5, ncol=1, heights = c(1,1,1,1.55))
 
-ggsave("outputs/207/combined-k-plots.pdf", width=11, height=8.5)
+ggsave("outputs/401/combined-k-plots.pdf", width=11, height=8.5)
 ```
 
 ## Calling SNPs
@@ -444,6 +472,7 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/401/snps-wgs.out 2> outputs/401/snps-wgs.err &
 
 ```
+	-> Number of sites retained after filtering: 3327142 
 
 Creating a vcf
 

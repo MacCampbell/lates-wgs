@@ -1,13 +1,12 @@
 ---
-title: "401.1-pcadapt"
+title: "401.2-ind"
 output: html_document
 date: "2023-12-12"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+knitr::opts_chunk$set(echo = TRUE)
 ```
-
 
 ```{r}
 library(tidyverse)
@@ -22,7 +21,8 @@ library(ggrepel)
 cols<-viridis(13, option="H")
 ```
 
-PCAdapt of everything again
+Select fish from OZ and then filter for MAF of 0.05
+
 
 ```{r}
 meta<-read_csv("meta/60-Indo-split.csv")
@@ -31,28 +31,38 @@ meta$Region<-factor(meta$Region, levels=c("Queensland","Northern Territory","Pap
                                               "Vietnam","Cambodia","Thailand", "Bangladesh",
                                               "India Eastern Coast","India Western Coast"))
 m<-meta
+
+ind<-m %>% filter(Lineage=="IND")
+
 ```
 
 
+
+```{sh, eval=FALSE}
+bcftools view -S outputs/401/ind.samples outputs/401/pruned.vcf | bcftools +fill-tags | bcftools view -q 0.05:minor > outputs/401/ind-05.vcf
+
+```
+
 ```{r}
-path_to_file <- "outputs/401/pruned.vcf"
+path_to_file <- "outputs/401/ind-05.vcf"
 filename <- read.pcadapt(path_to_file, type = "vcf")
 ```
 
 
+12075 loci
 
 _1_ choose a K   
 
 ```{r}
-x <- pcadapt(input = filename, K = 20) 
+x <- pcadapt(input = filename, K = 5) 
 ```
 
 ```{r}
 #plot(x, option = "screeplot")
-panela<-plot(x, option = "screeplot", K = 10) + ggtitle("A") +
+panela<-plot(x, option = "screeplot", K = 5) + ggtitle("A") +
   theme(plot.title = element_text(size=14, face="bold")) +
   theme(panel.grid = element_blank(), panel.background = element_blank()) +
-  scale_x_continuous(breaks=seq(1,10,1), labels=seq(1,10,1)) +
+  scale_x_continuous(breaks=seq(1,5,1), labels=seq(1,5,1)) +
   ylab("Proption of Explained Variance\n") +
   xlab("\nPrincipal Component") +
   theme(axis.title=element_text(size=12))
@@ -61,88 +71,62 @@ panela
 
 
 ```{r}
-plot(x, option = "scores", pop = factor(m$Region, levels=c("Northern Territory","Queensland",
-                                                           "Papua New Guinea","Indonesia-K",
-                                                           "Indonesia-SJ",
-                                                           "Indonesia-SU",
-                                      "Philippines","Vietnam","Cambodia","Thailand","Bangladesh",
-                                              "India Eastern Coast","India Western Coast"))) 
- 
-```
-
-Get scree plot and PCA    
-```{r}
 pcadata<-x$scores[,1:3] %>% as_tibble()
-pcadata<-pcadata %>% bind_cols(m)
-pcadata$Region<-factor(m$Region, levels=c("Northern Territory","Queensland",
-                                                           "Papua New Guinea","Indonesia-K",
-                                                           "Indonesia-SJ",
-                                                           "Indonesia-SU",
-                                      "Philippines","Vietnam","Cambodia","Thailand","Bangladesh",
-                                              "India Eastern Coast","India Western Coast"))
-
+pcadata<-pcadata %>% bind_cols(ind)
+labels<-pcadata %>% group_by(Region) %>% mutate(x=mean(V1), y=mean(V2)) %>% select(Region, x, y) %>% unique()
 ```
 
 ```{r}
 pcb<-ggplot(pcadata) +
   geom_point(aes(x=V1, y=V2, shape=Lineage, fill=Region), alpha=0.95) +
-  scale_shape_manual(values = c(21,23,24)) +
-  scale_fill_viridis_d(option="H") +
+  geom_text_repel(data=labels, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  scale_shape_manual(values = c(23)) +
+  scale_fill_manual(values=cols[11:13]) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
   theme_bw() +
-  theme(legend.position = "none") +
+  #theme(legend.position = "none") +
   theme(panel.grid = element_blank()) +
   xlab("PC 1") +
   ylab("PC 2") +
   ggtitle("B") +
   theme(plot.title = element_text(size=14, face="bold")) 
 
-labels13<-pcadata %>% filter(Region %in% c("Indonesia-K","Indonesia-SU")) %>% 
-  select(Region,V1, V3) %>% group_by(Region) %>% summarize(x=mean(V1), y=mean(V3)) 
+pcb
+```
 
+
+```{r}
 pcc<-ggplot(pcadata) +
-  geom_point(aes(x=V1, y=V3, shape=Lineage, fill=Region), alpha=0.9) +
-  geom_text_repel(data=labels13, aes(x=x, y=y, label=Region))+
-  scale_shape_manual(values = c(21,23,24)) +
-  scale_fill_viridis_d(option="H") +
+  geom_point(aes(x=V1, y=V3, shape=Lineage, fill=Region), alpha=0.95) +
+  geom_text_repel(data=labels, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  scale_shape_manual(values = c(23)) +
+  scale_fill_manual(values=cols[11:13]) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
   theme_bw() +
+  #theme(legend.position = "none") +
   theme(panel.grid = element_blank()) +
   xlab("PC 1") +
   ylab("PC 3") +
   ggtitle("C") +
   theme(plot.title = element_text(size=14, face="bold")) 
-```
 
+pcc
+```
 ```{r}
 blank <- grid.rect(gp=gpar(col="white"))
 ```
 
-
-
 ```{r}
-a<-ggplotGrob(ggarrange(panela, blank))
-bc<-ggplotGrob(ggarrange(pcb, pcc, ncol=, widths=c(1,1.45)))
-ggarrange(a,bc, ncol=1, heights=c(.5,1))
-ggsave("outputs/401/pcadapt.jpeg", width=8*1.3, height=6*1.2)
+ggarrange(ggarrange(panela,blank, ncol=1), pcb, ncol=2, widths = c(1,2))
+ggsave("outputs/401/pcadapt-ind.jpeg", width=8.5, height=5.5)
+
 ```
-
-Examining 3 and 4 PCs
-```{r}
-plot(x, option = "scores", i = 1, j = 3, pop = m$Region)
-```
-
-get panel b and c
-
-
-```{r}
-plot(x, option = "scores", i = 3, j = 4, pop = m$Region)
-```
+# Outliers
 
 Test Statistic
 
 ```{r}
-x <- pcadapt(filename, K = 3)
+x <- pcadapt(filename, K = 2)
 summary(x)
 ```
 
@@ -166,14 +150,12 @@ plot(x, option = "stat.distribution")
 Manual suggests LD thining for snps from WGS data, but not RAD, checking for clustering around certain regions    
 ```{R}
 par(mfrow = c(2, 2))
-for (i in 1:3)
+for (i in 1:1)
   plot(x$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
 ```    
 ```{r}
 plot(x)
 ```
-
-outliers
 ```{r}
 padj <- p.adjust(x$pvalues,method="BH")
 alpha <- 0.1
@@ -190,12 +172,7 @@ padj <- p.adjust(x$pvalues,method="bonferroni")
 alpha <- 0.1
 outliers <- which(padj < alpha)
 length(outliers)
-```
 
-Find snps along axes
-
-```{r}
 snp_pc <- get.pc(x, outliers)
 snp_pc %>% group_by(PC) %>% summarize(Count=n())
 ```
-

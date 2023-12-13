@@ -1,0 +1,135 @@
+---
+title: "402-network"
+output: html_document
+date: "2023-12-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+
+
+```{r}
+library(phytools)
+library(tidyverse)
+library(ggtree)
+library(tanggle)
+library(phangorn)
+library(viridis)
+library(ggpubr)
+library(ape)
+library(snpR)
+```
+
+
+
+```{r}
+meta<-read_csv("meta/60-Indo-split.csv")
+meta$Region<-factor(meta$Region, levels=c("Queensland","Northern Territory","Papua New Guinea",
+                                              "Indonesia-K","Indonesia-SJ","Indonesia-SU","Philippines",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India Eastern Coast","India Western Coast"))
+m<-meta
+```
+
+in 401
+```{sh, eval=FALSE}
+~/github/mccloud-rrt/vcf2phylip.py -i pruned.vcf 
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-03.vcf 
+
+```
+
+SNPs that passed the filters: 22088
+Total of genotypes processed: 81267
+
+
+```{r}
+dat<-read.dna(file="outputs/401/pruned.min4.phy")
+write.nexus.data(dat, file="outputs/402/pruned.nex")
+
+```
+
+```{sh, eval=FALSE}
+iqtree -s pruned.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
+iqtree -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo
+```
+
+ERROR: Invalid use of +ASC because of 14427 invariant sites in the alignment
+
+Now Alignment has 60 sequences with 7661 columns, 7661 distinct patterns
+5571 parsimony-informative, 2090 singleton sites, 0 constant sites
+
+(base) Macs-MacBook-Pro-2:401 mac$ seqConverter.pl -dpruned.min4.phy.varsites.phy -on
+```{r}
+dat<-read.dna(file="outputs/401/pruned.min4.phy.varsites.phy")
+write.nexus.data(dat, file="outputs/402/pruned-varsites.nex")
+
+```
+```{r}
+net<-read.nexus.networx("outputs/402/pruned-varsites.network")
+```
+
+```{r}
+g<-ggsplitnet(net)  
+g$data<-left_join(g$data, m2, by=c("label"="Run")) 
+
+g + 
+  geom_tippoint(aes(shape=Lineage, fill=Region), cex=4, alpha=1.00) +
+  scale_shape_manual(values = c(21,23,24)) +
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+
+ggsave("outputs/402/wgs-network.jpeg")
+
+```
+
+
+
+Looking at the tree
+
+```{r}
+
+ind<-m %>% filter(Lineage=="IND")
+tree<-read.tree("outputs/401/pruned.min4.phy.varsites.phy.contree")
+#t2<-root.phylo(tree,outgroup = ind$Run)
+
+t2<-midpoint.root(t2)
+t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 75)
+
+t<-t3
+
+t<-ggtree(t)
+
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[e$label < 90,]
+e <- e[e$label >= 75,]
+```
+
+```{r}
+u<-t %<+% m + #bind_rows(m58, rm) +
+  geom_point(data=e,  fill="gray50", cex=3, alpha=1, pch=22) +
+  geom_point(data=d,  fill="black", cex=3, alpha=1, pch=22) +
+  geom_tippoint(aes(x=x+0.002,fill=Region, shape=Lineage), cex=3) + 
+  geom_tiplab(aes(label=Region, x=x+0.01), align = FALSE, size=3) +
+  #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(0,.5) +
+  scale_fill_viridis_d(option="H") +
+  theme(legend.position = "none") +
+  geom_treescale(x = 0)
+
+u
+
+ggsave("outputs/402/concatenated-tree-60inds.jpeg", width=6, height=9)
+```
