@@ -75,12 +75,12 @@ g<-ggsplitnet(net)
 g$data<-left_join(g$data, m2, by=c("label"="Run")) 
 
 g + 
-  geom_tippoint(aes(shape=Lineage, fill=Region), cex=4, alpha=1.00) +
+  geom_tippoint(aes(shape=Lineage, fill=Region), cex=5, alpha=1.00) +
   scale_shape_manual(values = c(21,23,24)) +
   scale_fill_viridis_d(option="H") +
   guides(fill = guide_legend(override.aes = list(pch = 22))) 
 
-ggsave("outputs/402/wgs-network.jpeg")
+ggsave("outputs/402/wgs-network.jpeg", width=8, height=5)
 
 ```
 

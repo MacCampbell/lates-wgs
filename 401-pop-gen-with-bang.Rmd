@@ -229,6 +229,11 @@ PlotAdmix("outputs/401/60-K4.qopt", meta)
 ```
 
 ```{r}
+PlotAdmix("outputs/401/60-K5.qopt", meta)
+```
+
+
+```{r}
 PlotAdmixNoLabs2<- function(file, meta) {
 
 q<-read_delim(file, delim=" ", col_names=FALSE)
@@ -446,10 +451,10 @@ ggplot(rdf) +
   scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
   theme(axis.text.x = element_text(angle=45, hjust=1)) +
   #scale_fill_viridis_d(option="viridis") +
-  scale_fill_manual(values=c("#FE9F6DBF","#3B0F70BF","#8C2981BF","#DE4968BF","#000004BF"))
+  scale_fill_manual(values=c("#FE9F6DBF","#000004BF","#DE4968BF","#8C2981BF","#3B0F70BF"))
 
 }
-k5<-PlotAdmix5("outputs/207/58-K5-gls.qopt", m)
+k5<-PlotAdmix5("outputs/401/60-K5.qopt", meta)
 k5
 ```
 

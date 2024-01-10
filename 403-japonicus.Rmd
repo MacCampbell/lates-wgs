@@ -1,0 +1,59 @@
+---
+title: "403-japonicus"
+output: html_document
+date: "2024-01-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(phytools)
+library(tidyverse)
+library(ggtree)
+library(tanggle)
+library(phangorn)
+library(viridis)
+library(ggpubr)
+library(ape)
+library(snpR)
+```
+
+
+Downloaded and aligned japonicus. Using to generate a rooted tree.     
+`(base) maccamp@farm:~/lates-wgs/data/japonicus/split$ cat DRR391968.stats`     
+DRR391968,972202037,621949413,110.071     
+20/110.071     
+0.1817009     
+
+(20/110.071)*621949413      
+113008769     
+
+srun -p high -t 24:00:00 --mem=32G --nodes=1 samtools view -bs 0.1817009 /home/maccamp/lates-wgs/data/split/DRR391968.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/DRR391968.reduced.bam
+
+
+Downsample to 20x coverage.
+
+Check sanity with a basic PCA using .cov approach with all the data and one chrom
+
+/home/maccamp/lates-wgs/data/japonicus/split/DRR391968.sort.flt.bam
+
+```{r}
+m61<-read_csv("meta/61-Indo-split.csv")
+m61 %>% select(Path) %>% write_tsv("bamlists/61.bamlist", col_names = FALSE)
+```
+
+
+Generate PCA and GL file
+-rf genome/lates-lgs.txt 
+```{sh, eval=FALSE}
+srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/61.bamlist -r NC_066833.1\
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 55 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/403/61-ibs-90 > outputs/403/61-ibs-90.out 2> outputs/403/61-ibs-90.err &
+```
+

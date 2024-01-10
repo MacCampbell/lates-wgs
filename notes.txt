@@ -1,0 +1,6 @@
+srun -p high -t 4:00:00 --mem=16GB zcat DRR391968_pass_1.fastq.gz | split -l 4000000 - prefix &
+
+srun -p high -t 4:00:00 --mem=16GB zcat DRR391968_pass_2.fastq.gz | split -l 4000000 - reverse &
+
+for f in prefix*; do  mv $f ${f}.fastq; done;
+for f in reverse*; do  mv $f ${f}.fastq; done;
