@@ -58,4 +58,4 @@ data/split/SRR3165606.sort.flt.bam
 data/split/SRR3183252.sort.flt.bam
 data/split/SRR26358744.sort.flt.bam
 data/split/SRR26402930.sort.flt.bam
-data/split/DRR391968.sort.flt.bam
+data/downsample/DRR391968.reduced.bam
