@@ -1,0 +1,15 @@
+Tip	Region	Lineage
+japonicus		
+NorthernTerritory	Northern Territory	AUS+NG
+Queensland	Queensland	AUS+NG
+IndiaEC	India Eastern Coast	IND
+IndiaWC	India Western Coast	IND
+IndonesiaK	Indonesia-K	SEA
+IndonesiaSJ	Indonesia-SJ	SEA
+IndonesiaSU	Indonesia-SU	SEA
+Cambodia	Cambodia	SEA
+PapuaNG	Papua New Guinea	AUS+NG
+Philipines	Philippines	SEA
+Thailand	Thailand	SEA
+Vietnam	Vietnam	SEA
+Bangladesh	Bangladesh	IND

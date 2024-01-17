@@ -43,6 +43,7 @@ Check sanity with a basic PCA using .cov approach with all the data and one chro
 ```{r}
 m61<-read_csv("meta/61-Indo-split.csv")
 m61 %>% select(Path) %>% write_tsv("bamlists/61.bamlist", col_names = FALSE)
+m61 %>% select(Run) %>% write_tsv("bamlists/61-sample-names.txt", col_names = FALSE)
 ```
 
 
@@ -129,7 +130,7 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/403/snps-wgs.out 2> outputs/403/snps-wgs.err &
 
 ```
-	-> Number of sites retained after filtering: 3327142 
+	-> Number of sites retained after filtering: 3283323 
 
 Creating a vcf
 
@@ -140,7 +141,7 @@ bgzip plink.vcf
 tabix plink.vcf.gz
 
 #renaming vcf
-bcftools reheader --samples bamlists/60-sample-names.txt -o outputs/401/renamed.vcf.gz outputs/401/plink.vcf.gz
+bcftools reheader --samples bamlists/61-sample-names.txt -o outputs/401/renamed.vcf.gz outputs/401/plink.vcf.gz
 
 bcftools +prune -l 0.20 -w 10000 outputs/401/renamed.vcf.gz > outputs/401/pruned.vcf
 bcftools +prune -l 0.30 -w 10000 outputs/401/renamed.vcf.gz > outputs/401/pruned-03.vcf
@@ -151,6 +152,8 @@ bcftools +prune -l 0.30 -w 10000 outputs/401/renamed.vcf.gz > outputs/401/pruned
 ## MTDNA
 
 (didnt' work well with japonicus with all the data, trying with 20x downsampled data too, work less well)
+options
+--coverage=200
 
 samtools view -b data/split/DRR391968.sort.flt.bam NC_007439.1 > data/mtdna/DRR391968-mtdna.bam
 samtools index data/mtdna/DRR391968-mtdna.bam
@@ -162,3 +165,25 @@ samtools faidx data/mtdna/DRR391968-mtdna-q20.fasta NC_007439.1:6329-7879 > data
 
 
 ~/seqtk/seqtk seq -a -q20 -n N data/mtdna/DRR391968-mtdna.fq 
+
+
+Alternatively
+
+# call variants
+bcftools mpileup -d 400 -Ou -f genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna data/mtdna/DRR391968-mtdna.bam | bcftools call -mv -Oz -o outputs/403/calls.vcf.gz
+bcftools index calls.vcf.gz
+
+# normalize indels
+bcftools norm -f reference.fa calls.vcf.gz -Ob -o calls.norm.bcf
+
+# filter adjacent indels within 5bp
+bcftools filter --IndelGap 5 calls.norm.bcf -Ob -o calls.norm.flt-indels.bcf
+
+# apply variants to create consensus sequence
+cat reference.fa | bcftools consensus calls.vcf.gz > consensus.fa
+
+# output IUPAC ambiguity codes based on REF+ALT columns (regardless of genotype)
+cat reference.fa | bcftools consensus --iupac-codes calls.vcf.gz > consensus.fa
+
+# output IUPAC ambiguity codes based on sample genotypes
+cat reference.fa | bcftools consensus --haplotype I calls.vcf.gz > consensus.fa

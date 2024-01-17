@@ -101,6 +101,7 @@ blank <- grid.rect(gp=gpar(col="white"))
 ```{r}
 ggarrange(ggarrange(panela,blank, ncol=1), pcb, ncol=2, widths = c(1,2))
 ggsave("outputs/401/pcadapt-ozng.jpeg", width=8.5, height=5.5)
+ggsave("outputs/401/Supplemental Figure S4.pdf", width=8.5, height=5.5)
 
 ```
 # Outliers

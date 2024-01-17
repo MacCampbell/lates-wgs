@@ -1,4 +1,4 @@
----
+--
 title: "402-network"
 output: html_document
 date: "2023-12-12"
@@ -72,15 +72,17 @@ net<-read.nexus.networx("outputs/402/pruned-varsites.network")
 
 ```{r}
 g<-ggsplitnet(net)  
-g$data<-left_join(g$data, m2, by=c("label"="Run")) 
+g$data<-left_join(g$data, m, by=c("label"="Run")) 
 
-g + 
+n<-g + 
   geom_tippoint(aes(shape=Lineage, fill=Region), cex=5, alpha=1.00) +
   scale_shape_manual(values = c(21,23,24)) +
   scale_fill_viridis_d(option="H") +
-  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+  guides(fill = guide_legend(override.aes = list(pch = 22)))
 
+n
 ggsave("outputs/402/wgs-network.jpeg", width=8, height=5)
+ggsave("outputs/402/wgs-network.pdf", width=8, height=5)
 
 ```
 
@@ -89,12 +91,16 @@ ggsave("outputs/402/wgs-network.jpeg", width=8, height=5)
 Looking at the tree
 
 ```{r}
-
-ind<-m %>% filter(Lineage=="IND")
 tree<-read.tree("outputs/401/pruned.min4.phy.varsites.phy.contree")
-#t2<-root.phylo(tree,outgroup = ind$Run)
+t1<-ggtree(tree) + geom_nodelab(aes(label=node))
+t1
+```
 
-t2<-midpoint.root(t2)
+```{r}
+#ind<-m %>% filter(Lineage=="IND")
+#t2<-root.phylo(tree,outgroup = ind$Run)
+#t2<-midpoint.root(t2)
+t2<-root.phylo(tree, node=73)
 t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 75)
 
 t<-t3
@@ -133,3 +139,29 @@ u
 
 ggsave("outputs/402/concatenated-tree-60inds.jpeg", width=6, height=9)
 ```
+
+
+Unrooted version
+```{r}
+
+#t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 75)
+
+#t2
+
+t<-ggtree(t2, layout = 'circular' ) %>% ggtree::rotate(73) %>% ggtree::rotate(67) %>% ggtree::rotate(86) %>% ggtree::rotate(91) %>% ggtree::rotate(104) %>% ggtree::rotate(93)
+t + geom_nodelab(aes(label=node)) 
+
+```
+
+```{r}
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[

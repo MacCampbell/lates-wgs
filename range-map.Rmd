@@ -149,4 +149,6 @@ map2 +
   ylab("Latitude\n") +
   theme(axis.title = element_text(size=18, face="bold")) 
 ggsave("outputs/range-map/range-map.jpeg")
+ggsave("outputs/range-map/range-map.pdf")
+
 ```
