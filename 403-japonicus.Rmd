@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 library(phytools)
 library(tidyverse)
 library(ggtree)
+library(treeio)
 library(ggrepel)
 library(tanggle)
 library(phangorn)
@@ -140,15 +141,46 @@ plink --ped plink-binary.ped --map plink-binary.map --recode vcf --allow-extra-c
 bgzip plink.vcf 
 tabix plink.vcf.gz
 
-#renaming vcf
-bcftools reheader --samples bamlists/61-sample-names.txt -o outputs/401/renamed.vcf.gz outputs/401/plink.vcf.gz
+#renaming vcf in 403 locally
+bcftools reheader --samples bamlists/61-sample-names.txt -o outputs/403/renamed.vcf.gz outputs/403/plink.vcf.gz
 
-bcftools +prune -l 0.20 -w 10000 outputs/401/renamed.vcf.gz > outputs/401/pruned.vcf
-bcftools +prune -l 0.30 -w 10000 outputs/401/renamed.vcf.gz > outputs/401/pruned-03.vcf
+bcftools +prune -l 0.20 -w 10000 outputs/403/renamed.vcf.gz > outputs/403/pruned.vcf
+bcftools +prune -l 0.30 -w 10000 outputs/403/renamed.vcf.gz > outputs/403/pruned-03.vcf
 ```
 
+in 403 locally   
+
+in 403
+```{sh, eval=FALSE}
+~/github/mccloud-rrt/vcf2phylip.py -i pruned.vcf 
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-03.vcf 
+
+```
+
+```{sh, eval=FALSE}
+iqtree -s pruned.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
+iqtree -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo
+iqtree -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo -o DRR391968
+iqtree -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m GTR+ASC -bb 10000 --redo -o DRR391968
+raxmlHPC-PTHREADS -T 3 -m ASC_GTRGAMMA --asc-corr lewis -p 2 -s  pruned.min4.phy.varsites.phy  -n asc -o DRR391968 
+```
+-p is random number seed  
 
 
+ERROR: Invalid use of +ASC because of 14065 invariant sites in the alignment
+
+Alignment has 61 sequences with 8529 columns, 8529 distinct patterns
+6456 parsimony-informative, 2073 singleton sites, 0 constant sites
+
+Note, without specifying outgroup, clear clades not found. NJ tree shows clear clades though....
+
+iqtree -s pruned-03.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
+iqtree -s pruned-03.min4.phy.varsites.phy -st DNA -m GTR+ASC -bb 10000 --redo  -o DRR391968
+Alignment has 61 sequences with 36765 columns, 36765 distinct patterns
+27762 parsimony-informative, 9003 singleton sites, 0 constant sites
+ 
+             
+             
 ## MTDNA
 
 (didnt' work well with japonicus with all the data, trying with 20x downsampled data too, work less well)
@@ -187,3 +219,53 @@ cat reference.fa | bcftools consensus --iupac-codes calls.vcf.gz > consensus.fa
 
 # output IUPAC ambiguity codes based on sample genotypes
 cat reference.fa | bcftools consensus --haplotype I calls.vcf.gz > consensus.fa
+
+
+## SVDQuartets
+
+Running on Farm
+
+conda activate py2
+(py2) maccamp@farm:~/bin$ LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/maccamp/miniconda3/envs/py2/lib/
+
+now it works!
+
+```{sh, eval=FALSE}
+srun -p high -t 48:00:00 --mem=32G --nodes=1 paup4a168_ubuntu64 lates-svd.nex  
+
+```
+
+Plotting a figure.
+
+```{r}
+q<-read.tree("outputs/403/svd-boot-reroot.tree") 
+#q<-root(q,"japonicus")
+qt<-ggtree(q, branch.length = "none") 
+qt + geom_tiplab() + geom_nodelab(aes(label=branch.length)) +
+  xlim(0,10)
+```
+
+```{r}
+tips<-read_tsv("meta/species-tree-tips.txt")
+
+tips$Region<-factor(tips$Region, levels=c("Queensland","Northern Territory","Papua New Guinea",
+                                              "Indonesia-K","Indonesia-SJ","Indonesia-SU","Philippines",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India Eastern Coast","India Western Coast"))
+
+```
+
+```{r}
+
+qt %<+% tips + 
+  geom_tippoint(aes(x=x+0.002,fill=Region, shape=Lineage), cex=4) + 
+  geom_tiplab(aes(x=x+.3, label=Region)) +
+  geom_nodelab(aes(label=paste0(round(branch.length,0)), y=y+.4, x=x-.3)) +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(0,10) +
+  scale_fill_viridis_d(option="H") +
+  theme(legend.position = "none") 
+
+ggsave("outputs/403/species-tree.pdf")
+```
