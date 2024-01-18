@@ -26,18 +26,20 @@ CGGAATAGTGGGCACAGCCCTAAGCCTACTCATCCGAGCGGAACTTAGCCAACCTGGCGCACTCCTAGGAGACGACCAGA
 		
 		Expanding to 20M genes for better ESS values (>>200)
 ```{r}
-tree<-read.beast("data/mtdna/dating/summary/lates-date.con.tre") 
+tree<-read.beast("~/Dropbox/Australian-fishes/barra-genomics-paper/time-tree-files/lates-date.con.tre") 
 tm<-read_csv("meta/tree-meta.csv")
 ```
 
+
 ```{r}
-t<-ggtree(tree) %>% ggtree::rotate(17)  %>% ggtree::rotate(18) %>% ggtree::rotate(20) %<+% tm 
-nodes<-t$data %>% filter(isTip==FALSE) %>% filter(x > 41) %>% filter(node %in% c(19,20))
+t<-ggtree(tree) %>% ggtree::rotate(21)   %<+% tm 
+nodes<-t$data %>% filter(isTip==FALSE) %>% filter(x > 41) %>% filter(node %in% c(20,21))
 extras<-t$data %>% filter(isTip==TRUE)
 
 t + 
   geom_text(data=t$data %>% filter(isTip==FALSE), aes(x=x, y=y,label=node)) +
-  geom_tiplab(size=4, aes(x=x+1,label=Tip), fontface = 3) 
+  geom_tiplab(size=4, aes(x=x+1,label=Tip), fontface = 3) +
+  xlim(0,75)
 ```
 
 ```{r}
@@ -63,6 +65,6 @@ ggsave("outputs/103/time-tree.jpeg")
 
 95%hpd    
 ```{r}
-age<-t$data %>% filter(node %in% c(19,20)) %>% select(age_0.95HPD)
+age<-t$data %>% filter(node %in% c(20,21)) %>% select(age_0.95HPD)
 age$age_0.95HPD
 ```
