@@ -72,12 +72,6 @@ ggplot(lc05) +
   theme_bw()
 ```
 
-```{r}
-ggplot(lc05 %>% filter(BP_A <1e07)) +
-  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
-  scale_color_gradient(low="khaki1", high="red") + 
-  theme_bw()
-```
 
 ```{r}
 lc03<-read.delim("outputs/600/sea/NC_066835.1.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
@@ -90,22 +84,6 @@ ggplot(lc03) +
 ```
 
 
-```{r}
-ggplot(lc03) +
-  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
-  scale_color_gradient(low="khaki1", high="red") + 
-  theme_bw() +
-  xlim(1.75e7,2.4e07)
-```
-
-
-```{r}
-ggplot(lc03) +
-  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
-  scale_color_gradient(low="khaki1", high="red") + 
-  theme_bw() +
-  xlim(0,5e06)
-```
 
 ```{r}
 lc20<-read.delim("outputs/600/sea/NC_066852.1.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
@@ -257,6 +235,86 @@ Calculating heterozygosity
 
 ```{r}
 snps<-import.snpR.data(genotypes = "outputs/600/sea/NC_066835.1-sub.vcf", 
+      sample.meta = df3)
+```
+
+```{r}
+x<-calc_hs(snps)
+hs<-get.snpR.stats(x, stats="hs")
+```
+
+```{r}
+ggplot(hs$sample) +
+  geom_boxplot(aes(x=Zygosity, y=hs)) +
+  theme_bw() +
+  ylab("Individual Mean Heterozygosity hs\n") +
+  xlab("\nZygosity") +
+  theme(axis.text=element_text(size=12)) +
+  theme(axis.title = element_text(size=14, face="bold"))
+```
+
+
+
+## Determine NC_066852.1, breakpoints and heterozygotes.....
+
+
+Let's look at a pca of NC_066852.1 in a region
+bgzip, tabix    
+bcftools view -r NC_066852.1:3500000-23737464 NC_066852.1.vcf.gz > NC_066852.1-sub.vcf;    
+
+
+```{r}
+vcf<-read.vcfR(file="outputs/600/sea/NC_066852.1-sub.vcf")
+genind<-vcfR2genind(vcf)
+genind@pop<-factor(sea$Pop, levels=c("INA","MAL","THA"))
+
+```
+
+```{r}
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+```
+
+```{r}
+df<-pca1$li
+df<-df %>% bind_cols(sea)
+eig<-pca1$eig/sum(pca1$eig)*100
+df$Population<-factor(df$Pop, levels=c("INA","MAL","THA"))
+```
+
+```{r}
+pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Population, shape=Lineage), alpha=0.75, cex=2) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+pc12
+```
+
+```{r}
+df2 <- df %>% as_tibble()
+df2$Run<-rownames(df)
+
+rhoms<-df2 %>% filter(Axis1>20) 
+hets<-df2 %>% filter(Axis1< 20) %>% filter(Axis1> -20)
+ahoms<-df2 %>% filter(Axis1< -20)
+```
+
+```{r}
+df3<-df2 %>% mutate(Zygosity=ifelse(Run %in% ahoms$Run, "AA", ifelse(Run %in% hets$Run, "AR","RR"))) %>% select(Run, Region, Zygosity)
+```
+
+Calculating heterozygosity   
+
+```{r}
+snps<-import.snpR.data(genotypes = "outputs/600/sea/NC_066852.1-sub.vcf", 
       sample.meta = df3)
 ```
 

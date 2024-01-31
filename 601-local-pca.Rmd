@@ -135,7 +135,9 @@ ggplot(p1) +
   xlab("Chromosome")
 ```
 
-
+```{r}
+outliers %>% filter(chrom=="NC_066837.1")
+```
 
 ### MDS2
 ```{r}
@@ -217,7 +219,7 @@ Let's look at a PCA of NC_066837.1
 
 
 ```{r}
-vcf<-read.vcfR(file="outputs/600/sea/NC_066837.1.vcf")
+vcf<-read.vcfR(file="outputs/600/sea/NC_066837.1.vcf.gz")
 genind<-vcfR2genind(vcf)
 genind@pop<-factor(sea$Pop, levels=c("INA","MAL","THA"))
 
@@ -257,7 +259,7 @@ Let's look at a pca of NC_066835.1
 
 
 ```{r}
-vcf<-read.vcfR(file="outputs/600/sea/NC_066835.1.vcf")
+vcf<-read.vcfR(file="outputs/600/sea/NC_066835.1.vcf.gz")
 genind<-vcfR2genind(vcf)
 genind@pop<-factor(sea$Pop, levels=c("INA","MAL","THA"))
 
@@ -297,7 +299,7 @@ Let's look at a pca of NC_066852.1
 
 
 ```{r}
-vcf<-read.vcfR(file="outputs/600/sea/NC_066852.1.vcf")
+vcf<-read.vcfR(file="outputs/600/sea/NC_066852.1.vcf.gz")
 genind<-vcfR2genind(vcf)
 genind@pop<-factor(sea$Pop, levels=c("INA","MAL","THA"))
 
