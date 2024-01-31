@@ -1,0 +1,68 @@
+---
+title: "500-sl-network"
+output: html_document
+date: "2024-01-22"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message = FALSE)
+```
+
+## mtDNA network
+
+```{r}
+library(tidyverse)
+library(viridis)
+library(ape)
+library(pegas)
+```
+
+
+```{r}
+Naso<-read.dna(file="data/sri-lanka/sl-for-network.afas", format="fasta")
+
+Naso
+```
+
+```{r}
+NasoHaps <- haplotype(Naso)
+NasoHaps
+```
+
+
+```{r}
+NasoNet <- haploNet(NasoHaps)
+plot(NasoNet, size=attr(NasoNet,"freq"), fast=FALSE)
+
+```
+
+
+````{r}
+ind.hap<-with(
+  stack(setNames(attr(NasoHaps, "index"), rownames(NasoHaps))),
+  table(hap=ind, individuals=rownames(Naso)[values])
+ )
+ind.hap
+```
+
+
+```{r}
+plot(NasoNet, size=attr(NasoNet, "freq"), scale.ratio = 5, cex = .5, pie=ind.hap, labels = FALSE,
+     fast = TRUE, threshold = 0, 
+     bg=viridis(length(colnames(ind.hap)), option="H"))
+
+legend("topright",colnames(ind.hap), text.col =viridis(length(colnames(ind.hap)), option="H") )
+```
+
+```{r}
+pdf("./outputs/500/mtdna-network.pdf", height=8, width=8)
+plot(NasoNet, size=attr(NasoNet, "freq"), scale.ratio = 2, cex = 0.7, pie=ind.hap, labels = FALSE,
+     fast = TRUE, threshold = 0, 
+     bg=viridis(length(colnames(ind.hap)), option="H"))
+
+legend("bottomleft",colnames(ind.hap), text.col =viridis(length(colnames(ind.hap)), option="H") )
+dev.off()
+```
+
+

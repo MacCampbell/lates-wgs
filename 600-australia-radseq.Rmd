@@ -1,0 +1,242 @@
+---
+title: "600-australia-radseq"
+output: html_document
+date: "2024-01-30"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+
+```{r}
+library(tidyverse)
+library(ggrepel)
+library(pcadapt)
+library(adegenet)
+library(vcfR)
+library(snpR)
+library(ggpubr)
+library(RColorBrewer)
+```
+
+See 106 for generation of snps
+
+retrieve meta.    
+
+
+```{r}
+meta<-read_csv("meta/wang.csv") %>% mutate(Region=Pop)
+write_tsv(meta %>% select(Run), col_names=FALSE, file="bamlists/130-sample-names.txt")
+write_tsv(meta %>% filter(Pop %in% c("AUW","AUE","PNG")) %>% select(Run), col_names=FALSE, file="bamlists/oz-png-names.txt")
+ozpng<-meta %>% filter(Pop %in% c("AUW","AUE","PNG"))
+meta
+```
+
+```{r}
+meta$Pop<-factor(meta$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
+meta<-meta %>% mutate(Lineage=ifelse(Pop %in% c("AUW","AUE","PNG"), "AUS+NG", "SEA"))
+meta %>% group_by(Pop, Lat_Lon) %>% summarize(Count=n(), Reads=mean(Filtered))
+```
+
+
+Let's see what we can pull from here in terms of local PCA.
+
+```{r, eval=FALSE}
+vcf<-read.vcfR(file="outputs/106/plink.vcf.gz")
+genind<-vcfR2genind(vcf)
+genind@pop<-factor(meta$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
+save(genind, file="outputs/600/plink-unpruned-genind.rda")
+```
+
+
+```{r}
+load("outputs/600/plink-unpruned-genind.rda")
+```
+
+
+```{r}
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+plot(pca1$li)
+
+```
+
+Plotting again
+```{r}
+df<-pca1$li
+df<-df %>% bind_cols(meta)
+eig<-pca1$eig/sum(pca1$eig)*100
+df$Population<-factor(df$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
+```
+
+```{r}
+pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Population, shape=Lineage), alpha=0.75, cex=2) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+pc12
+ggsave("outputs/106/pcs12.jpeg")
+```
+
+```{r}
+pc13<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis3, fill=Population, shape=Lineage), alpha=0.75, cex=2) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC3 ",round(eig[3],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+pc13
+```
+
+```{r}
+eigs<-eig %>% as_tibble() %>% head(n=5) %>% rename(Variance=value) %>%
+  mutate(PC=1:n())
+e<-ggplot(eigs, aes(x=PC, y=Variance)) +
+  geom_bar(stat="identity") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_x_continuous(breaks=c(1,2,3,4,5)) +
+  ylab("% Variance\n") +
+  xlab("\nPC") + 
+  theme(axis.title=element_text(size=14, face="bold")) +
+  theme(axis.text=element_text(size=12))
+e
+```
+
+```{r}
+ggarrange(pc12+theme(legend.position = "") + ggtitle("A") + theme(plot.title=element_text(size=14, face="bold")),
+          pc13+ggtitle("B") + theme(plot.title=element_text(size=14, face="bold")), widths=c(1,1.3))
+ggsave("outputs/600/combined-radseqpcs.pdf", width=8, height=3.75)
+```
+
+
+Let's test for differentiation
+## PCAdapt
+
+
+```{r}
+path_to_file <- "outputs/106/renamed.vcf.gz"
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+
+Choose a K
+```{r}
+x <- pcadapt(input = filename, K = 5) 
+```
+
+
+```{r}
+panela<-plot(x, option = "screeplot", K = 5) + ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  scale_x_continuous(breaks=seq(1,5,1), labels=seq(1,5,1)) +
+  ylab("Proption of Explained Variance\n") +
+  xlab("\nPrincipal Component") +
+  theme(axis.title=element_text(size=12))
+```
+
+```{r}
+pcadata<-x$scores[,1:2] %>% as_tibble()
+pcadata<-pcadata %>% bind_cols(meta)
+labels<-pcadata %>% group_by(Region) %>% mutate(x=mean(V1), y=mean(V2)) %>% select(Region, x, y) %>% unique()
+```
+
+```{r}
+pcb<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V2, fill=Region, shape=Lineage), alpha=0.95) +
+  geom_text_repel(data=labels, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  scale_shape_manual(values = c(21,24)) +
+ # scale_fill_manual(values=cols[1:3]) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  #theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 2") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  scale_fill_viridis_d(option="H") 
+
+pcb
+```
+
+
+
+Now to split up samples to
+
+SEA lineage
+
+```{r}
+sea<-meta %>% filter(Lineage=="SEA")
+sea %>% select(Run) %>% write_tsv(col_names = FALSE, file="bamlists/sea-names.txt")
+```
+
+```{sh, eval=FALSE}
+bcftools view -S bamlists/sea-names.txt outputs/106/renamed.vcf.gz | bcftools view -q 0.05:minor  > outputs/600/sea-maf05.vcf
+bcftools view -S bamlists/oz-png-names.txt outputs/106/renamed.vcf.gz | bcftools view -q 0.05:minor  > outputs/600/ozpng-maf05.vcf
+
+```
+bgzip, tabix etc.
+
+Let's load it up and see what we can get.
+
+```{r}
+path_to_file <- "outputs/600/sea-maf05.vcf.gz"
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+
+Choose a K
+```{r}
+x <- pcadapt(input = filename, K = 5) 
+```
+
+
+```{r}
+panela<-plot(x, option = "screeplot", K = 5) + ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  scale_x_continuous(breaks=seq(1,5,1), labels=seq(1,5,1)) +
+  ylab("Proption of Explained Variance\n") +
+  xlab("\nPrincipal Component") +
+  theme(axis.title=element_text(size=12))
+```
+
+```{r}
+pcadata<-x$scores[,1:2] %>% as_tibble()
+pcadata<-pcadata %>% bind_cols(sea)
+labels<-pcadata %>% group_by(Region) %>% mutate(x=mean(V1), y=mean(V2)) %>% select(Region, x, y) %>% unique()
+```
+
+```{r}
+pcb<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V2, fill=Region, shape=Lineage), alpha=0.95) +
+  geom_text_repel(data=labels, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  scale_shape_manual(values = c(21,24)) +
+ # scale_fill_manual(values=cols[1:3]) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  #theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 2") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  scale_fill_viridis_d(option="H") 
+
+pcb
+```
+
+Look, some MAL samples are funny.
