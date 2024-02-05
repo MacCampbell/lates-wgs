@@ -33,7 +33,10 @@ bam2<-read_csv("meta/wang.csv") %>%  mutate(Region=Pop) %>%
 bams<-bind_rows(bam1,bam2)
 
 bams %>% group_by(DataType, Lineage) %>% summarize(Count=n())
-bams %>% write_tsv("bamlists/190.bamlist", col_names = FALSE)
+bams %>% select(Path) %>% write_tsv("bamlists/190.bamlist", col_names = FALSE)
+bams %>% select(Run) %>% write_tsv("bamlists/190-sample-names.txt", col_names = FALSE)
+
+meta<-bams
 ```
 
 ```{sh, eval=FALSE}
@@ -47,3 +50,61 @@ srun -p high -t 1-12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 ```
 
 
+
+
+```{r}
+m <- as.matrix(read.table("outputs/607/190-ibs-90.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+```
+
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta)
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Region), pch=21, alpha=0.75) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("Genome-Wide PCA of L. calcarifer WGS and RADseq Data") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+ggsave("outputs/607/lates-c-genome-wide-pca-12.jpeg")
+```
+
+## Calling SNPs
+
+
+```{sh, eval=FALSE}
+srun -t 96:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 171 -bam bamlists/190.bamlists -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf genome/lates-lgs.txt -out outputs/607/snps  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/607/snps-wgs.out 2> outputs/607/snps-wgs.err &
+
+```
+
+Creating a vcf
+
+```{sh, eval=FALSE}
+plink --tped snps.tped --tfam snps.tfam  --out plink-binary --recode --allow-extra-chr --noweb
+plink --ped plink-binary.ped --map plink-binary.map --recode vcf --allow-extra-chr -out plink
+bgzip plink.vcf 
+tabix plink.vcf.gz
+
+#renaming vcf
+bcftools reheader --samples bamlists/190-sample-names.txt outputs/607/plink.vcf.gz |  bcftools +fill-tags | bcftools view -q 0.05:minor -O z > outputs/607/snps-05.vcf.gz  
+
+bcftools +prune -l 0.20 -w 10000 outputs/607/snps-05.vcf.gz -O z > outputs/607/pruned.vcf.gz
+```
