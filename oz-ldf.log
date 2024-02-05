@@ -1,0 +1,19 @@
+PLINK v1.90b6.14 64-bit (7 Jan 2020)
+Options in effect:
+  --allow-extra-chr
+  --double-id
+  --ld-window-r2 0.5
+  --out oz-ldf
+  --r2 inter-chr
+  --vcf oz-ng-sub.vcf.gz
+
+Hostname: macs-mbp-2.staff.wireless.sydney.edu.au
+Working directory: /Users/mac/github/lates-wgs
+Start time: Thu Feb  1 14:56:37 2024
+
+Random number seed: 1706759797
+16384 MB RAM detected; reserving 8192 MB for main workspace.
+Error: Failed to open oz-ng-sub.vcf.gz. (--vcf expects a complete filename; did
+you forget '.vcf' at the end?)
+
+End time: Thu Feb  1 14:56:37 2024

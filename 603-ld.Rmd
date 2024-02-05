@@ -47,8 +47,29 @@ plink --vcf NC_066833.1.vcf --r2 inter-chr --ld-window-r2 0.3 --out NC_066833.1.
 
 ```
 
-#Null Example
+```{sh, eval=FALSE}
+for f in *1.vcf; do plink --vcf $f --r2 inter-chr --ld-window-r2 0.3 --out `basename $f vcf`ldf --allow-extra-chr --double-id; done;
+```
 
+```{r, eval=FALSE}
+files<-list.files("outputs/600/sea",pattern = "*.ldf.ld", full.names = TRUE)
+
+plotLd<-function(file) {
+  chrom<-gsub("outputs/600/sea/","",file)
+  chrom<-gsub(".1.ldf.ld","", chrom)
+  lc<-read.delim(file,sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>%  filter(R2 >0.5)
+
+  ggplot(lc) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw()
+ggsave(paste0("outputs/600/sea-ld/",chrom,".jpeg"))
+}
+
+lapply(files, plotLd)
+```
+
+#Null Example
 
 ```{r}
 lc01<-read.delim("outputs/600/sea/NC_066833.1.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
@@ -267,7 +288,7 @@ bcftools view -r NC_066852.1:3500000-23737464 NC_066852.1.vcf.gz > NC_066852.1-s
 vcf<-read.vcfR(file="outputs/600/sea/NC_066852.1-sub.vcf")
 genind<-vcfR2genind(vcf)
 genind@pop<-factor(sea$Pop, levels=c("INA","MAL","THA"))
-
+genind@other<-sea
 ```
 
 ```{r}
@@ -332,3 +353,8 @@ ggplot(hs$sample) +
   theme(axis.text=element_text(size=12)) +
   theme(axis.title = element_text(size=14, face="bold"))
 ```
+
+
+Note: Can examine homs from lack of signature of LD
+
+

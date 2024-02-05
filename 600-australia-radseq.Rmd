@@ -30,14 +30,16 @@ meta<-read_csv("meta/wang.csv") %>% mutate(Region=Pop)
 write_tsv(meta %>% select(Run), col_names=FALSE, file="bamlists/130-sample-names.txt")
 write_tsv(meta %>% filter(Pop %in% c("AUW","AUE","PNG")) %>% select(Run), col_names=FALSE, file="bamlists/oz-png-names.txt")
 ozpng<-meta %>% filter(Pop %in% c("AUW","AUE","PNG"))
-meta
-```
 
-```{r}
 meta$Pop<-factor(meta$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
 meta<-meta %>% mutate(Lineage=ifelse(Pop %in% c("AUW","AUE","PNG"), "AUS+NG", "SEA"))
 meta %>% group_by(Pop, Lat_Lon) %>% summarize(Count=n(), Reads=mean(Filtered))
+
+sea<-meta %>% filter(Lineage=="SEA")
+sea %>% select(Run) %>% write_tsv(col_names = FALSE, file="bamlists/sea-names.txt")
+
 ```
+
 
 
 Let's see what we can pull from here in terms of local PCA.
@@ -178,11 +180,6 @@ Now to split up samples to
 
 SEA lineage
 
-```{r}
-sea<-meta %>% filter(Lineage=="SEA")
-sea %>% select(Run) %>% write_tsv(col_names = FALSE, file="bamlists/sea-names.txt")
-```
-
 ```{sh, eval=FALSE}
 bcftools view -S bamlists/sea-names.txt outputs/106/renamed.vcf.gz | bcftools view -q 0.05:minor  > outputs/600/sea-maf05.vcf
 bcftools view -S bamlists/oz-png-names.txt outputs/106/renamed.vcf.gz | bcftools view -q 0.05:minor  > outputs/600/ozpng-maf05.vcf
@@ -240,3 +237,42 @@ pcb
 ```
 
 Look, some MAL samples are funny.
+
+
+SNPR admixture (pruning)
+bcftools +prune -l 0.20 -w 10000 outputs/600/sea-maf05.vcf.gz > outputs/600/sea-pruned.vcf
+
+```{r}
+snps<-import.snpR.data(genotypes = "outputs/600/sea-pruned.vcf", 
+      sample.meta = sea %>% select(Run, Region, Lineage))
+```
+
+
+```{r}
+p <- plot_clusters(snps, facets = c("Region"))
+p$plot$pca
+```
+
+
+```{r}
+q<-plot_structure(snps, facet = "Region", method = "snmf", k=c(1,2,3,4,5,6), qsort=FALSE)
+```
+
+```{r}
+ent<-ggplot(q$K_plot, aes(x=k, y=Cross.Entropy)) +
+  geom_line() +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_x_discrete(limits=seq(2:10), labels=seq(2:10)) +
+  theme(axis.title = element_text(size=12, face="bold")) +
+  theme(axis.text=element_text(size=10)) +
+  ylab("Cross Entropy\n") +
+  xlab("\nK")
+
+ent
+```
+
+```{r}
+q$plot
+```
+

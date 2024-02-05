@@ -1,0 +1,134 @@
+---
+title: "605-inversion-convergence"
+output: html_document
+date: "2024-02-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+
+```{r}
+library(tidyverse)
+library(ggrepel)
+library(pcadapt)
+library(adegenet)
+library(vcfR)
+library(snpR)
+library(ggpubr)
+library(viridis)
+```
+
+Some omy05 genes are NC_066849.1
+
+https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_001640805.2/
+
+Assembly is on Ensembl, but the fragmented ones
+
+# q: are these inversions present in IND and AUS?
+
+retrieve meta and organize
+
+```{r}
+meta<-read_csv("meta/60-Indo-split.csv")
+meta$Region<-factor(meta$Region, levels=c("Queensland","Northern Territory","Papua New Guinea",
+                                              "Indonesia-K","Indonesia-SJ","Indonesia-SU","Philippines",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India Eastern Coast","India Western Coast"))
+meta$Lineage<-factor(meta$Lineage, levels=c("AUS+NG","SEA","IND"))
+  
+```
+
+
+using outputs/401/renamed.vcf.gz
+
+_1_     
+`bcftools view -r NC_066852.1:3500000-23737464 outputs/401/renamed.vcf.gz -O z > outputs/605/NC_066852.1-sub.vcf.gz `     
+
+
+```{r, eval=FALSE}
+vcf<-read.vcfR(file="outputs/605/NC_066852.1-sub.vcf.gz")
+genind<-vcfR2genind(vcf)
+genind@pop<-meta$Region
+
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(meta)
+eig<-pca1$eig/sum(pca1$eig)*100
+save(df, file="outputs/605/df.rda")
+save(eig, file="outputs/605/eig.rda")
+```
+
+```{r}
+load("outputs/605/df.rda")
+load("outputs/605/eig.rda")
+pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Region, shape=Lineage), alpha=0.75, cex=2) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,24,22)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+pc12
+```
+
+Errr.... Some of these fish (two are probably hybrids with IND fish), but IND is so divergent in this region... WE could have RR types on the left (all RR in OZ), then AR, then AAs.
+
+This is going to be pretty hard to eyeball with IND. Identifying hets/homs from sea data, looks like there are no RR homs in the WGS data from SEA. So if we calculate LD from AUS and IND samples it should be low, with LD high in SEA.
+
+Genomic data files in 401 series dirs    
+
+```{sh, eval=FALSE}
+bcftools view -S outputs/401/ind.samples -r NC_066852.1 outputs/401/renamed.vcf.gz | bcftools +fill-tags | bcftools view -q 0.05:minor -i 'F_MISSING<0.5'| bcftools +prune -l 0.20 -O z > outputs/605/ind-sub.vcf.gz
+
+bcftools view -S outputs/401/sea.samples -r NC_066852.1 outputs/401/renamed.vcf.gz | bcftools +fill-tags | bcftools view -q 0.05:minor -i 'F_MISSING<0.5' | bcftools +prune -l 0.20  -O z > outputs/605/sea-sub.vcf.gz
+
+bcftools view -S outputs/401/ozng.samples -r NC_066852.1 outputs/401/renamed.vcf.gz | bcftools +fill-tags | bcftools view -q 0.05:minor -i 'F_MISSING<0.5' | bcftools +prune -l 0.20  -O z > outputs/605/oz-ng-sub.vcf.gz
+
+
+plink --vcf oz-ng-sub.vcf.gz --r2 inter-chr --ld-window-r2 0.5 --out oz-ldf --allow-extra-chr --double-id
+plink --vcf sea-sub.vcf.gz --r2 inter-chr --ld-window-r2 0.5 --out sea-ldf --allow-extra-chr --double-id
+plink --vcf ind-sub.vcf.gz --r2 inter-chr --ld-window-r2 0.5 --out ind-ldf --allow-extra-chr --double-id
+```
+
+```{r}
+ozld<-read.delim("outputs/605/oz-ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
+  filter(R2 >0.5)
+
+ggplot(ozld) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw()
+```
+
+```{r}
+seald<-read.delim("outputs/605/sea-ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
+  filter(R2 >0.5)
+
+ggplot(seald) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw()
+```
+ 
+ 
+ 
+```{r}
+indld<-read.delim("outputs/605/ind-ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
+  filter(R2 >0.5)
+
+ggplot(indld) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw()
+```
+
+
+Not really what I thought, but oh well!
