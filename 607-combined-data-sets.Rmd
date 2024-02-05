@@ -37,13 +37,13 @@ bams %>% write_tsv("bamlists/190.bamlist", col_names = FALSE)
 ```
 
 ```{sh, eval=FALSE}
-srun -p high -t 1=12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+srun -p high -t 1-12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 -bam bamlists/190.bamlist -rf genome/lates-lgs.txt \
 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 171 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/607/190-ibs-90 > outputs/607/190-ibs-90.out 2> outputs/607/190-ibs-90.err &
-	
+```
 
 
