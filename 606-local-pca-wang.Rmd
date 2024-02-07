@@ -97,11 +97,6 @@ Running lostruct:
 `./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/606/bcf -t snp -s 25 -m 4 -I /Users/mac/github/lates-wgs/outputs/606/bcf/sample_info.tsv -j 1606`    
 
 `./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/606/bcf -t snp -s 50 -m 4 -I /Users/mac/github/lates-wgs/outputs/606/bcf/sample_info.tsv -j 1607`      
-Done finding PCs, computing distances.     
-   user  system elapsed       
-936.946  27.646 997.603       
-4000 windows and it didn't work so hot.
-240.935   5.264 258.473     
 
 ```{r}
 #mds<-read_csv("outputs/606/mds_coords-snp25.csv") # 25 SNP windows

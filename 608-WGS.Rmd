@@ -1,0 +1,33 @@
+---
+title: "608-WGS"
+output: html_document
+date: "2024-02-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+What if we use all samples from the WGS data set?
+
+
+```{sh, eval=FALSE}
+bcftools view outputs/401/renamed.vcf.gz | bcftools +fill-tags | bcftools view -q 0.05:minor -O z > outputs/608/wgs-05.vcf.gz
+
+bcftools index outputs/608/wgs-05.vcf.gz
+
+cat meta/lates-lgs.txt  | while read line; do bcftools view -Ob -r $line outputs/608/wgs-05.vcf.gz > outputs/608/bcf/$line.bcf; done;
+for f in outputs/608/bcf/*.bcf; do bcftools index $f; done;
+
+#Pulling some regions:
+bcftools view -r NC_066852.1:3500000-23737464 outputs/608/wgs-05.vcf.gz -O z > outputs/608/NC_066852.1-sub.vcf.gz     
+bcftools view -r NC_066852.1:6500000-8000000 outputs/608/wgs-05.vcf.gz -O z > outputs/608/NC_066852.1-dummy-sub.vcf.gz     
+
+```
+```     
+
+Note: 
+(base) macs-mbp-2:lates-wgs mac$ gunzip -c outputs/608/wgs-05.vcf.gz | wc -l
+ 2651716
+(base) macs-mbp-2:lates-wgs mac$ gunzip -c outputs/401/renamed.vcf.gz | wc -l
+ 3327172

@@ -11,12 +11,17 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 
 ```{r}
 library(tidyverse)
+library(vcfR)
+library(adegenet)
+library(ggrepel)
 library(ggpubr)
 library(phytools)
 library(tanggle)
 library(phangorn)
 library(viridis)
 library(ggpubr)
+library(snpR)
+library(RColorBrewer)
 ```
 
 
@@ -49,7 +54,7 @@ srun -p high -t 1-12:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 -out outputs/607/190-ibs-90 > outputs/607/190-ibs-90.out 2> outputs/607/190-ibs-90.err &
 ```
 
-
+258278 gls   
 
 
 ```{r}
@@ -66,8 +71,8 @@ head(cumvar)
 ```{r}
 covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta)
 
-text12<-covs %>% select(Run, Region, V1, V2) %>%
-  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+text12<-covs %>% select(Run, Region, DataType, V1, V2) %>%
+  group_by(Region, DataType) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
 
 ggplot(covs) +
   geom_point(aes(x=V1, y=V2, fill=Region), pch=21, alpha=0.75) +
@@ -78,7 +83,8 @@ ggplot(covs) +
   theme(panel.grid=element_blank()) +
   scale_fill_viridis_d(option="turbo") +
   ggtitle("Genome-Wide PCA of L. calcarifer WGS and RADseq Data") +
-  theme(plot.title = element_text(hjust=0.5, face="bold"))
+  theme(plot.title = element_text(hjust=0.5, face="bold")) +
+  facet_wrap(.~DataType, ncol = 1)
 
 ggsave("outputs/607/lates-c-genome-wide-pca-12.jpeg")
 ```
@@ -88,13 +94,14 @@ ggsave("outputs/607/lates-c-genome-wide-pca-12.jpeg")
 
 ```{sh, eval=FALSE}
 srun -t 96:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
--minInd 171 -bam bamlists/190.bamlists -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 171 -bam bamlists/190.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -rf genome/lates-lgs.txt -out outputs/607/snps  \
 -minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/607/snps-wgs.out 2> outputs/607/snps-wgs.err &
 
 ```
 
+104440 sites     
 Creating a vcf
 
 ```{sh, eval=FALSE}
@@ -107,4 +114,311 @@ tabix plink.vcf.gz
 bcftools reheader --samples bamlists/190-sample-names.txt outputs/607/plink.vcf.gz |  bcftools +fill-tags | bcftools view -q 0.05:minor -O z > outputs/607/snps-05.vcf.gz  
 
 bcftools +prune -l 0.20 -w 10000 outputs/607/snps-05.vcf.gz -O z > outputs/607/pruned.vcf.gz
+```
+
+### Checking signals
+
+
+```{r}
+
+snps<-import.snpR.data(genotypes = "outputs/607/pruned.vcf.gz", 
+      sample.meta = meta %>% select(Run, Region, Lineage, DataType))
+```
+
+
+```{r}
+p <- plot_clusters(snps, facets = c("Region.DataType"), viridis.option = "H")
+p$plot$pca
+```
+
+
+```{r, eval=FALSE}
+q<-plot_structure(snps, facet = "Region", method = "snmf", k=c(1,2,3,4,5,6), qsort=FALSE)
+save(q, file="outputs/607/q.rda")
+```
+
+
+```{r}
+load("outputs/607/q.rda")
+ent<-ggplot(q$K_plot, aes(x=k, y=Cross.Entropy)) +
+  geom_line() +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_x_discrete(limits=seq(2,6), labels=seq(2,6)) +
+  theme(axis.title = element_text(size=12, face="bold")) +
+  theme(axis.text=element_text(size=10)) +
+  ylab("Cross Entropy\n") +
+  xlab("\nK")
+
+ent
+```
+
+
+```{r}
+q$plot
+```
+
+Local PCA:     
+
+```{sh, eval=FALSE}
+cat meta/lates-lgs.txt  | while read line; do bcftools view -Ob -r $line outputs/607/snps-05.vcf.gz > outputs/607/bcf/$line.bcf; done;
+for f in outputs/607/bcf/*.bcf; do bcftools index $f; done;
+``` 
+
+
+```{r}
+samples<-meta %>% select(Run) %>% rename(ID=Run)
+
+population<-meta %>% select(Region) %>% rename(population=Region)
+
+table<-cbind(samples, population)
+write.table(table, "outputs/607/bcf/sample_info.tsv", quote = TRUE, row.names = FALSE, sep="\t")
+```
+
+`./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/607/bcf -t SNP -s 25 -m 4 -I /Users/mac/github/lates-wgs/outputs/607/bcf/sample_info.tsv -j 1607`
+
+`./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/607/bcf -t SNP -s 50 -m 4 -I /Users/mac/github/lates-wgs/outputs/607/bcf/sample_info.tsv -j 1607`
+
+```{r}
+#mds<-read_csv("outputs/607/mds_coords.csv") # 1e5 bp windows
+mds<-read_csv("outputs/607/mds_coords-snp25.csv") # 25 SNP windows
+mds<-read_csv("outputs/607/mds_coords-snp50.csv") # 25 SNP windows
+
+#make tidy
+tidymds<-mds %>% gather(MDS, Value, 3:6)
+MDS1<-filter(tidymds, MDS=="MDS1") %>% rename(MDS1=MDS) %>% rename(Value1=Value)
+MDS2<-filter(tidymds, MDS=="MDS2") %>% rename(MDS2=MDS) %>% rename(Value2=Value)
+MDS3<-filter(tidymds, MDS=="MDS3") %>% rename(MDS3=MDS) %>% rename(Value3=Value)
+MDS4<-filter(tidymds, MDS=="MDS4") %>% rename(MDS4=MDS) %>% rename(Value4=Value)
+```
+
+
+```{r}
+ggplot(mds)+
+  geom_point(aes(x=MDS1, y=MDS2, fill=chrom), pch=21, alpha=0.75) +
+  scale_fill_viridis_d(option="magma") +
+  theme_bw() +
+  theme(legend.position = 'none')
+```
+
+
+```{r}
+ggplot(mds)+
+  geom_point(aes(x=MDS1, y=MDS3, fill=chrom), pch=21, alpha=0.75) +
+  scale_fill_viridis_d(option="magma") +
+  theme_bw() +
+  theme(legend.position = 'none')
+```
+
+     
+     
+     
+```{r}
+ggplot(mds)+
+  geom_point(aes(x=MDS1, y=MDS4, fill=chrom), pch=21, alpha=0.75) +
+  scale_fill_viridis_d(option="magma") +
+  theme_bw() +
+  theme(legend.position = 'none')
+```
+     
+Plotting outliers by chrom.
+
+### MDS1
+
+```{r}
+p1<-MDS1 %>% mutate(Index=1:n())
+
+out <- boxplot.stats(p1$Value1)$out
+out_ind <- which(p1$Value1 %in% c(out))
+length(out_ind)
+```
+
+
+```{r}
+outliers<-p1[out_ind,]
+outliers %>% group_by(chrom) %>% summarize(Count=n()) %>% arrange(-Count)
+```
+
+```{r}
+#places to put labels based on index
+chroms<-p1 %>% group_by(chrom) %>% mutate(Start=min(Index), Stop=max(Index)) %>% select(chrom,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2))
+
+#Make enough colors
+nb.cols <- nrow(chroms)
+mycolors <- colorRampPalette(brewer.pal(8, "Set1"))(nb.cols)
+
+ggplot(p1) +
+  geom_rect(data=chroms, aes(xmin=Start, xmax=Stop, ymin=min(p1$Value1), ymax=max(p1$Value1)), fill=mycolors, alpha=0.25) +
+  geom_point(data=p1, aes(x=Index, y=Value1, color=chrom), alpha=0.75, cex=0.5) +
+  geom_point(data=outliers, aes(x=Index, y=Value1), color="black", cex=0.5) +
+  theme_bw() +
+  scale_x_continuous(breaks=chroms$Position, labels=chroms$chrom) +
+  theme(axis.text.x = element_text(angle=45, hjust = 1, face="bold", size=6)) +
+  theme(legend.title = element_blank()) +
+  theme(panel.grid = element_blank()) +
+  theme(legend.position = "none") +
+  scale_color_manual(values=mycolors) +
+  ylab("MDS1") +
+  xlab("Chromosome")
+```
+
+### MDS2
+```{r}
+p2<-MDS2 %>% mutate(Index=1:n())
+
+out2 <- boxplot.stats(p2$Value2)$out
+out_ind2 <- which(p2$Value2 %in% c(out2))
+length(out_ind2)
+```
+```{r}
+outliers2<-p2[out_ind2,]
+outliers2 %>% group_by(chrom) %>% summarize(Count=n()) %>% arrange(-Count)
+```
+
+```{r}
+#places to put labels based on index
+chroms<-p2 %>% group_by(chrom) %>% mutate(Start=min(Index), Stop=max(Index)) %>% select(chrom,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2))
+
+#Make enough colors
+nb.cols <- nrow(chroms)
+mycolors <- colorRampPalette(brewer.pal(8, "Set1"))(nb.cols)
+
+ggplot(p2) +
+  geom_rect(data=chroms, aes(xmin=Start, xmax=Stop, ymin=min(p2$Value2), ymax=max(p2$Value2)), fill=mycolors, alpha=0.25) +
+  geom_point(data=p2, aes(x=Index, y=Value2, color=chrom), alpha=0.75, cex=0.5) +
+  geom_point(data=outliers2, aes(x=Index, y=Value2), color="black", cex=0.5) +
+  theme_bw() +
+  scale_x_continuous(breaks=chroms$Position, labels=chroms$chrom) +
+  theme(axis.text.x = element_text(angle=45, hjust = 1, face="bold", size=6)) +
+  theme(legend.title = element_blank()) +
+  theme(panel.grid = element_blank()) +
+  theme(legend.position = "none") +
+  scale_color_manual(values=mycolors) +
+  ylab("MDS2") +
+  xlab("Chromosome")
+```
+
+### MDS3     
+
+```{r}
+p3<-MDS3 %>% mutate(Index=1:n())
+
+out3 <- boxplot.stats(p3$Value3)$out
+out_ind3 <- which(p3$Value3 %in% c(out3))
+out_ind3
+```
+```{r}
+outliers3<-p3[out_ind3,]
+outliers3 %>% group_by(chrom) %>% summarize(Count=n()) %>% arrange(-Count)
+
+```
+
+```{r}
+#places to put labels based on index
+chroms<-p3 %>% group_by(chrom) %>% mutate(Start=min(Index), Stop=max(Index)) %>% select(chrom,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2))
+
+#Make enough colors
+nb.cols <- nrow(chroms)
+mycolors <- colorRampPalette(brewer.pal(8, "Set1"))(nb.cols)
+
+
+#Hmm.. I should be able to include a bunch of rectangles to offset chroms
+ggplot(p3) +
+  geom_rect(data=chroms, aes(xmin=Start, xmax=Stop, ymin=min(p3$Value3), ymax=max(p3$Value3)), fill=mycolors, alpha=0.25) +
+  geom_point(data=p3, aes(x=Index, y=Value3, color=chrom), alpha=0.75, cex=0.5) +
+  geom_point(data=outliers3, aes(x=Index, y=Value3), color="black", cex=0.5) +
+  theme_bw() +
+  scale_x_continuous(breaks=chroms$Position, labels=chroms$chrom) +
+  theme(axis.text.x = element_text(angle=45, hjust = 1, face="bold", size=6)) +
+  theme(legend.title = element_blank()) +
+  theme(panel.grid = element_blank()) +
+  theme(legend.position = "none") +
+  scale_color_manual(values=mycolors) +
+  ylab("MDS3") +
+  xlab("Chromosome")
+```
+
+```{sh, eval=FALSE}
+bcftools view -r NC_066852.1:6500000-8000000 outputs/607/snps-05.vcf.gz -O z > outputs/607/NC_066852.1-dummy-sub.vcf.gz     
+bcftools view -r NC_066852.1:3500000-23737464 outputs/607/snps-05.vcf.gz -O z > outputs/607/NC_066852.1-sub.vcf.gz    
+
+bcftools view -r NC_066837.1:5247652-28551740 outputs/607/snps-05.vcf.gz -O z > outputs/607/NC_066837.1-sub.vcf;    
+
+
+```
+
+
+```{r}
+vcf<-read.vcfR(file="outputs/607/NC_066852.1-sub.vcf.gz")
+genind<-vcfR2genind(vcf)
+genind@pop<-as.factor(meta$Region)
+
+```
+
+```{r}
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(meta)
+eig<-pca1$eig/sum(pca1$eig)*100
+```
+
+```{r}
+pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Region, shape=Lineage), alpha=0.75, cex=2) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,24,22)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  facet_wrap(.~DataType) +
+  theme(legend.position = "top")
+pc12
+
+ggsave("outputs/607/NC_066852.1.jpeg", width=8)
+```
+
+
+
+```{r}
+vcf<-read.vcfR(file="outputs/607/NC_066837.1-sub.vcf")
+genind<-vcfR2genind(vcf)
+genind@pop<-as.factor(meta$Region)
+
+```
+
+```{r}
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(meta)
+eig<-pca1$eig/sum(pca1$eig)*100
+```
+
+```{r}
+pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Region, shape=Lineage), alpha=0.75, cex=2) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,24,22)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  facet_wrap(.~DataType) +
+  theme(legend.position = "top")
+pc12
+
+ggsave("outputs/607/NC_066837.1.jpeg", width=8)
 ```
