@@ -1,0 +1,86 @@
+---
+title: "604.1-ld"
+output: html_document
+date: "2024-02-08"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+
+```{r}
+library(tidyverse)
+library(ggrepel)
+library(pcadapt)
+library(adegenet)
+library(vcfR)
+library(snpR)
+library(ggpubr)
+```
+
+in 604/vcf
+gunzip -c NC_066852.1.vcf.gz | wc -l
+  101136
+gunzip -c NC_066852.1.vcf.gz | grep "#" > header.txt
+gunzip -c NC_066852.1.vcf.gz | grep -v "#" | awk 'BEGIN{i=0}{i++;if (i%100==0) print}' > NC_066852.1-thinned.vcf
+cat header.txt NC_066852.1-thinned.vcf > NC_066852.1-thinned.wheader.vcf
+gunzip -c NC_066837.1.vcf.gz | grep -v "#" | awk 'BEGIN{i=0}{i++;if (i%100==0) print}' > NC_066837.1-thinned.vcf
+cat header.txt NC_066837.1-thinned.vcf > NC_066837.1-thinned.wheader.vcf
+
+gunzip -c NC_066835.1.vcf.gz | grep -v "#" | awk 'BEGIN{i=0}{i++;if (i%100==0) print}' > NC_066835.1-thinned.vcf
+cat header.txt NC_066835.1-thinned.vcf > NC_066835.1-thinned.wheader.vcf
+
+
+wc -l NC_066852.1-thinned.vcf 
+2021 NC_066852.1-thinned.vcf
+1010 at 100 
+plink --vcf NC_066852.1-thinned.wheader.vcf --r2 inter-chr --ld-window-r2 0.3 --out NC_066852.1-thinned.ldf --allow-extra-chr --double-id
+plink --vcf NC_066837.1-thinned.wheader.vcf --r2 inter-chr --ld-window-r2 0.3 --out NC_066837.1-thinned.ldf --allow-extra-chr --double-id
+plink --vcf NC_066835.1-thinned.wheader.vcf --r2 inter-chr --ld-window-r2 0.3 --out NC_066835.1-thinned.ldf --allow-extra-chr --double-id
+
+
+## High LD
+
+
+```{r}
+lc20<-read.delim("outputs/604/vcf/NC_066852.1-thinned.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>%
+  filter(R2>.5)
+
+ggplot(lc20) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  coord_equal()
+```
+
+
+
+```{r}
+lc05<-read.delim("outputs/604/vcf/NC_066837.1-thinned.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>%
+  filter(R2>.5)
+
+ggplot(lc05) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  coord_equal()
+```
+
+
+
+
+```{r}
+lc03<-read.delim("outputs/604/vcf/NC_066835.1-thinned.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>%
+  filter(R2>.5)
+
+ggplot(lc03) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  coord_equal()
+```
