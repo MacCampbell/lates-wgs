@@ -427,7 +427,7 @@ sites
 tops2<-tops %>% left_join(sites) %>% mutate(Diagnosis=ifelse(MajorMinor=="0",Major,Minor)) %>%
   mutate(Alternate=ifelse(MajorMinor=="1",Major,Minor)) %>%
            mutate(Genotype=paste0(Diagnosis,Diagnosis))
-tops2 %>% select(Position, Diagnosis, Alternate)
+tops2 %>% select(Position, Diagnosis, Alternate) %>% arrange(Position) %>% write_tsv(file="outputs/607/lc20-diagnostic.tsv",col_names = FALSE)
 ```
 
 
