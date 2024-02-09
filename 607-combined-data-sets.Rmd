@@ -99,6 +99,14 @@ srun -t 96:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/607/snps-wgs.out 2> outputs/607/snps-wgs.err &
 
+
+#Calling snps with doGeno 4
+srun -t 96:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 171 -bam bamlists/190.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf genome/lates-lgs.txt -out outputs/607/dogeno4  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 4 -doPost 1 -postCutoff 0.9  > outputs/607/snps-wgs.out 2> outputs/607/snps-wgs.err &
+
 ```
 
 104440 sites     
@@ -384,6 +392,48 @@ pc12<-ggplot(df) +
 pc12
 
 ggsave("outputs/607/NC_066852.1.jpeg", width=8)
+```
+
+Pulling loadings on axis1    
+```{r}
+loadings<-pca1$c1 %>% as_tibble()
+loadings$Allele<-rownames(pca1$c1)  
+loadings$Position<-gsub("NC_.*_|\\.\\d$","",loadings$Allele)
+loadings$Position<-as.numeric(loadings$Position)
+
+tops<-loadings %>% arrange(-CS1) %>% slice_max(order_by = CS1,prop = .05) %>% select(-CS2, -CS3) %>% 
+  mutate(MajorMinor=gsub("NC.*\\.","",Allele)) 
+tops$Chrom<-gsub("_1_.*$",".1",tops$Allele)
+```
+
+```{r}
+ggplot(loadings, aes(x=Position, y=CS1)) +
+  geom_point(pch=21, alpha=0.50, fill="black") +
+  geom_point(data=tops, aes(x=Position, y=CS1), fill="skyblue", pch=21, alpha=0.8) +
+  theme(axis.text.x = element_blank(), axis.ticks.x=element_blank())
+```
+
+```{sh, eval=FALSE}
+ gunzip -c NC_066852.1-sub.vcf.gz  | grep -v "#" | cut -f 1-5 > NC_066852.1-major-minor.tsv
+```
+
+```{r}
+sites<-read_tsv("outputs/607/NC_066852.1-major-minor.tsv", col_names = c("Chrom","Position","Site","Major","Minor")) %>% select(-Site)
+sites
+```
+
+
+```{r}
+tops2<-tops %>% left_join(sites) %>% mutate(Diagnosis=ifelse(MajorMinor=="0",Major,Minor)) %>%
+  mutate(Alternate=ifelse(MajorMinor=="1",Major,Minor)) %>%
+           mutate(Genotype=paste0(Diagnosis,Diagnosis))
+tops2 %>% select(Position, Diagnosis, Alternate)
+```
+
+
+```{r}
+p20 <- plot_clusters(lc20, facets = c("Region.DataType"), viridis.option = "H")
+p20$plot$pca
 ```
 
 
