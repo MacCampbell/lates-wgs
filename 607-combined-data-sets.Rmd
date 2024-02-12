@@ -42,6 +42,9 @@ bams %>% select(Path) %>% write_tsv("bamlists/190.bamlist", col_names = FALSE)
 bams %>% select(Run) %>% write_tsv("bamlists/190-sample-names.txt", col_names = FALSE)
 
 meta<-bams
+
+write_csv(meta, "meta/190.csv")
+meta$Region<-gsub(" ","", meta$Region)
 ```
 
 ```{sh, eval=FALSE}
@@ -431,12 +434,6 @@ tops2 %>% select(Position, Diagnosis, Alternate) %>% arrange(Position) %>% write
 ```
 
 
-```{r}
-p20 <- plot_clusters(lc20, facets = c("Region.DataType"), viridis.option = "H")
-p20$plot$pca
-```
-
-
 
 ```{r}
 vcf<-read.vcfR(file="outputs/607/NC_066837.1-sub.vcf")
@@ -471,4 +468,40 @@ pc12<-ggplot(df) +
 pc12
 
 ggsave("outputs/607/NC_066837.1.jpeg", width=8)
+```
+
+Pulling loadings on axis1    
+```{r}
+loadings<-pca1$c1 %>% as_tibble()
+loadings$Allele<-rownames(pca1$c1)  
+loadings$Position<-gsub("NC_.*_|\\.\\d$","",loadings$Allele)
+loadings$Position<-as.numeric(loadings$Position)
+
+tops<-loadings %>% arrange(-CS1) %>% slice_max(order_by = CS1,prop = .05) %>% select(-CS2, -CS3) %>% 
+  mutate(MajorMinor=gsub("NC.*\\.","",Allele)) 
+tops$Chrom<-gsub("_1_.*$",".1",tops$Allele)
+```
+
+```{r}
+ggplot(loadings, aes(x=Position, y=CS1)) +
+  geom_point(pch=21, alpha=0.50, fill="black") +
+  geom_point(data=tops, aes(x=Position, y=CS1), fill="skyblue", pch=21, alpha=0.8) +
+  theme(axis.text.x = element_blank(), axis.ticks.x=element_blank())
+```
+
+```{sh, eval=FALSE}
+ gunzip -c NC_066837.1-sub.vcf  | grep -v "#" | cut -f 1-5 > NC_066837.1-major-minor.tsv
+```
+
+
+```{r}
+sites<-read_tsv("outputs/607/NC_066837.1-major-minor.tsv", col_names = c("Chrom","Position","Site","Major","Minor")) %>% select(-Site)
+```
+
+
+```{r}
+tops2<-tops %>% left_join(sites) %>% mutate(Diagnosis=ifelse(MajorMinor=="0",Major,Minor)) %>%
+  mutate(Alternate=ifelse(MajorMinor=="1",Major,Minor)) %>%
+           mutate(Genotype=paste0(Diagnosis,Diagnosis))
+tops2 %>% select(Position, Diagnosis, Alternate) %>% arrange(Position) %>% write_tsv(file="outputs/607/lc05-diagnostic.tsv",col_names = FALSE)
 ```

@@ -1,0 +1,191 @@
+Run,Region,Lineage,Path,DataType
+SRR3165618,Northern Territory,AUS+NG,data/split/SRR3165618.sort.flt.bam,WGS
+SRR3165619,Northern Territory,AUS+NG,data/split/SRR3165619.sort.flt.bam,WGS
+SRR3165620,Northern Territory,AUS+NG,data/split/SRR3165620.sort.flt.bam,WGS
+SRR3165621,Northern Territory,AUS+NG,data/split/SRR3165621.sort.flt.bam,WGS
+SRR3165622,Northern Territory,AUS+NG,data/split/SRR3165622.sort.flt.bam,WGS
+SRR3165623,Northern Territory,AUS+NG,data/split/SRR3165623.sort.flt.bam,WGS
+SRR3165629,Queensland,AUS+NG,data/split/SRR3165629.sort.flt.bam,WGS
+SRR3165630,Queensland,AUS+NG,data/split/SRR3165630.sort.flt.bam,WGS
+SRR3165631,Queensland,AUS+NG,data/split/SRR3165631.sort.flt.bam,WGS
+SRR3165632,Queensland,AUS+NG,data/split/SRR3165632.sort.flt.bam,WGS
+SRR3165633,Queensland,AUS+NG,data/split/SRR3165633.sort.flt.bam,WGS
+SRR3165634,Queensland,AUS+NG,data/split/SRR3165634.sort.flt.bam,WGS
+SRR3165594,India Eastern Coast,IND,data/split/SRR3165594.sort.flt.bam,WGS
+SRR3165595,India Eastern Coast,IND,data/split/SRR3165595.sort.flt.bam,WGS
+SRR3183253,India Eastern Coast,IND,data/split/SRR3183253.sort.flt.bam,WGS
+SRR3183255,India Eastern Coast,IND,data/split/SRR3183255.sort.flt.bam,WGS
+SRR3183256,India Eastern Coast,IND,data/split/SRR3183256.sort.flt.bam,WGS
+SRR3183257,India Eastern Coast,IND,data/split/SRR3183257.sort.flt.bam,WGS
+SRR3183258,India Western Coast,IND,data/split/SRR3183258.sort.flt.bam,WGS
+SRR3183259,India Western Coast,IND,data/split/SRR3183259.sort.flt.bam,WGS
+SRR3183260,India Western Coast,IND,data/split/SRR3183260.sort.flt.bam,WGS
+SRR3183261,India Western Coast,IND,data/split/SRR3183261.sort.flt.bam,WGS
+SRR3165613,Indonesia-K,SEA,data/split/SRR3165613.sort.flt.bam,WGS
+SRR3165614,Indonesia-K,SEA,data/split/SRR3165614.sort.flt.bam,WGS
+SRR3165615,Indonesia-K,SEA,data/split/SRR3165615.sort.flt.bam,WGS
+SRR3165616,Indonesia-K,SEA,data/split/SRR3165616.sort.flt.bam,WGS
+SRR3165617,Indonesia-K,SEA,data/split/SRR3165617.sort.flt.bam,WGS
+SRR3183267,Indonesia-SJ,SEA,data/split/SRR3183267.sort.flt.bam,WGS
+SRR3183268,Indonesia-SJ,SEA,data/split/SRR3183268.sort.flt.bam,WGS
+SRR3183269,Indonesia-SJ,SEA,data/split/SRR3183269.sort.flt.bam,WGS
+SRR3183270,Indonesia-SJ,SEA,data/split/SRR3183270.sort.flt.bam,WGS
+SRR3183271,Indonesia-SJ,SEA,data/split/SRR3183271.sort.flt.bam,WGS
+SRR3165612,Indonesia-SU,SEA,data/split/SRR3165612.sort.flt.bam,WGS
+SRR3165598,Cambodia,SEA,data/split/SRR3165598.sort.flt.bam,WGS
+SRR3165599,Cambodia,SEA,data/split/SRR3165599.sort.flt.bam,WGS
+SRR3165600,Cambodia,SEA,data/split/SRR3165600.sort.flt.bam,WGS
+SRR3165601,Cambodia,SEA,data/split/SRR3165601.sort.flt.bam,WGS
+SRR3165602,Cambodia,SEA,data/split/SRR3165602.sort.flt.bam,WGS
+SRR3165624,Papua New Guinea,AUS+NG,data/split/SRR3165624.sort.flt.bam,WGS
+SRR3165625,Papua New Guinea,AUS+NG,data/split/SRR3165625.sort.flt.bam,WGS
+SRR3165626,Papua New Guinea,AUS+NG,data/split/SRR3165626.sort.flt.bam,WGS
+SRR3165627,Papua New Guinea,AUS+NG,data/split/SRR3165627.sort.flt.bam,WGS
+SRR3165628,Papua New Guinea,AUS+NG,data/split/SRR3165628.sort.flt.bam,WGS
+SRR3165607,Philippines,SEA,data/split/SRR3165607.sort.flt.bam,WGS
+SRR3165608,Philippines,SEA,data/split/SRR3165608.sort.flt.bam,WGS
+SRR3165609,Philippines,SEA,data/split/SRR3165609.sort.flt.bam,WGS
+SRR3165610,Philippines,SEA,data/split/SRR3165610.sort.flt.bam,WGS
+SRR3165611,Philippines,SEA,data/split/SRR3165611.sort.flt.bam,WGS
+SRR3165603,Thailand,SEA,data/split/SRR3165603.sort.flt.bam,WGS
+SRR3183262,Thailand,SEA,data/split/SRR3183262.sort.flt.bam,WGS
+SRR3183263,Thailand,SEA,data/split/SRR3183263.sort.flt.bam,WGS
+SRR3183264,Thailand,SEA,data/split/SRR3183264.sort.flt.bam,WGS
+SRR3183265,Thailand,SEA,data/split/SRR3183265.sort.flt.bam,WGS
+SRR3165604,Thailand,SEA,data/split/SRR3165604.sort.flt.bam,WGS
+SRR3183266,Thailand,SEA,data/split/SRR3183266.sort.flt.bam,WGS
+SRR3165605,Vietnam,SEA,data/split/SRR3165605.sort.flt.bam,WGS
+SRR3165606,Vietnam,SEA,data/split/SRR3165606.sort.flt.bam,WGS
+SRR3183252,India Eastern Coast,IND,data/split/SRR3183252.sort.flt.bam,WGS
+SRR26358744,Bangladesh,IND,data/split/SRR26358744.sort.flt.bam,WGS
+SRR26402930,Bangladesh,IND,data/split/SRR26402930.sort.flt.bam,WGS
+DRR111126,AUE,AUS+NG,bams/DRR111126.sort.flt.bam,RAD
+DRR111127,AUE,AUS+NG,bams/DRR111127.sort.flt.bam,RAD
+DRR111128,AUE,AUS+NG,bams/DRR111128.sort.flt.bam,RAD
+DRR111129,AUE,AUS+NG,bams/DRR111129.sort.flt.bam,RAD
+DRR111130,AUE,AUS+NG,bams/DRR111130.sort.flt.bam,RAD
+DRR111132,AUE,AUS+NG,bams/DRR111132.sort.flt.bam,RAD
+DRR111133,AUE,AUS+NG,bams/DRR111133.sort.flt.bam,RAD
+DRR111137,AUE,AUS+NG,bams/DRR111137.sort.flt.bam,RAD
+DRR111139,PNG,AUS+NG,bams/DRR111139.sort.flt.bam,RAD
+DRR111141,PNG,AUS+NG,bams/DRR111141.sort.flt.bam,RAD
+DRR111142,PNG,AUS+NG,bams/DRR111142.sort.flt.bam,RAD
+DRR111143,PNG,AUS+NG,bams/DRR111143.sort.flt.bam,RAD
+DRR111144,PNG,AUS+NG,bams/DRR111144.sort.flt.bam,RAD
+DRR111146,PNG,AUS+NG,bams/DRR111146.sort.flt.bam,RAD
+DRR111148,PNG,AUS+NG,bams/DRR111148.sort.flt.bam,RAD
+DRR111154,PNG,AUS+NG,bams/DRR111154.sort.flt.bam,RAD
+DRR111155,PNG,AUS+NG,bams/DRR111155.sort.flt.bam,RAD
+DRR111166,AUW,AUS+NG,bams/DRR111166.sort.flt.bam,RAD
+DRR111167,AUW,AUS+NG,bams/DRR111167.sort.flt.bam,RAD
+DRR111171,AUW,AUS+NG,bams/DRR111171.sort.flt.bam,RAD
+DRR111176,AUW,AUS+NG,bams/DRR111176.sort.flt.bam,RAD
+DRR111177,AUW,AUS+NG,bams/DRR111177.sort.flt.bam,RAD
+DRR111178,AUW,AUS+NG,bams/DRR111178.sort.flt.bam,RAD
+DRR111179,AUW,AUS+NG,bams/DRR111179.sort.flt.bam,RAD
+DRR111182,AUW,AUS+NG,bams/DRR111182.sort.flt.bam,RAD
+DRR111183,AUW,AUS+NG,bams/DRR111183.sort.flt.bam,RAD
+DRR111184,AUW,AUS+NG,bams/DRR111184.sort.flt.bam,RAD
+DRR111186,INA,SEA,bams/DRR111186.sort.flt.bam,RAD
+DRR111193,INA,SEA,bams/DRR111193.sort.flt.bam,RAD
+DRR111195,INA,SEA,bams/DRR111195.sort.flt.bam,RAD
+DRR111198,INA,SEA,bams/DRR111198.sort.flt.bam,RAD
+DRR111199,INA,SEA,bams/DRR111199.sort.flt.bam,RAD
+DRR111202,INA,SEA,bams/DRR111202.sort.flt.bam,RAD
+DRR111205,INA,SEA,bams/DRR111205.sort.flt.bam,RAD
+DRR111206,INA,SEA,bams/DRR111206.sort.flt.bam,RAD
+DRR111207,INA,SEA,bams/DRR111207.sort.flt.bam,RAD
+DRR111208,INA,SEA,bams/DRR111208.sort.flt.bam,RAD
+DRR111209,INA,SEA,bams/DRR111209.sort.flt.bam,RAD
+DRR111210,INA,SEA,bams/DRR111210.sort.flt.bam,RAD
+DRR111212,INA,SEA,bams/DRR111212.sort.flt.bam,RAD
+DRR111214,INA,SEA,bams/DRR111214.sort.flt.bam,RAD
+DRR111224,MAL,SEA,bams/DRR111224.sort.flt.bam,RAD
+DRR111225,MAL,SEA,bams/DRR111225.sort.flt.bam,RAD
+DRR111226,MAL,SEA,bams/DRR111226.sort.flt.bam,RAD
+DRR111227,MAL,SEA,bams/DRR111227.sort.flt.bam,RAD
+DRR111228,MAL,SEA,bams/DRR111228.sort.flt.bam,RAD
+DRR111229,MAL,SEA,bams/DRR111229.sort.flt.bam,RAD
+DRR111230,MAL,SEA,bams/DRR111230.sort.flt.bam,RAD
+DRR111231,MAL,SEA,bams/DRR111231.sort.flt.bam,RAD
+DRR111235,MAL,SEA,bams/DRR111235.sort.flt.bam,RAD
+DRR111238,MAL,SEA,bams/DRR111238.sort.flt.bam,RAD
+DRR111239,MAL,SEA,bams/DRR111239.sort.flt.bam,RAD
+DRR111240,MAL,SEA,bams/DRR111240.sort.flt.bam,RAD
+DRR111241,MAL,SEA,bams/DRR111241.sort.flt.bam,RAD
+DRR111243,MAL,SEA,bams/DRR111243.sort.flt.bam,RAD
+DRR111244,MAL,SEA,bams/DRR111244.sort.flt.bam,RAD
+DRR111245,THA,SEA,bams/DRR111245.sort.flt.bam,RAD
+DRR111246,THA,SEA,bams/DRR111246.sort.flt.bam,RAD
+DRR111249,THA,SEA,bams/DRR111249.sort.flt.bam,RAD
+DRR111250,THA,SEA,bams/DRR111250.sort.flt.bam,RAD
+DRR111251,THA,SEA,bams/DRR111251.sort.flt.bam,RAD
+DRR111252,THA,SEA,bams/DRR111252.sort.flt.bam,RAD
+DRR111254,THA,SEA,bams/DRR111254.sort.flt.bam,RAD
+DRR111258,THA,SEA,bams/DRR111258.sort.flt.bam,RAD
+DRR111261,THA,SEA,bams/DRR111261.sort.flt.bam,RAD
+DRR111263,THA,SEA,bams/DRR111263.sort.flt.bam,RAD
+DRR111264,THA,SEA,bams/DRR111264.sort.flt.bam,RAD
+DRR111265,THA,SEA,bams/DRR111265.sort.flt.bam,RAD
+DRR111267,THA,SEA,bams/DRR111267.sort.flt.bam,RAD
+DRR111268,THA,SEA,bams/DRR111268.sort.flt.bam,RAD
+DRR111269,THA,SEA,bams/DRR111269.sort.flt.bam,RAD
+DRR111272,THA,SEA,bams/DRR111272.sort.flt.bam,RAD
+DRR111273,THA,SEA,bams/DRR111273.sort.flt.bam,RAD
+DRR111125,AUE,AUS+NG,bams/DRR111125.sort.flt.bam,RAD
+DRR111131,AUE,AUS+NG,bams/DRR111131.sort.flt.bam,RAD
+DRR111134,AUE,AUS+NG,bams/DRR111134.sort.flt.bam,RAD
+DRR111135,AUE,AUS+NG,bams/DRR111135.sort.flt.bam,RAD
+DRR111136,AUE,AUS+NG,bams/DRR111136.sort.flt.bam,RAD
+DRR111138,AUE,AUS+NG,bams/DRR111138.sort.flt.bam,RAD
+DRR111140,PNG,AUS+NG,bams/DRR111140.sort.flt.bam,RAD
+DRR111145,PNG,AUS+NG,bams/DRR111145.sort.flt.bam,RAD
+DRR111147,PNG,AUS+NG,bams/DRR111147.sort.flt.bam,RAD
+DRR111149,PNG,AUS+NG,bams/DRR111149.sort.flt.bam,RAD
+DRR111150,PNG,AUS+NG,bams/DRR111150.sort.flt.bam,RAD
+DRR111151,PNG,AUS+NG,bams/DRR111151.sort.flt.bam,RAD
+DRR111152,PNG,AUS+NG,bams/DRR111152.sort.flt.bam,RAD
+DRR111153,PNG,AUS+NG,bams/DRR111153.sort.flt.bam,RAD
+DRR111156,PNG,AUS+NG,bams/DRR111156.sort.flt.bam,RAD
+DRR111157,AUW,AUS+NG,bams/DRR111157.sort.flt.bam,RAD
+DRR111165,AUW,AUS+NG,bams/DRR111165.sort.flt.bam,RAD
+DRR111168,AUW,AUS+NG,bams/DRR111168.sort.flt.bam,RAD
+DRR111169,AUW,AUS+NG,bams/DRR111169.sort.flt.bam,RAD
+DRR111170,AUW,AUS+NG,bams/DRR111170.sort.flt.bam,RAD
+DRR111172,AUW,AUS+NG,bams/DRR111172.sort.flt.bam,RAD
+DRR111173,AUW,AUS+NG,bams/DRR111173.sort.flt.bam,RAD
+DRR111174,AUW,AUS+NG,bams/DRR111174.sort.flt.bam,RAD
+DRR111175,AUW,AUS+NG,bams/DRR111175.sort.flt.bam,RAD
+DRR111180,AUW,AUS+NG,bams/DRR111180.sort.flt.bam,RAD
+DRR111181,AUW,AUS+NG,bams/DRR111181.sort.flt.bam,RAD
+DRR111185,AUW,AUS+NG,bams/DRR111185.sort.flt.bam,RAD
+DRR111192,INA,SEA,bams/DRR111192.sort.flt.bam,RAD
+DRR111194,INA,SEA,bams/DRR111194.sort.flt.bam,RAD
+DRR111196,INA,SEA,bams/DRR111196.sort.flt.bam,RAD
+DRR111197,INA,SEA,bams/DRR111197.sort.flt.bam,RAD
+DRR111200,INA,SEA,bams/DRR111200.sort.flt.bam,RAD
+DRR111201,INA,SEA,bams/DRR111201.sort.flt.bam,RAD
+DRR111203,INA,SEA,bams/DRR111203.sort.flt.bam,RAD
+DRR111204,INA,SEA,bams/DRR111204.sort.flt.bam,RAD
+DRR111211,INA,SEA,bams/DRR111211.sort.flt.bam,RAD
+DRR111213,INA,SEA,bams/DRR111213.sort.flt.bam,RAD
+DRR111219,MAL,SEA,bams/DRR111219.sort.flt.bam,RAD
+DRR111223,MAL,SEA,bams/DRR111223.sort.flt.bam,RAD
+DRR111232,MAL,SEA,bams/DRR111232.sort.flt.bam,RAD
+DRR111233,MAL,SEA,bams/DRR111233.sort.flt.bam,RAD
+DRR111234,MAL,SEA,bams/DRR111234.sort.flt.bam,RAD
+DRR111236,MAL,SEA,bams/DRR111236.sort.flt.bam,RAD
+DRR111237,MAL,SEA,bams/DRR111237.sort.flt.bam,RAD
+DRR111242,MAL,SEA,bams/DRR111242.sort.flt.bam,RAD
+DRR111247,THA,SEA,bams/DRR111247.sort.flt.bam,RAD
+DRR111248,THA,SEA,bams/DRR111248.sort.flt.bam,RAD
+DRR111253,THA,SEA,bams/DRR111253.sort.flt.bam,RAD
+DRR111255,THA,SEA,bams/DRR111255.sort.flt.bam,RAD
+DRR111256,THA,SEA,bams/DRR111256.sort.flt.bam,RAD
+DRR111257,THA,SEA,bams/DRR111257.sort.flt.bam,RAD
+DRR111259,THA,SEA,bams/DRR111259.sort.flt.bam,RAD
+DRR111260,THA,SEA,bams/DRR111260.sort.flt.bam,RAD
+DRR111262,THA,SEA,bams/DRR111262.sort.flt.bam,RAD
+DRR111266,THA,SEA,bams/DRR111266.sort.flt.bam,RAD
+DRR111270,THA,SEA,bams/DRR111270.sort.flt.bam,RAD
+DRR111271,THA,SEA,bams/DRR111271.sort.flt.bam,RAD

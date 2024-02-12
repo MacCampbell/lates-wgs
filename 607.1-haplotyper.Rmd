@@ -1,0 +1,80 @@
+---
+title: "607.1-haplotyper"
+output: html_document
+date: "2024-02-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+Getting things off the ground!!
+
+Have genos from 607.1
+
+gunzip -c dogeno4.geno.gz | grep NC_066852.1 | cut -f 2-192 > lc20.geno
+gunzip -c dogeno4.geno.gz | grep NC_066837.1 | cut -f 2-192 > lc05.geno
+
+./105-omy05-haplotyper.pl genotypes.txt  genosToTest.txt bamlist
+This script is hard coded for some reason for the number of samples 
+ ../../omy05-haplotyper.pl lc20-diagnostic.tsv lc20.geno ../../bamlists/190-sample-names.txt > lc20-haplos.txt 
+../../omy05-haplotyper.pl lc05-diagnostic.tsv lc05.geno ../../bamlists/190-sample-names.txt > lc05-haplos.txt 
+
+ 
+```{r}
+meta<-read_csv("meta/190.csv")
+
+meta$Region<-factor(meta$Region, levels=c("AUE","Queensland","AUW","Northern Territory","PNG","Papua New Guinea",
+                                              "INA","Indonesia-K","Indonesia-SJ","Indonesia-SU","MAL","Philippines",
+                                              "Vietnam","Cambodia","THA","Thailand", "Bangladesh",
+                                              "India Eastern Coast","India Western Coast"))
+
+
+meta$Lineage<-factor(meta$Lineage, levels=c("AUS+NG","SEA","IND"))
+data<-read_tsv("outputs/607/lc20-haplos.txt")
+
+df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
+  mutate(Genotype=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, "RHom",
+                       ifelse(NumberAA > NumberRR & NumberAA > NumberAR, "AHom",
+                       ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other"))))
+```
+
+
+```{r}
+ddf<-df %>% group_by(Lineage, Region, Genotype, DataType) %>% summarise(Count=n()) %>% ungroup() %>%
+  group_by(Lineage, Region) %>% mutate(Proportion=Count/sum(Count)) %>% mutate(SampleSize=sum(Count))
+```
+
+```{r}
+ggplot(ddf) +
+  geom_col(aes(x=Region, y=Proportion, fill=Genotype)) +
+  facet_grid(.~Lineage, scales = "free_x", space="free_x") +
+  scale_fill_viridis_d(option="inferno") +
+  theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) 
+```
+
+lc05
+
+```{r}
+data<-read_tsv("outputs/607/lc05-haplos.txt")
+
+df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
+  mutate(Genotype=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, "RHom",
+                       ifelse(NumberAA > NumberRR & NumberAA > NumberAR, "AHom",
+                       ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other"))))
+```
+
+
+```{r}
+ddf<-df %>% group_by(Lineage, Region, Genotype, DataType) %>% summarise(Count=n()) %>% ungroup() %>%
+  group_by(Lineage, Region) %>% mutate(Proportion=Count/sum(Count)) %>% mutate(SampleSize=sum(Count))
+```
+
+```{r}
+ggplot(ddf) +
+  geom_col(aes(x=Region, y=Proportion, fill=Genotype)) +
+  facet_grid(.~Lineage, scales = "free_x", space="free_x") +
+  scale_fill_viridis_d(option="inferno") +
+  theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) 
+```
+

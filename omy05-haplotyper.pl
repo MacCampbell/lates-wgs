@@ -37,7 +37,7 @@ my $testFile=shift;
 my $bamlist=shift;
 my @samples;
 # I should probably program a way to generalize this length of the bamlist.
-my $testSize=48;
+my $testSize=190;
 my %sites;
 
 open (INFILE, "<$genoFile") || die "Can't open $genoFile\n";
