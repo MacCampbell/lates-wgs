@@ -8,7 +8,12 @@ date: "2024-02-12"
 knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```
 
-Getting things off the ground!!
+
+```{r}
+library(tidyverse)
+library(viridis)
+```
+
 
 Have genos from 607.1
 
