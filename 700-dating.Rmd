@@ -1,0 +1,103 @@
+---
+title: "700-dating"
+output: html_document
+date: "2024-02-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+Going to follow this tutorial:
+https://github.com/mmatschiner/tutorials/blob/master/divergence_time_estimation_with_snp_data/README.md
+
+
+```{r}
+meta<-read_csv("meta/190.csv")
+
+meta$Region<-factor(meta$Region, levels=c("AUE","Queensland","AUW","Northern Territory","PNG","Papua New Guinea",
+                                              "INA","Indonesia-K","Indonesia-SJ","Indonesia-SU","MAL","Philippines",
+                                              "Vietnam","Cambodia","THA","Thailand", "Bangladesh",
+                                              "India Eastern Coast","India Western Coast"))
+
+
+meta$Lineage<-factor(meta$Lineage, levels=c("AUS+NG","SEA","IND"))
+data<-read_tsv("outputs/607/lc20-haplos.txt")
+
+df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
+  mutate(Genotype=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, "RHom",
+                       ifelse(NumberAA > NumberRR & NumberAA > NumberAR, "AHom",
+                       ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other"))))
+```
+
+
+Want homozygotes from different lineages.   
+
+```{r}
+df %>% filter(DataType=="WGS") %>% filter(Lineage=="AUS+NG") %>% filter(Genotype=="RHom")
+```
+
+AA Homs
+SRR3183268 Indonesia-SJ
+SRR3165598 Cambodia
+SRR3183253 India Eastern Coast
+SRR3183258 India Western Coast
+
+RR Homs
+SRR3183270 Indonesia-SJ
+SRR3165599 Cambodia
+SRR3165616 Indonesia-K
+SRR3165629 Queensland
+SRR3165628 Papua New Guinea
+
+Using pruned file.    
+```{sh, eval=FALSE}
+gunzip -c outputs/608/wgs-pruned.vcf.gz | wc -l
+```
+
+26051
+
+_1_ Select samples and filter sites again.    
+
+```{sh, eval=FALSE}
+bcftools view  -r NC_066833.1 -s SRR3183253,SRR3183258,SRR3183268,SRR3183270,SRR3165629,SRR3165628,SRR3165599,SRR3165598,SRR3165616  outputs/608/wgs-pruned.vcf.gz |  bcftools view -e 'AC==0 || AC==AN || F_MISSING > 0.0' -o outputs/700/NC_066833.1.sub.vcf 
+
+bcftools view -s SRR3183253,SRR3183258,SRR3183268,SRR3183270,SRR3165629,SRR3165628,SRR3165599,SRR3165598,SRR3165616   outputs/608/wgs-pruned.vcf.gz |  bcftools view -e 'AC==0 || AC==AN || F_MISSING > 0.0' -o outputs/700/wgs.sub.vcf
+```
+
+476 SNPs on chrom01 after filtering.  Didn't seem to work with SNAPP. Could use starting tree or more snps.
+
+Tried genome-wide with six samples and 5000 snps. Worked well, but, branch to AUS+NG the longest? ESS much too small. Running overnight at 500K sampling
+
+_2_ Set up for analysis
+
+```{sh, eval=FALSE}
+ruby snapp_prep.rb -v NC_066833.1.sub.vcf -t samples.txt -c constraints.txt -m 1000 -l 100000
+ruby snapp_prep.rb -v wgs.sub.vcf -t samples.txt -c constraints.txt -m 5000 -l 100000 -x genome-wide.xml -o genome-wide
+ruby snapp_prep.rb -v wgs.sub.vcf -t samples.txt -c constraints.txt -m 5000 -l 500000 -x genome-wide-5K.xml -o genome-wide-5K
+
+```
+
+-m 1000 sampled snps (not important for chrom01).   
+
+_3_ Add population size estimates
+
+
+
+## The inversion zone
+```{sh, eval=FALSE}
+bcftools view  -r NC_066852.1:3500000-23737464 -s SRR3183253,SRR3183258,SRR3183268,SRR3165598,SRR3183270,SRR3165599,SRR3165616,SRR3165629,SRR3165628  outputs/608/wgs-05.vcf.gz |  bcftools view -e 'AC==0 || AC==AN || F_MISSING > 0.0' -o outputs/700/NC_066852.1.sub.vcf 
+```
+
+```{sh, eval=FALSE}
+ruby snapp_prep.rb -v NC_066852.1.sub.vcf -t samples.txt -c constraints.txt -m 1000 -l 200000 -x lc20.xml -o lc20
+```
+
+This worked rather well (ESS > 114, 144-567), doubling run length.
+Executing in shell.    
+```{sh, eval=FALSE}
+/Applications/BEAST\ 2.7.6/bin/beast -threads 4 lc20.xml
+```
+
+
+
