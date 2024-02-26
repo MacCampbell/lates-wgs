@@ -143,6 +143,37 @@ p$plot$pca
 ```
 
 
+Make a version with ggplot:
+
+```{r}
+pcadf<-p$plot$pca$data %>% as_tibble()
+pcadf$Region<-factor(pcadf$Region, levels=c("AUE","Queensland","AUW","NorthernTerritory","PNG","PapuaNewGuinea","INA","Indonesia-K","Indonesia-SJ","Indonesia-SU",
+                                               "MAL","Cambodia","THA","Thailand","Vietnam","Philippines","Bangladesh","IndiaEasternCoast","IndiaWesternCoast"))
+```
+
+```{r}
+labels<-p$plot$pca$data %>% select(Run, Region, Lineage, DataType, PC1, PC2) %>%
+  group_by(Lineage, DataType) %>% summarize(x=mean(PC1), y=mean(PC2))
+```
+```{r}
+ggplot(pcadf) +
+  geom_point(aes(x=PC1, y=PC2, fill=Region, shape=Lineage), alpha=0.75, cex=2) +
+  geom_text_repel(data=labels, aes(x=x, y=y, label=Lineage), face="bold", size=6)+
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  xlab(p$plot$pca$labels$x) +
+  ylab(p$plot$pca$labels$y) +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  facet_wrap(.~DataType) +
+  theme(legend.position="none")
+
+ggsave("outputs/607/basic-pca.pdf")
+
+```
+
+
 ```{r, eval=FALSE}
 q<-plot_structure(snps, facet = "Region", method = "snmf", k=c(1,2,3,4,5,6), qsort=FALSE)
 save(q, file="outputs/607/q.rda")

@@ -1,0 +1,113 @@
+---
+title: "range-map-2"
+output: html_document
+date: "2024-02-26"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+
+```{r}
+library(tidyverse)
+library(ggmap)
+require(maps)
+library(ggrepel)
+```
+
+```{r}
+range<-read_csv("outputs/range-map/1693178727.csv")
+range$`Overall Probability`<-as.numeric(range$`Overall Probability`)
+range
+```
+
+
+```{r}
+ggplot() +
+geom_raster(data=range, aes(x=`Center Long`, y=`Center Lat`, fill=`Overall Probability`),alpha=0.75) +
+  scale_fill_gradient(low="yellow", high="red")
+```
+
+
+```{r}
+
+world <- borders("world", colour="black", fill="black",
+                 xlim=c(-180,180), ylim=c(-90,90))# create a layer of borders
+data<-as_tibble(world$data)
+map<-ggplot(data)+geom_polygon(aes(x=long,y=lat,group=group), fill="burlywood3", 
+                              color="burlywood3",size=0.2)+
+  coord_fixed(1.3)+
+  theme(axis.title.x=element_blank(), axis.text.x=element_blank(), 
+        axis.ticks.x=element_blank())+
+  theme(axis.title.y=element_blank(), axis.text.y=element_blank(), 
+        axis.ticks.y=element_blank())+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background =  element_rect(fill="cornflowerblue"))
+
+mp1 <- fortify(map(fill=TRUE, plot=FALSE))
+mp2 <- mp1
+mp2$long <- mp2$long + 360
+mp2$group <- mp2$group + max(mp2$group) + 1
+mp <- rbind(mp1, mp2)
+```
+
+
+```{r}
+map2<-ggplot() + 
+  geom_polygon(data=mp,aes(x=long,y=lat,group=group), fill="grey", 
+               color="black",size=0.2)+
+  coord_fixed(1.3)+
+  theme_bw() +
+   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background =  element_rect(fill="white"))+
+  coord_fixed(ratio=1.3, xlim = c(-0, 360), ylim=c(-90,90))
+map2
+```
+theme(axis.title.x=element_blank(), axis.text.x=element_blank(), 
+        axis.ticks.x=element_blank())+
+  theme(axis.title.y=element_blank(), axis.text.y=element_blank(), 
+        axis.ticks.y=element_blank())+
+
+```{r}
+long<-c(79.3,127.04,146.64,140.93,104.87,103.64,101.15,130.83,145.78,80,73.83)
+lat<-c(10.4,-13.38,-18.41,-9.42,-1.66,3.35,12.62,-12.52,-16.92,15,15.26)
+text<-c("Type Location", "AUW","AUE","PNG","INA","MAL","THA","NT","QLD","INDE","INDW")
+color<-c("purple","blue","blue","blue","blue","blue","blue","green","green","green","green")
+shape<-c(22,21,21,21,24,24,24,21,21,23,23)
+ddf<-cbind(long,lat,text,color,shape) %>% as_tibble()
+ddf$long<-as.numeric(ddf$long)
+ddf$lat<-as.numeric(ddf$lat)
+ddf$shape<-as.numeric(ddf$shape)
+ddf
+
+loc<-ddf[1,]
+write_tsv(ddf, file="outputs/range-map/points.tsv")
+```
+```{r}
+points<-read_tsv("outputs/range-map/points-edited-2.tsv")
+points$Lineage<-factor(points$Lineage, levels=c("AUS+NG","SEA","IND"))
+
+ggplot() + geom_point(data=points, aes(x=long, y=lat, fill=DataType, shape=Lineage), cex=2) +
+  scale_shape_manual(values=c(21,24,23)) +
+  scale_fill_viridis_d() +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+
+
+```
+
+```{r}
+points2<-points 
+map2 +
+  geom_raster(data=range, aes(x=`Center Long`, y=`Center Lat`, fill=`Overall Probability`),alpha=0.75) +
+  scale_fill_gradient(low="yellow", high="red")+
+ # geom_point(data=loc, aes(x=long, y=lat), fill=loc$color, shape=loc$shape, cex=2) +
+  geom_point(data=points2, aes(x=long, y=lat), fill=points2$color, shape=points2$shape, cex=2) +
+  #geom_text_repel(data=loc, aes(x=long, y=lat, label=text), size=2, fontface="bold") +
+  coord_cartesian(xlim =c(30,180), ylim=c(-45,45)) +
+  xlab("\nLongitude") +
+  ylab("Latitude\n") +
+  theme(axis.title = element_text(size=18, face="bold")) 
+
+ggsave("outputs/range-map/range-map-2.pdf")
+```

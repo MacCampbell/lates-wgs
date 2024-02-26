@@ -99,5 +99,34 @@ Executing in shell.
 /Applications/BEAST\ 2.7.6/bin/beast -threads 4 lc20.xml
 ```
 
+Worked well, but I wonder about rooting. Maybe I do need L. japonicus data. Blargh.
+
+## Pulling l. japonicus data
+
+DRR391968
+
+```{sh, eval=FALSE}
+bcftools view -s DRR391968,SRR3183253,SRR3183258,SRR3183268,SRR3183270,SRR3165629,SRR3165628,SRR3165599,SRR3165598,SRR3165616  outputs/403/pruned.vcf.gz |  bcftools view -e 'AC==0 || AC==AN || F_MISSING > 0.0' -o outputs/700/outgroup.vcf 
+
+bcftools view  -r NC_066852.1:3500000-23737464 -s DRR391968,SRR3183253,SRR3183258,SRR3183268,SRR3183270,SRR3165629,SRR3165628,SRR3165599,SRR3165598,SRR3165616 outputs/403/renamed.vcf.gz |  bcftools view -e 'AC==0 || AC==AN || F_MISSING > 0.0' -o outputs/700/og-lg20.vcf 
 
 
+```
+
+in outputs/700
+
+```{sh, eval=FALSE}
+ruby snapp_prep.rb -v outgroup.vcf -t og-samples.txt -c og-constraints.txt -m 5000 -l 500000 -x og.xml -o og
+ruby snapp_prep.rb -v og-lg20.vcf -t og-samples.txt -c og-constraints.txt -m 2000 -l 500000 -x og-lg20.xml -o og-lg20
+
+/Applications/BEAST\ 2.7.6/bin/beast -threads 4 og.xml --overwrite
+/Applications/BEAST\ 2.7.6/bin/beast -threads 4 og-lg20.xml --overwrite
+
+```
+
+oom error fix: `java -Xmx16g -jar /Applications/BEAST\ 2.6.0/lib/launcher.jar -threads 4 beast.xml`
+
+Checking overall signal
+./vcf2phylip.py -i outgroup.vcf
+iqtree2 -s outgroup.min4.phy  -st DNA -m GTR+ASC -bb 1000 --redo
+iqtree2 -s outgroup.min4.phy.varsites.phy  -st DNA -m GTR+ASC -bb 1000 --redo

@@ -1,0 +1,119 @@
+---
+title: "603.1-rad-seq-ld"
+output: html_document
+date: "2024-02-26"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+
+
+```{r}
+library(tidyverse)
+library(ggrepel)
+library(pcadapt)
+library(adegenet)
+library(vcfR)
+library(snpR)
+library(ggpubr)
+```
+
+
+meta
+
+```{r}
+meta<-read_csv("meta/wang.csv") %>% mutate(Region=Pop)
+write_tsv(meta %>% select(Run), col_names=FALSE, file="bamlists/130-sample-names.txt")
+meta$Pop<-factor(meta$Pop, levels=c("AUW","AUE","PNG","INA","MAL","THA"))
+meta<-meta %>% mutate(Lineage=ifelse(Pop %in% c("AUW","AUE","PNG"), "AUS+NG", "SEA"))
+ozpng<-meta %>% filter(Pop %in% c("AUW","AUE","PNG"))
+sea<-meta %>% filter(Lineage=="SEA")
+```
+
+Calculate ld, like so in outputs/606/vcf
+
+Chroms of interest: NC_066837.1 NC_066835.1 NC_066852.1
+
+```{sh, eval=FALSE}
+
+plink --vcf NC_066837.1.vcf.gz --r2 inter-chr --ld-window-r2 0.3 --out NC_066837.1.ldf --allow-extra-chr --double-id
+plink --vcf NC_066835.1.vcf.gz --r2 inter-chr --ld-window-r2 0.3 --out NC_066835.1.ldf --allow-extra-chr --double-id
+plink --vcf NC_066852.1.vcf.gz --r2 inter-chr --ld-window-r2 0.3 --out NC_066852.1.ldf --allow-extra-chr --double-id
+
+#one for fun
+plink --vcf NC_066833.1.vcf.gz --r2 inter-chr --ld-window-r2 0.3 --out NC_066833.1.ldf --allow-extra-chr --double-id
+
+```
+
+```{sh, eval=FALSE}
+for f in *1.vcf.gz; do plink --vcf $f --r2 inter-chr --ld-window-r2 0.3 --out `basename $f vcf`ldf --allow-extra-chr --double-id; done;
+```
+
+```{r, eval=FALSE}
+files<-list.files("outputs/606/vcf",pattern = "*.gzldf.ld", full.names = TRUE)
+
+plotLd<-function(file) {
+  chrom<-gsub("outputs/606/vcf/","",file)
+  chrom<-gsub(".1.vcf.gzldf.ld","", chrom)
+  lc<-read.delim(file,sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>%  filter(R2 >0.8)
+
+  ggplot(lc) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  ggtitle(paste0(chrom))+
+  theme_bw()
+ggsave(paste0("outputs/606/wang-ld/",chrom,".jpeg"))
+}
+
+lapply(files, plotLd)
+```
+
+#Null Example
+
+```{r}
+lc01<-read.delim("outputs/606/vcf/NC_066833.1.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
+  filter(R2 >0.8)
+
+ggplot(lc01) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw()
+```
+
+#Expecting High LD
+
+```{r}
+lc05<-read.delim("outputs/606/vcf/NC_066837.1.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
+  filter(R2 >0.8)
+
+ggplot(lc05) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw()
+```
+
+
+```{r}
+lc03<-read.delim("outputs/600/sea/NC_066835.1.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
+  filter(R2 >0.5) 
+
+ggplot(lc03) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw()
+```
+
+
+
+```{r}
+lc20<-read.delim("outputs/600/sea/NC_066852.1.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
+  filter(R2 >0.5)
+
+ggplot(lc20) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw()
+```
+
