@@ -98,6 +98,7 @@ ggplot() + geom_point(data=points, aes(x=long, y=lat, fill=DataType, shape=Linea
 
 ```{r}
 points2<-points 
+save(map2,file="outputs/range-map/map2.rda")
 map2 +
   geom_raster(data=range, aes(x=`Center Long`, y=`Center Lat`, fill=`Overall Probability`),alpha=0.75) +
   scale_fill_gradient(low="yellow", high="red")+

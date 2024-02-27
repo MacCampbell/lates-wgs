@@ -11,7 +11,10 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 
 ```{r}
 library(tidyverse)
+library(scatterpie)
 library(viridis)
+library(ggpubr)
+library(snpR)
 ```
 
 Note, we expect:        
@@ -27,11 +30,14 @@ Have genos from 607.1.
 ```{sh, eval=FALSE}
 gunzip -c dogeno4.geno.gz | grep NC_066852.1 | cut -f 2-192 > lc20.geno    
 gunzip -c dogeno4.geno.gz | grep NC_066837.1 | cut -f 2-192 > lc05.geno   
+gunzip -c dogeno4.geno.gz | grep NC_066835.1 | cut -f 2-192 > lc03.geno   
 
 ./105-omy05-haplotyper.pl genotypes.txt  genosToTest.txt bamlist
 #This script is hard coded for some reason for the number of samples 
  ../../omy05-haplotyper.pl lc20-diagnostic.tsv lc20.geno ../../bamlists/190-sample-names.txt > lc20-haplos.txt 
 ../../omy05-haplotyper.pl lc05-diagnostic.tsv lc05.geno ../../bamlists/190-sample-names.txt > lc05-haplos.txt 
+../../omy05-haplotyper.pl lc03-diagnostic.tsv lc03.geno ../../bamlists/190-sample-names.txt > lc03-haplos.txt 
+
 ```
      
 ```{r}
@@ -44,6 +50,13 @@ meta$Region<-factor(meta$Region, levels=c("AUE","Queensland","AUW","Northern Ter
 
 
 meta$Lineage<-factor(meta$Lineage, levels=c("AUS+NG","SEA","IND"))
+
+
+locs<-read_tsv("outputs/range-map/points-edited-2.tsv")
+meta<-meta %>% left_join(locs %>% select(Region, long, lat))
+```
+
+```{r}
 data<-read_tsv("outputs/607/lc20-haplos.txt")
 
 df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
@@ -54,23 +67,81 @@ df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
 
 
 ```{r}
-ddf<-df %>% group_by(Lineage, Region, Genotype, DataType) %>% summarise(Count=n()) %>% ungroup() %>%
+ddf<-df %>% group_by(Lineage, Region, Genotype, DataType, lat, long) %>% summarise(Count=n()) %>% ungroup() %>%
   group_by(Lineage, Region) %>% mutate(Proportion=Count/sum(Count)) %>% mutate(SampleSize=sum(Count))
 ```
 
 ```{r}
 ggplot(ddf) +
-  geom_col(aes(x=Region, y=Proportion, fill=Genotype)) +
+  geom_col(aes(x=Region, y=Proportion, fill=Genotype), color="black") +
   facet_grid(.~Lineage, scales = "free_x", space="free_x") +
   scale_fill_viridis_d(option="inferno") +
+  theme_bw() +
   theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
+  theme(panel.grid = element_blank()) +
   ggtitle("lc20 Variant Frequencies\n") +
   theme(plot.title=element_text(size=14, face="bold", hjust=0.5))
 
 ggsave("outputs/607/lc20-frequency-plot.jpg")
 ```
 
-lc05
+
+
+
+
+```{r}
+wide<-ddf %>% pivot_wider(id_cols = c("Lineage","Region","lat","long"), names_from = Genotype, values_from = Proportion, values_fill = 0)
+load("outputs/range-map/map2.rda")
+```
+
+```{r}
+lc20<-map2 +
+  geom_scatterpie(aes(x=long, y=lat, group=Region), data=wide, cols=c("AHom","Het","RHom")) +
+  coord_cartesian(xlim =c(70,170), ylim=c(-35,35)) +
+  xlab("\nLongitude") +
+  ylab("Latitude\n") +
+  theme(axis.title = element_text(size=12, face="bold")) +
+  scale_fill_viridis_d(option="inferno") +
+  ggtitle("C Lca20") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0))
+lca20
+ggsave("outputs/607/lca20.pdf")
+
+
+```
+
+Calculating heterozygosity. 
+
+```{r}
+samplem<-df %>% select(Run, Region, Lineage, DataType, Genotype)
+samplem$Genotype<-factor(samplem$Genotype,levels=c("AHom", "Het","RHom"))
+snps<-import.snpR.data(genotypes = "outputs/607/NC_066852.1-sub.vcf.gz", 
+      sample.meta = samplem)
+```
+
+
+```{r}
+het<-calc_hs(snps)
+ho <- get.snpR.stats(het, stats = "hs")
+```
+
+```{r}
+h20<-ggplot(ho$sample) +
+  geom_boxplot(aes(x=Genotype, y=hs, fill=Genotype), alpha=0.9) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  ylab("Individual Heterozygosity\n") +
+  xlab("\nGenotype") +
+  theme(axis.title=element_text(face="bold", size=14)) +
+  theme(axis.text=element_text(size=12)) +
+  ggtitle("C Lca20") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0)) +
+  scale_fill_viridis_d(option="inferno") +
+  theme(legend.position = "none")
+h20
+```
+
+## lc05
 
 ```{r}
 data<-read_tsv("outputs/607/lc05-haplos.txt")
@@ -83,19 +154,164 @@ df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
 
 
 ```{r}
-ddf<-df %>% group_by(Lineage, Region, Genotype, DataType) %>% summarise(Count=n()) %>% ungroup() %>%
+ddf<-df %>% group_by(Lineage, Region, Genotype, DataType, lat, long) %>% summarise(Count=n()) %>% ungroup() %>%
   group_by(Lineage, Region) %>% mutate(Proportion=Count/sum(Count)) %>% mutate(SampleSize=sum(Count))
 ```
 
 ```{r}
 ggplot(ddf) +
-  geom_col(aes(x=Region, y=Proportion, fill=Genotype)) +
+  geom_col(aes(x=Region, y=Proportion, fill=Genotype), color="black") +
   facet_grid(.~Lineage, scales = "free_x", space="free_x") +
   scale_fill_viridis_d(option="inferno") +
+  theme_bw() +
   theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
+  theme(panel.grid = element_blank()) +
   ggtitle("lc05 Variant Frequencies\n") +
   theme(plot.title=element_text(size=14, face="bold", hjust=0.5))
 
 ggsave("outputs/607/lc05-frequency-plot.jpg")
 ```
 
+
+
+```{r}
+wide<-ddf %>% pivot_wider(id_cols = c("Lineage","Region","lat","long"), names_from = Genotype, values_from = Proportion, values_fill = 0)
+```
+
+```{r}
+lc05<-map2 +
+  geom_scatterpie(aes(x=long, y=lat, group=Region), data=wide, cols=c("AHom","Het","RHom")) +
+  coord_cartesian(xlim =c(70,170), ylim=c(-35,35)) +
+  xlab("\nLongitude") +
+  ylab("Latitude\n") +
+  theme(axis.title = element_text(size=12, face="bold")) +
+  scale_fill_viridis_d(option="inferno") +
+  ggtitle("B Lca05") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0))
+lc05
+ggsave("outputs/607/lca05.pdf")
+
+```
+
+
+Calculating heterozygosity. 
+
+```{r}
+samplem<-df %>% select(Run, Region, Lineage, DataType, Genotype)
+samplem$Genotype<-factor(samplem$Genotype,levels=c("AHom", "Het","RHom"))
+snps<-import.snpR.data(genotypes = "outputs/607/NC_066837.1-sub.vcf", 
+      sample.meta = samplem)
+```
+
+
+```{r}
+het<-calc_hs(snps)
+ho <- get.snpR.stats(het, stats = "hs")
+```
+
+```{r}
+h05<-ggplot(ho$sample) +
+  geom_boxplot(aes(x=Genotype, y=hs, fill=Genotype), alpha=0.9) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  ylab("Individual Heterozygosity\n") +
+  xlab("\nGenotype") +
+  theme(axis.title=element_text(face="bold", size=14)) +
+  theme(axis.text=element_text(size=12)) +
+  ggtitle("B Lca05") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0)) +
+  scale_fill_viridis_d(option="inferno") +
+  theme(legend.position = "none")
+h05
+```
+## lc03
+
+```{r}
+data<-read_tsv("outputs/607/lc03-haplos.txt")
+
+df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
+  mutate(Genotype=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, "RHom",
+                       ifelse(NumberAA > NumberRR & NumberAA > NumberAR, "AHom",
+                       ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other"))))
+```
+
+
+```{r}
+ddf<-df %>% group_by(Lineage, Region, Genotype, DataType, lat, long) %>% summarise(Count=n()) %>% ungroup() %>%
+  group_by(Lineage, Region) %>% mutate(Proportion=Count/sum(Count)) %>% mutate(SampleSize=sum(Count))
+```
+
+```{r}
+ggplot(ddf) +
+  geom_col(aes(x=Region, y=Proportion, fill=Genotype), color="black") +
+  facet_grid(.~Lineage, scales = "free_x", space="free_x") +
+  scale_fill_viridis_d(option="inferno") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
+  theme(panel.grid = element_blank()) +
+  ggtitle("lc03 Variant Frequencies\n") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0.5))
+
+ggsave("outputs/607/lc03-frequency-plot.jpg")
+```
+
+
+
+```{r}
+wide<-ddf %>% pivot_wider(id_cols = c("Lineage","Region","lat","long"), names_from = Genotype, values_from = Proportion, values_fill = 0)
+```
+
+```{r}
+lc03<-map2 +
+  geom_scatterpie(aes(x=long, y=lat, group=Region), data=wide, cols=c("AHom","Het","RHom")) +
+  coord_cartesian(xlim =c(70,170), ylim=c(-35,35)) +
+  xlab("\nLongitude") +
+  ylab("Latitude\n") +
+  theme(axis.title = element_text(size=12, face="bold")) +
+  scale_fill_viridis_d(option="inferno") +
+  ggtitle("A Lca03") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0))
+lc03
+ggsave("outputs/607/lca03.pdf")
+
+```
+
+```{r}
+samplem<-df %>% select(Run, Region, Lineage, DataType, Genotype)
+samplem$Genotype<-factor(samplem$Genotype,levels=c("AHom", "Het","RHom"))
+snps<-import.snpR.data(genotypes = "outputs/607/NC_066835.1-sub.vcf.gz", 
+      sample.meta = samplem)
+```
+
+
+```{r}
+het<-calc_hs(snps)
+ho <- get.snpR.stats(het, stats = "hs")
+```
+
+```{r}
+h03<-ggplot(ho$sample) +
+  geom_boxplot(aes(x=Genotype, y=hs, fill=Genotype), alpha=0.9) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  ylab("Individual Heterozygosity\n") +
+  xlab("\nGenotype") +
+  theme(axis.title=element_text(face="bold", size=14)) +
+  theme(axis.text=element_text(size=12)) +
+  ggtitle("A Lca03") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0)) +
+  scale_fill_viridis_d(option="inferno") +
+  theme(legend.position = "none")
+h03
+```
+## All together
+
+```{r}
+ggarrange(h03, h05, h20, ncol=1)
+ggsave("outputs/607/heterozygosity.pdf", height=11, width=5)
+```
+
+```{r}
+ggarrange(lc03, lc05, lc20, ncol=1)
+ggsave("outputs/607/geographic-dist.pdf", height=11, width=6.5)
+```

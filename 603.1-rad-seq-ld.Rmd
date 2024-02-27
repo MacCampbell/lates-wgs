@@ -63,8 +63,9 @@ plotLd<-function(file) {
   geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
   scale_color_gradient(low="khaki1", high="red") + 
   ggtitle(paste0(chrom))+
-  theme_bw()
-ggsave(paste0("outputs/606/wang-ld/",chrom,".jpeg"))
+  theme_bw() +
+  theme(panel.grid = el)
+ggsave(paste0("outputs/606/wang-ld/",chrom,".pdf"))
 }
 
 lapply(files, plotLd)
