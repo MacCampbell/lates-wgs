@@ -157,8 +157,8 @@ labels<-p$plot$pca$data %>% select(Run, Region, Lineage, DataType, PC1, PC2) %>%
 ```
 ```{r}
 ggplot(pcadf) +
-  geom_point(aes(x=PC1, y=PC2, fill=Region, shape=Lineage), alpha=0.75, cex=2) +
-  geom_text_repel(data=labels, aes(x=x, y=y, label=Lineage), face="bold", size=6)+
+  geom_point(aes(x=PC1, y=PC2, shape=Lineage), alpha=0.75, cex=2, fill="grey50") +
+  geom_label_repel(data=labels, aes(x=x, y=y, label=Lineage), face="bold", size=6)+
   theme_bw() +
   theme(panel.grid = element_blank()) +
   xlab(p$plot$pca$labels$x) +

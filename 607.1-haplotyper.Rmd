@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 
 
 ```{r}
+library(gplots)
 library(tidyverse)
 library(scatterpie)
 library(viridis)
@@ -63,6 +64,8 @@ df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
   mutate(Genotype=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, "RHom",
                        ifelse(NumberAA > NumberRR & NumberAA > NumberAR, "AHom",
                        ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other"))))
+
+genotypeDF<-df %>% rename(LC20geno=Genotype) %>% select(-NumberAA, -NumberAR, -NumberRR)
 ```
 
 
@@ -92,13 +95,15 @@ ggsave("outputs/607/lc20-frequency-plot.jpg")
 
 
 ```{r}
-wide<-ddf %>% pivot_wider(id_cols = c("Lineage","Region","lat","long"), names_from = Genotype, values_from = Proportion, values_fill = 0)
+wide<-ddf %>% pivot_wider(id_cols = c("Lineage","Region","lat","long", "SampleSize"), names_from = Genotype, values_from = Proportion, values_fill = 0) %>%
+  mutate(SampleSizes=ifelse(SampleSize > 10, 10, SampleSize))
+
 load("outputs/range-map/map2.rda")
 ```
 
 ```{r}
 lc20<-map2 +
-  geom_scatterpie(aes(x=long, y=lat, group=Region), data=wide, cols=c("AHom","Het","RHom"), legend_name = "Genotype") +
+  geom_scatterpie(aes(x=long, y=lat, group=Region, r=SampleSizes/3), data=wide, cols=c("AHom","Het","RHom"), legend_name = "Genotype") +
   coord_cartesian(xlim =c(70,170), ylim=c(-35,35)) +
   xlab("\nLongitude") +
   ylab("Latitude\n") +
@@ -155,6 +160,9 @@ df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
                        ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other"))))
 
 counts<-df %>% group_by(Genotype) %>% summarize(Count=n())
+
+genotypeDF05<-df %>% rename(LC05geno=Genotype) %>% select(-NumberAA, -NumberAR, -NumberRR)
+genotypeDF<-left_join(genotypeDF, genotypeDF05)
 ```
 
 
@@ -180,12 +188,13 @@ ggsave("outputs/607/lc05-frequency-plot.jpg")
 
 
 ```{r}
-wide<-ddf %>% pivot_wider(id_cols = c("Lineage","Region","lat","long"), names_from = Genotype, values_from = Proportion, values_fill = 0)
+wide<-ddf %>% pivot_wider(id_cols = c("Lineage","Region","lat","long", "SampleSize"), names_from = Genotype, values_from = Proportion, values_fill = 0) %>%
+  mutate(SampleSizes=ifelse(SampleSize > 10, 10, SampleSize))
 ```
 
 ```{r}
 lc05<-map2 +
-  geom_scatterpie(aes(x=long, y=lat, group=Region), data=wide, cols=c("AHom","Het","RHom"), legend_name = "Genotype") +
+  geom_scatterpie(aes(x=long, y=lat, group=Region, r=SampleSizes/3), data=wide, cols=c("AHom","Het","RHom"), legend_name = "Genotype") +
   coord_cartesian(xlim =c(70,170), ylim=c(-35,35)) +
   xlab("\nLongitude") +
   ylab("Latitude\n") +
@@ -240,6 +249,10 @@ df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
                        ifelse(NumberAA > NumberRR & NumberAA > NumberAR, "AHom",
                        ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other"))))
 counts<-df %>% group_by(Genotype) %>% summarize(Count=n())
+
+genotypeDF03<-df %>% rename(LC03geno=Genotype) %>% select(-NumberAA, -NumberAR, -NumberRR)
+genotypeDF<-left_join(genotypeDF, genotypeDF03)
+
 ```
 
 
@@ -265,12 +278,13 @@ ggsave("outputs/607/lc03-frequency-plot.jpg")
 
 
 ```{r}
-wide<-ddf %>% pivot_wider(id_cols = c("Lineage","Region","lat","long"), names_from = Genotype, values_from = Proportion, values_fill = 0)
+wide<-ddf %>% pivot_wider(id_cols = c("Lineage","Region","lat","long", "SampleSize"), names_from = Genotype, values_from = Proportion, values_fill = 0) %>%
+  mutate(SampleSizes=ifelse(SampleSize > 10, 10, SampleSize))
 ```
 
 ```{r}
 lc03<-map2 +
-  geom_scatterpie(aes(x=long, y=lat, group=Region), data=wide, cols=c("AHom","Het","RHom"), legend_name = "Genotype") +
+  geom_scatterpie(aes(x=long, y=lat, group=Region, r=SampleSizes/3), data=wide, cols=c("AHom","Het","RHom"), legend_name = "Genotype") +
   coord_cartesian(xlim =c(70,170), ylim=c(-35,35)) +
   xlab("\nLongitude") +
   ylab("Latitude\n") +
@@ -358,4 +372,65 @@ h01
 ```{r}
 p01 <- plot_clusters(lc01, facets = c("Lineage.DataType"), viridis.option = "H")
 p01$plot$pca
+```
+
+
+# How correlated are genotypes?
+
+```{r}
+genotypeDF<-genotypeDF %>% mutate(State=paste0(LC03geno,LC05geno,LC20geno))
+
+```
+
+```{r}
+variable<-genotypeDF %>% filter(State !="RHomRHomRHom")
+```
+
+
+```{r}
+m<-variable %>% select(LC03geno, LC05geno, LC20geno)
+#m<-genotypeDF %>% select(LC03geno, LC05geno, LC20geno)
+m[m=="AHom"]<-"0"
+m[m=="Het"]<-"1"
+m[m=="RHom"]<-"2"
+m$LC03geno<-as.numeric(m$LC03geno)
+m$LC05geno<-as.numeric(m$LC05geno)
+m$LC20geno<-as.numeric(m$LC20geno)
+```
+
+
+```{r}
+pdf("outputs/607/heatmap.pdf")
+heatmap.2( m %>% as.matrix(), 
+           dendrogram="row",trace="none", key=FALSE,
+           labRow = variable$Region
+           
+)
+dev.off()
+```
+
+```{r}
+long<-pivot_longer(genotypeDF, cols=c("LC03geno", "LC05geno","LC20geno"), names_to = "Chrom", values_to = "Genotype") %>%
+  select(-Path)
+long<-long %>% arrange(Lineage, State)
+long$Run<-factor(long$Run, levels=unique(long$Run))
+```
+
+```{r}
+ggplot(long) +
+  geom_raster(aes(x=Chrom, y=Run, fill=Genotype)) +
+  facet_grid(Lineage~., scales="free_y", space="free_y") +
+  theme_bw() +
+  theme(axis.text.y = element_blank()) +
+  theme(panel.grid = element_blank()) +
+  theme(axis.ticks.y = element_blank()) +
+  scale_x_discrete(labels=c("Lca03","Lca05","Lca20")) +
+  xlab("\nInversion Chromosome") +
+  ylab("Individual\n") +
+  theme(axis.text.x = element_text(size=12)) +
+  theme(axis.title=element_text(size=16, face="bold")) +
+  scale_fill_viridis_d(option="inferno") 
+
+
+ggsave("outputs/607/inversion-polys.jpeg", height=8)
 ```
