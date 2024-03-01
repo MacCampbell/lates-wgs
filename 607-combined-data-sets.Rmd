@@ -19,7 +19,7 @@ library(phytools)
 library(tanggle)
 library(phangorn)
 library(viridis)
-library(ggpubr)
+library(grid)
 library(snpR)
 library(RColorBrewer)
 ```
@@ -131,7 +131,6 @@ bcftools +prune -l 0.20 -w 10000 outputs/607/snps-05.vcf.gz -O z > outputs/607/p
 
 
 ```{r}
-
 snps<-import.snpR.data(genotypes = "outputs/607/pruned.vcf.gz", 
       sample.meta = meta %>% select(Run, Region, Lineage, DataType))
 ```
@@ -174,6 +173,30 @@ ggsave("outputs/607/basic-pca.pdf")
 
 ```
 
+
+Genome-wide individual heterozygosity
+
+```{r}
+het<-calc_hs(snps)
+ho <- get.snpR.stats(het, stats = "hs")
+```
+
+```{r}
+hets<-ggplot(ho$sample) +
+  geom_boxplot(aes(x=Lineage, y=hs), alpha=0.9) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  ylab("Individual Heterozygosity\n") +
+  xlab("\nLineage") +
+  theme(axis.title=element_text(face="bold", size=14)) +
+  theme(axis.text=element_text(size=12)) +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0)) +
+  theme(legend.position = "none") +
+  facet_wrap(.~DataType)
+hets
+
+ggsave("outputs/607/genome-wide-individual-heterozygosity.jpeg")
+```
 
 ```{r, eval=FALSE}
 q<-plot_structure(snps, facet = "Region", method = "snmf", k=c(1,2,3,4,5,6), qsort=FALSE)
@@ -399,6 +422,7 @@ bcftools view -r NC_066852.1:6500000-8000000 outputs/607/snps-05.vcf.gz -O z > o
 bcftools view -r NC_066852.1:3500000-23737464 outputs/607/snps-05.vcf.gz -O z > outputs/607/NC_066852.1-sub.vcf.gz    
 bcftools view -r NC_066837.1:5247652-28551740 outputs/607/snps-05.vcf.gz -O z > outputs/607/NC_066837.1-sub.vcf.gz    
 bcftools view -r NC_066835.1:1-17500000 outputs/607/snps-05.vcf.gz -O z > outputs/607/NC_066835.1-sub.vcf.gz    
+bcftools view -r NC_066833.1 outputs/607/snps-05.vcf.gz -O z > outputs/607/NC_066833.1.vcf.gz    
 
 
 ```
@@ -419,6 +443,7 @@ pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
 
 df<-pca1$li
 df<-df %>% bind_cols(meta)
+df$Lineage<-factor(df$Lineage, levels=c("AUS+NG","SEA","IND"))
 df$Region<-factor(df$Region, levels=c("AUE","Queensland","AUW","NorthernTerritory","PNG","PapuaNewGuinea","INA","Indonesia-K","Indonesia-SJ","Indonesia-SU",
                                                "MAL","Philippines","Vietnam","Cambodia","THA","Thailand","Bangladesh","IndiaEasternCoast","IndiaWesternCoast"))
 
@@ -426,18 +451,18 @@ eig<-pca1$eig/sum(pca1$eig)*100
 ```
 
 ```{r}
-pc12<-ggplot(df) + 
+lc20pc12<-ggplot(df) + 
   geom_point(aes(x=Axis1, y=Axis2, fill=Region, shape=Lineage), alpha=0.75, cex=2) +
   theme_bw() +
   xlab(paste0("PC1 ",round(eig[1],2), "%")) +
   ylab(paste0("PC2 ",round(eig[2],2), "%")) +
   theme(panel.grid = element_blank()) +
   scale_fill_viridis_d(option="H") +
-  scale_shape_manual(values=c(21,23,24)) +
+  scale_shape_manual(values=c(21,24,23)) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
   facet_wrap(.~DataType) +
   theme(legend.position = "top")
-pc12
+lc20pc12
 
 ggsave("outputs/607/NC_066852.1.jpeg", width=8)
 ```
@@ -496,6 +521,7 @@ pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
 
 df<-pca1$li
 df<-df %>% bind_cols(meta)
+df$Lineage<-factor(df$Lineage, levels=c("AUS+NG","SEA","IND"))
 df$Region<-factor(df$Region, levels=c("AUE","Queensland","AUW","NorthernTerritory","PNG","PapuaNewGuinea","INA","Indonesia-K","Indonesia-SJ","Indonesia-SU",
                                                "MAL","Philippines","Vietnam","Cambodia","THA","Thailand","Bangladesh","IndiaEasternCoast","IndiaWesternCoast"))
 
@@ -503,18 +529,18 @@ eig<-pca1$eig/sum(pca1$eig)*100
 ```
 
 ```{r}
-pc12<-ggplot(df) + 
+lc05pc12<-ggplot(df) + 
   geom_point(aes(x=Axis1, y=Axis2, fill=Region, shape=Lineage), alpha=0.75, cex=2) +
   theme_bw() +
   xlab(paste0("PC1 ",round(eig[1],2), "%")) +
   ylab(paste0("PC2 ",round(eig[2],2), "%")) +
   theme(panel.grid = element_blank()) +
   scale_fill_viridis_d(option="H") +
-  scale_shape_manual(values=c(21,23,24)) +
+  scale_shape_manual(values=c(21,24,23)) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
   facet_wrap(.~DataType) +
   theme(legend.position = "top")
-pc12
+lc05pc12
 
 ggsave("outputs/607/NC_066837.1.jpeg", width=8)
 ```
@@ -573,6 +599,7 @@ pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
 
 df<-pca1$li
 df<-df %>% bind_cols(meta)
+df$Lineage<-factor(df$Lineage, levels=c("AUS+NG","SEA","IND"))
 df$Region<-factor(df$Region, levels=c("AUE","Queensland","AUW","NorthernTerritory","PNG","PapuaNewGuinea","INA","Indonesia-K","Indonesia-SJ","Indonesia-SU",
                                                "MAL","Philippines","Vietnam","Cambodia","THA","Thailand","Bangladesh","IndiaEasternCoast","IndiaWesternCoast"))
 
@@ -580,18 +607,18 @@ eig<-pca1$eig/sum(pca1$eig)*100
 ```
 
 ```{r}
-pc12<-ggplot(df) + 
+lc03pc12<-ggplot(df) + 
   geom_point(aes(x=Axis1, y=Axis2, fill=Region, shape=Lineage), alpha=0.75, cex=2) +
   theme_bw() +
   xlab(paste0("PC1 ",round(eig[1],2), "%")) +
   ylab(paste0("PC2 ",round(eig[2],2), "%")) +
   theme(panel.grid = element_blank()) +
   scale_fill_viridis_d(option="H") +
-  scale_shape_manual(values=c(21,23,24)) +
+  scale_shape_manual(values=c(21,24,23)) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
   facet_wrap(.~DataType) +
   theme(legend.position = "top")
-pc12
+lc03pc12
 
 ggsave("outputs/607/NC_066835.1.jpeg", width=8)
 ```
@@ -630,4 +657,16 @@ tops2<-tops %>% left_join(sites) %>% mutate(Diagnosis=ifelse(MajorMinor=="0",Maj
   mutate(Alternate=ifelse(MajorMinor=="1",Major,Minor)) %>%
            mutate(Genotype=paste0(Diagnosis,Diagnosis))
 tops2 %>% select(Position, Diagnosis, Alternate) %>% arrange(Position) %>% write_tsv(file="outputs/607/lc03-diagnostic.tsv",col_names = FALSE)
+```
+
+
+## Combine plots
+
+```{r}
+ggarrange(lc03pc12 + ggtitle(label="A. Lca03") + theme(plot.title = element_text(size=20, face="bold")), 
+          lc05pc12 + theme(legend.position = "none") + ggtitle(label="B. Lca05") + theme(plot.title = element_text(size=20, face="bold")),
+          lc20pc12 + theme(legend.position = "none") + ggtitle(label="B. Lca20") + theme(plot.title = element_text(size=20, face="bold")),
+          ncol = 1, heights=c(1.5,1,1))
+
+ggsave("outputs/607/inversion-pcas.pdf", width=11, height=13)
 ```

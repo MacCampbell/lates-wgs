@@ -69,6 +69,8 @@ df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
 ```{r}
 ddf<-df %>% group_by(Lineage, Region, Genotype, DataType, lat, long) %>% summarise(Count=n()) %>% ungroup() %>%
   group_by(Lineage, Region) %>% mutate(Proportion=Count/sum(Count)) %>% mutate(SampleSize=sum(Count))
+
+counts<-df %>% group_by(Genotype) %>% summarize(Count=n())
 ```
 
 ```{r}
@@ -96,15 +98,15 @@ load("outputs/range-map/map2.rda")
 
 ```{r}
 lc20<-map2 +
-  geom_scatterpie(aes(x=long, y=lat, group=Region), data=wide, cols=c("AHom","Het","RHom")) +
+  geom_scatterpie(aes(x=long, y=lat, group=Region), data=wide, cols=c("AHom","Het","RHom"), legend_name = "Genotype") +
   coord_cartesian(xlim =c(70,170), ylim=c(-35,35)) +
   xlab("\nLongitude") +
   ylab("Latitude\n") +
   theme(axis.title = element_text(size=12, face="bold")) +
   scale_fill_viridis_d(option="inferno") +
-  ggtitle("C Lca20") +
-  theme(plot.title=element_text(size=14, face="bold", hjust=0))
-lca20
+  ggtitle("C. Lca20") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0)) 
+lc20
 ggsave("outputs/607/lca20.pdf")
 
 
@@ -132,12 +134,13 @@ h20<-ggplot(ho$sample) +
   theme(panel.grid = element_blank()) +
   ylab("Individual Heterozygosity\n") +
   xlab("\nGenotype") +
+  scale_x_discrete(labels=c(paste0("AHom\n","n = ",counts$Count[1]),paste0("Het\n","n = ",counts$Count[2]),paste0("RHom\n","n = ",counts$Count[3]))) +
   theme(axis.title=element_text(face="bold", size=14)) +
   theme(axis.text=element_text(size=12)) +
-  ggtitle("C Lca20") +
+  ggtitle("C. Lca20") +
   theme(plot.title=element_text(size=14, face="bold", hjust=0)) +
   scale_fill_viridis_d(option="inferno") +
-  theme(legend.position = "none")
+  theme(legend.position = "none") 
 h20
 ```
 
@@ -150,6 +153,8 @@ df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
   mutate(Genotype=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, "RHom",
                        ifelse(NumberAA > NumberRR & NumberAA > NumberAR, "AHom",
                        ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other"))))
+
+counts<-df %>% group_by(Genotype) %>% summarize(Count=n())
 ```
 
 
@@ -180,13 +185,13 @@ wide<-ddf %>% pivot_wider(id_cols = c("Lineage","Region","lat","long"), names_fr
 
 ```{r}
 lc05<-map2 +
-  geom_scatterpie(aes(x=long, y=lat, group=Region), data=wide, cols=c("AHom","Het","RHom")) +
+  geom_scatterpie(aes(x=long, y=lat, group=Region), data=wide, cols=c("AHom","Het","RHom"), legend_name = "Genotype") +
   coord_cartesian(xlim =c(70,170), ylim=c(-35,35)) +
   xlab("\nLongitude") +
   ylab("Latitude\n") +
   theme(axis.title = element_text(size=12, face="bold")) +
   scale_fill_viridis_d(option="inferno") +
-  ggtitle("B Lca05") +
+  ggtitle("B. Lca05") +
   theme(plot.title=element_text(size=14, face="bold", hjust=0))
 lc05
 ggsave("outputs/607/lca05.pdf")
@@ -216,9 +221,10 @@ h05<-ggplot(ho$sample) +
   theme(panel.grid = element_blank()) +
   ylab("Individual Heterozygosity\n") +
   xlab("\nGenotype") +
+  scale_x_discrete(labels=c(paste0("AHom\n","n = ",counts$Count[1]),paste0("Het\n","n = ",counts$Count[2]),paste0("RHom\n","n = ",counts$Count[3]))) +
   theme(axis.title=element_text(face="bold", size=14)) +
   theme(axis.text=element_text(size=12)) +
-  ggtitle("B Lca05") +
+  ggtitle("B. Lca05") +
   theme(plot.title=element_text(size=14, face="bold", hjust=0)) +
   scale_fill_viridis_d(option="inferno") +
   theme(legend.position = "none")
@@ -233,6 +239,7 @@ df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
   mutate(Genotype=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, "RHom",
                        ifelse(NumberAA > NumberRR & NumberAA > NumberAR, "AHom",
                        ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other"))))
+counts<-df %>% group_by(Genotype) %>% summarize(Count=n())
 ```
 
 
@@ -263,13 +270,13 @@ wide<-ddf %>% pivot_wider(id_cols = c("Lineage","Region","lat","long"), names_fr
 
 ```{r}
 lc03<-map2 +
-  geom_scatterpie(aes(x=long, y=lat, group=Region), data=wide, cols=c("AHom","Het","RHom")) +
+  geom_scatterpie(aes(x=long, y=lat, group=Region), data=wide, cols=c("AHom","Het","RHom"), legend_name = "Genotype") +
   coord_cartesian(xlim =c(70,170), ylim=c(-35,35)) +
   xlab("\nLongitude") +
   ylab("Latitude\n") +
   theme(axis.title = element_text(size=12, face="bold")) +
   scale_fill_viridis_d(option="inferno") +
-  ggtitle("A Lca03") +
+  ggtitle("A. Lca03") +
   theme(plot.title=element_text(size=14, face="bold", hjust=0))
 lc03
 ggsave("outputs/607/lca03.pdf")
@@ -296,9 +303,11 @@ h03<-ggplot(ho$sample) +
   theme(panel.grid = element_blank()) +
   ylab("Individual Heterozygosity\n") +
   xlab("\nGenotype") +
+  scale_x_discrete(labels=c(paste0("AHom\n","n = ",counts$Count[1]),paste0("Het\n","n = ",counts$Count[2]),paste0("RHom\n","n = ",counts$Count[3]))) +
+
   theme(axis.title=element_text(face="bold", size=14)) +
   theme(axis.text=element_text(size=12)) +
-  ggtitle("A Lca03") +
+  ggtitle("A. Lca03") +
   theme(plot.title=element_text(size=14, face="bold", hjust=0)) +
   scale_fill_viridis_d(option="inferno") +
   theme(legend.position = "none")
@@ -314,4 +323,39 @@ ggsave("outputs/607/heterozygosity.pdf", height=11, width=5)
 ```{r}
 ggarrange(lc03, lc05, lc20, ncol=1)
 ggsave("outputs/607/geographic-dist.pdf", height=11, width=6.5)
+```
+
+
+## A null example lc01
+```{r}
+lc01<-import.snpR.data(genotypes = "outputs/607/NC_066833.1.vcf.gz", 
+      sample.meta = meta %>% select(Run, Lineage, DataType))
+```
+
+
+```{r}
+het1<-calc_hs(lc01)
+ho1 <- get.snpR.stats(het1, stats = "hs")
+```
+
+```{r}
+h01<-ggplot(ho1$sample) +
+  geom_boxplot(aes(x=Lineage, y=hs), alpha=0.9) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  ylab("Individual Heterozygosity\n") +
+  xlab("\nLineage") +
+  theme(axis.title=element_text(face="bold", size=14)) +
+  theme(axis.text=element_text(size=12)) +
+  ggtitle("Null Example Lca01") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0)) +
+  theme(legend.position = "none") +
+  facet_wrap(~DataType)
+h01
+```
+
+
+```{r}
+p01 <- plot_clusters(lc01, facets = c("Lineage.DataType"), viridis.option = "H")
+p01$plot$pca
 ```
