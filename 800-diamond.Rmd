@@ -1,0 +1,63 @@
+---
+title: "800-diamond"
+output: html_document
+date: "2024-03-04"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+## Prospecting for novel viruses
+
+Downloaded NCBI refseq data for all viruses and parvoviridae, in outputs/800 
+
+### Data
+
+https://www.ncbi.nlm.nih.gov/bioproject/713978.  
+https://www.frontiersin.org/journals/genetics/articles/10.3389/fgene.2021.666897/full.  
+Expect a couple of viruses in these fish (but maybe a new one!!)
+
+acc
+SRR13950739
+SRR13950740
+SRR13950741
+SRR13950742
+SRR13950743
+SRR13950744
+SRR13950745
+SRR13950746
+SRR13950747
+SRR13950748
+SRR13950749
+SRR13950750
+SRR13950751
+SRR13950752
+SRR13950753
+SRR13950754
+SRR13950755
+SRR13950756
+SRR13950757
+SRR13950758
+SRR13950759
+SRR13950760
+SRR13950761
+SRR13950762
+SRR13950763
+SRR13950764
+SRR13950765
+SRR13950766
+SRR13950767
+SRR13950768
+SRR13950769
+SRR13950770
+
+
+Downloading like so:
+https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR13950739/SRR13950739
+
+(base) maccamp@farm:~/lates-wgs/outputs/800$ cat list.txt  | while read line; do wget https://sra-pub-run-odp.s3.amazonaws.com/sra/$line/$line; done;
+
+Then to dump like so:
+
+ `for f in raw/*sralite.1; do echo $f; fastq-dump --outdir split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip $f; done;  `    
