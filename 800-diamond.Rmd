@@ -8,6 +8,12 @@ date: "2024-03-04"
 knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```
 
+
+```{r}
+library(tidyverse)
+```
+
+
 ## Prospecting for novel viruses
 
 Downloaded NCBI refseq data for all viruses and parvoviridae, in outputs/800 
@@ -220,6 +226,8 @@ SRR13950770
 
 32 samples
 
+
+
 Downloading like so:
 https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR13950739/SRR13950739
 
@@ -233,6 +241,21 @@ for f in raw/SRR*; do echo $f; fastq-dump --outdir split --skip-technical --read
 
 Ugh, why did I do that. so slow.   
 
+organizing meta
+```{r}
+info1<-read_csv("outputs/800/scale-drop-rna-info.csv")
+info2<-read_csv("outputs/800/scale-drop-sra.csv")
+
+rnm<-left_join(info1, info2, by=c("Sample"="Sample Accession")) %>% select(Run, bases, Experiment, SampleName) 
+
+rnm$Status<-gsub("\\w\\d+","",rnm$SampleName)
+rnm$Tissue<-gsub("\\d+","",rnm$SampleName)
+rnm$Tissue<-gsub("^S|H","",rnm$Tissue)
+
+rnm
+write_csv(rnm,"meta/rna-32-meta.csv")
+```
+Sick Fish Muscle, Sick Fish Liver
 
 ## Search
 
@@ -363,6 +386,7 @@ call="STAR \
 --alignMatesGapMax 1000000 \
 --outSAMattributes NH HI NM MD \
 --outSAMtype BAM SortedByCoordinate \
+--outReadsUnmapped Fastx \
 --outFileNamePrefix $outP/${name}- \
 --quantMode GeneCounts"
 
@@ -370,4 +394,10 @@ echo $call
 eval $call
 ```
 
+Trialing with 3 samples
 `sbatch -p med -J star-$USER --array=1-3 do-align-star.slurm `
+
+SRR13950739 is healthy liver
+SRR13950740 is healthy liver
+SRR13950741 is sick liver
+
