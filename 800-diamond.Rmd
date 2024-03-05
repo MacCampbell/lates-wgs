@@ -11,13 +11,179 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ## Prospecting for novel viruses
 
 Downloaded NCBI refseq data for all viruses and parvoviridae, in outputs/800 
+Added MZ702992.1 tilapia parvoviruse to parvoviridae.faa
+
+
+Build databases.... 
+diamond makedb --in probes.faa -d probes
+
+```{sh, eval=FALSE}
+diamond makedb --in parvoviridae.faa -d parvoviridae 
+srun -p high -t 5:00:00 --nodes=1 --mem=32GB  diamond makedb --in ncbi-refseq.faa -d ncbi-refseq 
+```
+
+Refseq parvoviridae list see details in outputs/800/nuccore_result.txt  
+MZ702992.1
+NC_000883.2
+NC_000936.1
+NC_001401.2
+NC_001510.1
+NC_001539.1
+NC_001540.1
+NC_001662.1
+NC_001701.1
+NC_001718.1
+NC_001729.1
+NC_001829.1
+NC_001899.1
+NC_002077.1
+NC_002190.2
+NC_003346.1
+NC_004284.1
+NC_004285.1
+NC_004286.1
+NC_004287.1
+NC_004288.1
+NC_004289.1
+NC_004290.1
+NC_004295.1
+NC_004442.1
+NC_004828.1
+NC_005040.1
+NC_005041.2
+NC_005341.1
+NC_005889.1
+NC_006147.2
+NC_006148.1
+NC_006152.1
+NC_006259.1
+NC_006260.1
+NC_006261.1
+NC_006263.1
+NC_006555.1
+NC_007018.1
+NC_007218.1
+NC_007455.1
+NC_011317.1
+NC_011545.2
+NC_012042.1
+NC_012564.1
+NC_012636.1
+NC_012685.1
+NC_012729.2
+NC_014357.1
+NC_014358.1
+NC_014468.1
+NC_014665.1
+NC_015115.1
+NC_015718.1
+NC_016031.1
+NC_016032.1
+NC_016647.1
+NC_016744.1
+NC_016752.1
+NC_017823.1
+NC_018399.1
+NC_018450.1
+NC_019492.1
+NC_020499.1
+NC_022089.1
+NC_022104.1
+NC_022564.1
+NC_022748.1
+NC_022800.1
+NC_023020.1
+NC_023673.1
+NC_023842.1
+NC_023860.1
+NC_024452.1
+NC_024453.2
+NC_024454.1
+NC_024888.1
+NC_025825.1
+NC_025891.1
+NC_025965.1
+NC_026251.1
+NC_026815.1
+NC_026943.1
+NC_027429.1
+NC_028136.1
+NC_028650.1
+NC_028973.1
+NC_029133.1
+NC_029300.1
+NC_029797.1
+NC_030296.1
+NC_030402.1
+NC_030837.1
+NC_030873.1
+NC_031450.1
+NC_031670.1
+NC_031695.1
+NC_031751.1
+NC_031959.2
+NC_032097.1
+NC_034445.1
+NC_034532.1
+NC_035180.1
+NC_035185.1
+NC_035186.1
+NC_037053.1
+NC_038532.1
+NC_038533.1
+NC_038534.1
+NC_038535.1
+NC_038536.1
+NC_038537.1
+NC_038538.1
+NC_038539.1
+NC_038540.1
+NC_038541.1
+NC_038542.1
+NC_038543.1
+NC_038544.1
+NC_038545.1
+NC_038546.1
+NC_038547.1
+NC_038883.1
+NC_038895.1
+NC_038898.1
+NC_039043.1
+NC_039044.1
+NC_039045.1
+NC_039046.1
+NC_039047.1
+NC_039048.1
+NC_039049.1
+NC_039050.1
+NC_040533.1
+NC_040562.1
+NC_040603.1
+NC_040623.1
+NC_040626.1
+NC_040652.1
+NC_040671.1
+NC_040672.1
+NC_040694.1
+NC_040695.1
+NC_040843.1
+NC_043446.1
+NC_055458.1
+NC_055465.1
+NC_055485.1
+NC_055486.1
+NC_055487.1
+NC_055518.1
+NC_055527.1
+NC_055583.1
+
 
 ### Data
 
 https://www.ncbi.nlm.nih.gov/bioproject/713978.  
 https://www.frontiersin.org/journals/genetics/articles/10.3389/fgene.2021.666897/full.  
 Expect a couple of viruses in these fish (but maybe a new one!!)
-
+NC_027778 is the scale drop viruse, e.g. YP_009163762.1
 acc
 SRR13950739
 SRR13950740
@@ -52,6 +218,7 @@ SRR13950768
 SRR13950769
 SRR13950770
 
+32 samples
 
 Downloading like so:
 https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR13950739/SRR13950739
@@ -59,5 +226,148 @@ https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR13950739/SRR13950739
 (base) maccamp@farm:~/lates-wgs/outputs/800$ cat list.txt  | while read line; do wget https://sra-pub-run-odp.s3.amazonaws.com/sra/$line/$line; done;
 
 Then to dump like so:
+```{sh, eval=FALSE}
+mkdir split
+for f in raw/SRR*; do echo $f; fastq-dump --outdir split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip $f; done;    
+```
 
- `for f in raw/*sralite.1; do echo $f; fastq-dump --outdir split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip $f; done;  `    
+Ugh, why did I do that. so slow.   
+
+
+## Search
+
+Can assemble with megahit or similar, but will lose rare data. 
+
+Can try combining with flash
+
+
+
+```{sh, eval=FALSE}
+srun -p high -t 8:00:00 --nodes=1 --mem=32G diamond blastx -d ncbi-refseq -q split/SRR13950739_pass_1.fastq.gz -o SRR13950739_pass_1.tsv > SRR13950739_pass_1.out 2> SRR13950739_pass_1.err &
+#takes < 1 hr
+
+srun -p high -t 8:00:00 --nodes=1 --mem=32G diamond blastx -d parvoviridae -q split/SRR13950739_pass_1.fastq.gz -o SRR13950739_pass_1-parvo.tsv > SRR13950739_pass_1-parvo.out 2> SRR13950739_pass_1-parvo.err &
+```
+'
+
+
+SO many hits, maybe a poxvirus, but not hits to salmon gill poxvirus?
+
+base) maccamp@farm:~/lates-wgs/outputs/800$  grep SRR13950739.9999976 SRR13950739_pass_1.tsv 
+SRR13950739.9999976	YP_009447989.1	100	41	0	0	26	148	1	41	1.26e-21	81.3
+SRR13950739.9999976	NP_955119.1	97.6	41	1	0	26	148	1	41	2.22e-21	80.9
+SRR13950739.9999976	YP_009173411.1	92.7	41	3	0	26	148	1	41	2.09e-20	78.2
+SRR13950739.9999976	YP_010783327.1	92.7	41	3	0	26	148	1	41	1.72e-19	75.9
+SRR13950739.9999976	YP_009238796.1	90.2	41	4	0	26	148	1	41	2.26e-19	75.5
+SRR13950739.9999976	YP_004347213.1	90.2	41	4	0	26	148	1	41	2.26e-19	75.5
+SRR13950739.9999976	YP_009345355.1	92.7	41	3	0	26	148	2	42	3.29e-19	75.1
+SRR13950739.9999976	YP_007676278.1	92.7	41	3	0	26	148	1	41	3.89e-19	76.6
+SRR13950739.9999976	YP_001426684.1	92.7	41	3	0	26	148	1	41	9.93e-19	73.9
+SRR13950739.9999976	YP_010780588.1	90.2	41	4	0	26	148	1	41	1.07e-18	73.9
+SRR13950739.9999976	YP_010781883.1	90.2	41	4	0	26	148	1	41	1.07e-18	73.9
+SRR13950739.9999976	YP_010084826.1	87.8	41	5	0	26	148	1	41	2.00e-18	73.2
+SRR13950739.9999976	YP_009552359.1	87.8	41	5	0	26	148	1	41	2.00e-18	73.2
+SRR13950739.9999976	YP_008003723.1	90.2	41	4	0	26	148	1	41	2.00e-18	73.2
+SRR13950739.9999976	NP_064949.1	87.8	41	5	0	26	148	1	41	2.22e-18	73.2
+SRR13950739.9999976	YP_010805497.1	87.8	41	5	0	26	148	1	41	2.60e-18	73.2
+SRR13950739.9999976	YP_008004581.1	90.2	41	4	0	26	148	1	41	2.60e-18	73.2
+SRR13950739.9999976	YP_009186717.1	90.2	41	4	0	26	148	1	41	2.67e-18	73.2
+SRR13950739.9999976	YP_009001809.1	87.8	41	5	0	26	148	1	41	5.89e-18	72.0
+SRR13950739.9999976	YP_002854658.1	85.4	41	6	0	26	148	1	41	5.89e-18	72.0
+SRR13950739.9999976	YP_010086303.1	90.2	41	4	0	26	148	1	41	6.20e-18	72.0
+SRR13950739.9999976	YP_006607868.1	87.8	41	5	0	26	148	19	59	9.39e-18	72.0
+SRR13950739.9999976	YP_008004279.1	87.8	41	5	0	26	148	1	41	1.06e-17	71.6
+SRR13950739.9999976	YP_009255031.1	85.4	41	6	0	26	148	1	41	1.07e-17	71.2
+SRR13950739.9999976	YP_009552587.1	82.9	41	7	0	26	148	1	41	1.13e-17	71.2
+
+qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore'
+(base) maccamp@farm:~/lates-wgs/outputs/800$ grep MZ702992.1 SRR13950739_pass_1-parvo.tsv 
+SRR13950739.5379756	lcl|MZ702992.1_prot_UTI93250.1_5	53.8	26	12	0	6	83	167	192	1.08e-04	32.3
+SRR13950739.5380159	lcl|MZ702992.1_prot_UTI93250.1_5	53.8	26	12	0	6	83	167	192	1.08e-04	32.3
+SRR13950739.27957673	lcl|MZ702992.1_prot_UTI93247.1_2	31.6	38	26	0	33	146	253	290	9.92e-04	29.6
+
+SRR13950739.5379756
+Potential interesting seqs match general fish proteins. Hmmm, maybe align to genome first, then search non-aligning seqs?
+
+>SRR13950739.347963 347963 length=150
+CAAGAGAGGCTTGTGGCATCATTGTGGAGCTCATTCGCTCAAAAAAGATGGCAGGAAGGGCAGTGTTACTAGCAGGGCCACCAGGAACAGGAAAGACTGCTCTCGCCTTGGCTATAGCACAGGAGCTGGGAAACAAGGTGCCTTTCTGCC
+>SRR13950739.5379756 5379756 length=150
+GTTTTATTCCCGTTATCCCCCCAACACCAGCCGCAGCAGATATAAAAAAAGATAAAAAACCTGCATATTTTTGTCAAAGCCCTTCCCTTTTTTCCTTTTACAGTAAGTGTGGGTCTCAGGAGTGAGTCCAGCTGACTGGAACCCAGTGAG
+
+Can build a star reference....
+
+Checking output
+ cat SRR13950739_pass_1.tsv | awk ' {if ( $3 > 90 && $4 > 30) print }' | sort -k 3 -n
+
+>SRR13950739.46471272 46471272 length=150
+GCTAGCGGCCGGCCTGCAAACATGCAGATCTTCGTGAAGACGTTGACGGGGAAGACCATCACCCTCGAGGTTGAGCCCAGCGACACTATCGAAAATGTCAAGGCTAAGATCCAAGATAAGGAAGGAATTCCCCCTGACCAGCAGCGTCTG
+
+This interesting sequence is similar to L. calcarifer (100% ubiquitinn protein)
+
+building STAR aligner index
+module load star/2.7.6a
+
+srun -p high -t 12:00:00 --nodes=1 --mem=32GB STAR --runThreadN 4 --runMode genomeGenerate --genomeDir /home/maccamp/lates-wgs/genome/ --genomeFastaFiles GCF_001640805.2_TLL_Latcal_v3_genomic.fna --sjdbGTFfile GCF_001640805.2_TLL_Latcal_v3_genomic.gtf
+
+Need to build job array. Align to genome, then remove non-aligned sequences. 
+
+Aligning with:
+
+--outReadsUnmapped Fastx
+
+do-align-star.slurm
+
+```{sh, eval=FALSE}
+#!/bin/bash
+#
+#SBATCH --time=4-00
+#SBATCH --mem=10G # Memory pool for all cores (see also --mem-per-cpu)
+#SBATCH --output=slurmout/star-%A-%a.out # File to which STDOUT will be written
+#SBATCH --error=slurmout/star-%A-%a.err # File to which STDERR will be written
+
+
+start=`date +%s`
+hostname
+#aklog
+export baseP=/home/$USER/lates-wgs/outputs/800/
+export seqP=${baseP}/split
+export outP=${baseP}/align
+export cwd=${baseP}/scripts
+export tmpP=$cwd/tmp
+
+if [ ! -d "${outP}" ]; then
+   mkdir ${outP}
+fi
+
+if [ ! -d "${tmpP}" ]; then
+   mkdir ${tmpP}
+fi
+
+name=`head -n ${SLURM_ARRAY_TASK_ID} allsamples.txt | tail -1`
+
+module load star/2.7.6a 
+
+call="STAR \
+--runThreadN 4 \
+--genomeDir /home/maccamp/lates-wgs/genome/ \
+--readFilesIn $seqP/${name}_pass_1.fastq.gz $seqP/${name}_pass_2.fastq.gz  \
+--readFilesCommand zcat \
+--outFilterType BySJout \
+--outFilterMultimapNmax 20 \
+--alignSJoverhangMin 8 \
+--alignSJDBoverhangMin 1 \
+--outFilterMismatchNmax 999 
+--outFilterMismatchNoverLmax 0.1 \
+--alignIntronMin 20 \
+--alignIntronMax 1000000 \
+--alignMatesGapMax 1000000 \
+--outSAMattributes NH HI NM MD \
+--outSAMtype BAM SortedByCoordinate \
+--outFileNamePrefix $outP/${name}- \
+--quantMode GeneCounts"
+
+echo $call
+eval $call
+```
+
+`sbatch -p med -J star-$USER --array=1-3 do-align-star.slurm `
