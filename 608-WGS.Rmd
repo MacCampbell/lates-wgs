@@ -48,6 +48,13 @@ for f in outputs/608/vcf-pruned/*.vcf.gz; do bcftools index $f; done;
 bcftools view -r NC_066852.1:3500000-23737464 outputs/608/wgs-05.vcf.gz -O z > outputs/608/NC_066852.1-sub.vcf.gz     
 bcftools view -r NC_066852.1:6500000-8000000 outputs/608/wgs-05.vcf.gz -O z > outputs/608/NC_066852.1-dummy-sub.vcf.gz     
 
+
+bcftools view -r NC_066852.1:3500000-23737464 outputs/608/wgs-05.vcf.gz -O z > outputs/608/NC_066852.1-sub.vcf.gz    
+bcftools view -r NC_066837.1:5247652-28551740 outputs/608/wgs-05.vcf.gz -O z > outputs/608/NC_066837.1-sub.vcf.gz    
+bcftools view -r NC_066835.1:1-17500000 outputs/608/wgs-05.vcf.gz -O z > outputs/608/NC_066835.1-sub.vcf.gz    
+bcftools view -r NC_066833.1 outputs/608/wgs-05.vcf.gz -O z > outputs/608/NC_066833.1.vcf.gz    
+
+
 ```
  
 
@@ -302,3 +309,150 @@ ggplot(p3) +
   ylab("MDS3") +
   xlab("Chromosome")
 ```
+
+
+## Read in chroms and split
+
+Using a pruned version 
+```{r}
+
+wgsmeta<-meta %>% select(Run, Region, Lineage)
+
+lc3rhoms<-read_tsv("meta/lc03-rhoms.tsv", col_names = c("Run")) %>% mutate(Genotype="RHom")
+lc3ahoms<-read_tsv("meta/lc03-ahoms.tsv", col_names = c("Run")) %>% mutate(Genotype="AHom")
+lc3homs<-bind_rows(lc3ahoms,lc3rhoms)
+lc3homs %>% select(Run) %>% write_tsv(file="meta/lc03-homs.tsv", col_names = FALSE)
+```
+
+```{sh, eval=FALSE}
+bcftools view -S meta/lc03-homs.tsv outputs/608/NC_066835.1-sub.vcf.gz  -O z > outputs/608/NC_066835.1-homs.vcf.gz    
+```
+
+```{r}
+lc3<-import.snpR.data(genotypes = "outputs/608/NC_066835.1-homs.vcf.gz", 
+      sample.meta = lc3homs)
+```
+
+
+```{r}
+p <- plot_clusters(lc3, facets = "Genotype", viridis.option = "H")
+p$plot$pca
+```
+```{r}
+mylc3 <- calc_pairwise_fst(lc3, "Genotype", method = "WC")
+stats <- get.snpR.stats(mylc3, "Genotype", stats ="fst")
+```
+
+
+```{r}
+p3<-ggplot(stats$pairwise %>% as_tibble() %>% filter(fst > 0.85)) +
+  geom_density_2d_filled(aes(x=position, y=fst), bins=10) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  xlab("Fst") +
+  ylab("Position") +
+  theme(axis.title=element_text(face="bold", size=14)) +
+  theme(axis.text=element_text(size=12)) +
+  ggtitle("A. Lca03") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0)) 
+p3
+```
+
+
+
+
+### lc5
+```{r}
+lc5rhoms<-read_tsv("meta/lc05-rhoms.tsv", col_names = c("Run")) %>% mutate(Genotype="RHom")
+lc5ahoms<-read_tsv("meta/lc05-ahoms.tsv", col_names = c("Run")) %>% mutate(Genotype="AHom")
+lc5homs<-bind_rows(lc5ahoms,lc5rhoms)
+lc5homs %>% select(Run) %>% write_tsv(file="meta/lc05-homs.tsv", col_names = FALSE)
+```
+
+```{sh, eval=FALSE}
+bcftools view -S meta/lc05-homs.tsv outputs/608/NC_066837.1-sub.vcf.gz  -O z > outputs/608/NC_066837.1-homs.vcf.gz    
+```
+
+```{r}
+lc5<-import.snpR.data(genotypes = "outputs/608/NC_066837.1-homs.vcf.gz", 
+      sample.meta = lc5homs)
+```
+
+
+```{r}
+p <- plot_clusters(lc5, facets = "Genotype", viridis.option = "H")
+p$plot$pca
+```
+```{r}
+mylc5 <- calc_pairwise_fst(lc5, "Genotype", method = "WC")
+stats5 <- get.snpR.stats(mylc5, "Genotype", stats ="fst")
+```
+
+
+```{r}
+
+p5<-ggplot(stats5$pairwise %>% as_tibble() %>% filter(fst > 0.85)) +
+  geom_density_2d_filled(aes(x=position, y=fst), bins=10) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  xlab("Fst") +
+  ylab("Position") +
+  theme(axis.title=element_text(face="bold", size=14)) +
+  theme(axis.text=element_text(size=12)) +
+  ggtitle("B. Lca05") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0)) 
+p5
+```
+
+
+
+### lc20
+Using a pruned version 
+```{r}
+lc20rhoms<-read_tsv("meta/lc20-rhoms.tsv", col_names = c("Run")) %>% mutate(Genotype="RHom")
+lc20ahoms<-read_tsv("meta/lc20-ahoms.tsv", col_names = c("Run")) %>% mutate(Genotype="AHom")
+lc20homs<-bind_rows(lc20ahoms,lc20rhoms)
+lc20homs %>% select(Run) %>% write_tsv(file="meta/lc20-homs.tsv", col_names = FALSE)
+```
+
+```{sh, eval=FALSE}
+bcftools view -S meta/lc20-homs.tsv outputs/608/NC_066852.1-sub.vcf.gz  -O z > outputs/608/NC_066852.1-homs.vcf.gz    
+```
+
+```{r}
+lc20<-import.snpR.data(genotypes = "outputs/608/NC_066852.1-homs.vcf.gz", 
+      sample.meta = lc20homs)
+```
+
+
+```{r}
+p <- plot_clusters(lc20, facets = "Genotype", viridis.option = "H")
+p$plot$pca
+```
+```{r}
+mylc20<- calc_pairwise_fst(lc20, "Genotype", method = "WC")
+stats20<- get.snpR.stats(mylc20, "Genotype", stats ="fst")
+```
+
+
+```{r}
+p20<-ggplot(stats20$pairwise %>% as_tibble() %>% filter(fst > 0.85)) +
+  geom_density_2d_filled(aes(x=position, y=fst), bins=10) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  xlab("Fst") +
+  ylab("Position") +
+  theme(axis.title=element_text(face="bold", size=14)) +
+  theme(axis.text=element_text(size=12)) +
+  ggtitle("C. Lca20") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0)) 
+
+p20
+```
+
+
+```{r}
+ggarrange(p3,p5,p20, ncol=1)
+ggsave("outputs/608/fst-density.pdf", height=12, width=6.5)
+```
+

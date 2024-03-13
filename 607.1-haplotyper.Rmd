@@ -434,3 +434,39 @@ ggplot(long) +
 
 ggsave("outputs/607/inversion-polys.jpeg", height=8)
 ```
+
+Get sample sizes for WGS
+
+```{r}
+wgs<-long %>% filter(DataType=="WGS")
+
+ggplot(wgs) + 
+  geom_raster(aes(x=Chrom, y=Run, fill=Genotype)) +
+  facet_grid(Lineage~., scales="free_y", space="free_y") +
+  theme_bw() +
+  theme(axis.text.y = element_blank()) +
+  theme(panel.grid = element_blank()) +
+  theme(axis.ticks.y = element_blank()) +
+  scale_x_discrete(labels=c("Lca03","Lca05","Lca20")) +
+  xlab("\nInversion Chromosome") +
+  ylab("Individual\n") +
+  theme(axis.text.x = element_text(size=12)) +
+  theme(axis.title=element_text(size=16, face="bold")) +
+  scale_fill_viridis_d(option="inferno") 
+
+```
+
+
+set up sample lists
+```{r}
+wgs %>% group_by(Chrom, Genotype) %>% summarize(Count=n()) %>% filter(Genotype!="Het")
+
+wgs %>% filter(Chrom=="LC03geno") %>% filter(Genotype=="RHom") %>% select(Run) %>% write_tsv(col_names = FALSE, file="meta/lc03-rhoms.tsv")
+wgs %>% filter(Chrom=="LC03geno") %>% filter(Genotype=="AHom") %>% select(Run) %>% write_tsv(col_names = FALSE, file="meta/lc03-ahoms.tsv")
+wgs %>% filter(Chrom=="LC05geno") %>% filter(Genotype=="RHom") %>% select(Run) %>% write_tsv(col_names = FALSE, file="meta/lc05-rhoms.tsv")
+wgs %>% filter(Chrom=="LC05geno") %>% filter(Genotype=="AHom") %>% select(Run) %>% write_tsv(col_names = FALSE, file="meta/lc05-ahoms.tsv")
+wgs %>% filter(Chrom=="LC20geno") %>% filter(Genotype=="RHom") %>% select(Run) %>% write_tsv(col_names = FALSE, file="meta/lc20-rhoms.tsv")
+wgs %>% filter(Chrom=="LC20geno") %>% filter(Genotype=="AHom") %>% select(Run) %>% write_tsv(col_names = FALSE, file="meta/lc20-ahoms.tsv")
+
+wgs %>% write_csv("meta/wgs-inversion-genotypes.csv")
+```
