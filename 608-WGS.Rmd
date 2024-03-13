@@ -11,6 +11,8 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message=FALSE)
 
 
 ```{r}
+library(MASS)
+library(raster)
 library(tidyverse)
 library(ggrepel)
 library(pcadapt)
@@ -343,10 +345,33 @@ mylc3 <- calc_pairwise_fst(lc3, "Genotype", method = "WC")
 stats <- get.snpR.stats(mylc3, "Genotype", stats ="fst")
 ```
 
+Local maxima.    
+https://stackoverflow.com/questions/43190146/how-to-get-the-top-n-largest-density-spot-coordinates-in-ggmap
+```{r}
+m3<-stats$pairwise %>% as_tibble() %>% filter(fst > 0.85)
+
+w = matrix(1,3,3)
+x = kde2d(m3$position, m3$fst, n=1000)
+x2<-x %>% as_tibble()
+r = raster(x)
+f <- function(X) max(X, na.rm=TRUE)
+localmax <- focal(r, w, fun = f, pad=TRUE, padValue=NA)
+r2 <- r==localmax
+maxXY <- xyFromCell(r2, Which(r2==1, cells=TRUE))
+```
+
+```{r}
+image(x)
+points(maxXY)
+```
+```{r}
+maxXY %>% as_tibble() %>% filter(y>0.98) %>% arrange(x) %>% write_csv("outputs/608/lc03-local-maxima.csv")
+```
 
 ```{r}
 p3<-ggplot(stats$pairwise %>% as_tibble() %>% filter(fst > 0.85)) +
   geom_density_2d_filled(aes(x=position, y=fst), bins=10) +
+  geom_point(data=maxXY %>% as_tibble() %>% filter(y>0.98), aes(x=x, y=y), pch=21, alpha=0.75, fill="grey50")+
   theme_bw() +
   theme(panel.grid = element_blank()) +
   xlab("Position") +
@@ -366,7 +391,7 @@ p3
 lc5rhoms<-read_tsv("meta/lc05-rhoms.tsv", col_names = c("Run")) %>% mutate(Genotype="RHom")
 lc5ahoms<-read_tsv("meta/lc05-ahoms.tsv", col_names = c("Run")) %>% mutate(Genotype="AHom")
 lc5homs<-bind_rows(lc5ahoms,lc5rhoms)
-lc5homs %>% select(Run) %>% write_tsv(file="meta/lc05-homs.tsv", col_names = FALSE)
+lc5homs %>% dplyr::select(Run) %>% write_tsv(file="meta/lc05-homs.tsv", col_names = FALSE)
 ```
 
 ```{sh, eval=FALSE}
@@ -390,9 +415,31 @@ stats5 <- get.snpR.stats(mylc5, "Genotype", stats ="fst")
 
 
 ```{r}
+m5<-stats5$pairwise %>% as_tibble() %>% filter(fst > 0.85)
 
+w = matrix(1,3,3)
+x = kde2d(m5$position, m5$fst, n=1000)
+x2<-x %>% as_tibble()
+r = raster(x)
+f <- function(X) max(X, na.rm=TRUE)
+localmax <- focal(r, w, fun = f, pad=TRUE, padValue=NA)
+r2 <- r==localmax
+maxXY <- xyFromCell(r2, Which(r2==1, cells=TRUE))
+```
+
+```{r}
+image(x)
+points(maxXY)
+```
+```{r}
+maxXY %>% as_tibble() %>% filter(y>0.98) %>% arrange(x) %>% write_csv("outputs/608/lc05-local-maxima.csv")
+```
+
+
+```{r}
 p5<-ggplot(stats5$pairwise %>% as_tibble() %>% filter(fst > 0.85)) +
   geom_density_2d_filled(aes(x=position, y=fst), bins=10) +
+  geom_point(data=maxXY %>% as_tibble() %>% filter(y>0.98), aes(x=x, y=y), pch=21, alpha=0.75, fill="grey50")+
   theme_bw() +
   theme(panel.grid = element_blank()) +
   xlab("Position") +
@@ -444,8 +491,32 @@ stats20c<- get.snpR.stats(mylc20c, "Genotype", stats ="fst")
 
 
 ```{r}
+m20<-stats20$pairwise %>% as_tibble() %>% filter(fst > 0.85)
+
+w = matrix(1,3,3)
+x = kde2d(m20$position, m20$fst, n=1000)
+x2<-x %>% as_tibble()
+r = raster(x)
+f <- function(X) max(X, na.rm=TRUE)
+localmax <- focal(r, w, fun = f, pad=TRUE, padValue=NA)
+r2 <- r==localmax
+maxXY <- xyFromCell(r2, Which(r2==1, cells=TRUE))
+```
+
+```{r}
+image(x)
+points(maxXY)
+```
+```{r}
+maxXY %>% as_tibble() %>% filter(y>0.98) %>% arrange(x) %>% write_csv("outputs/608/lc20-local-maxima.csv")
+```
+
+
+
+```{r}
 p20<-ggplot(stats20$pairwise %>% as_tibble() %>% filter(fst > 0.85)) +
   geom_density_2d_filled(aes(x=position, y=fst), bins=10) +
+  geom_point(data=maxXY %>% as_tibble() %>% filter(y>0.98), aes(x=x, y=y), pch=21, alpha=0.75, fill="grey50")+
   theme_bw() +
   theme(panel.grid = element_blank()) +
   xlab("Position") +
@@ -477,4 +548,6 @@ p20c
 ggarrange(p3,p5,p20, ncol=1)
 ggsave("outputs/608/fst-density.pdf", height=12, width=6.5)
 ```
+
+
 
