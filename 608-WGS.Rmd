@@ -349,8 +349,8 @@ p3<-ggplot(stats$pairwise %>% as_tibble() %>% filter(fst > 0.85)) +
   geom_density_2d_filled(aes(x=position, y=fst), bins=10) +
   theme_bw() +
   theme(panel.grid = element_blank()) +
-  xlab("Fst") +
-  ylab("Position") +
+  xlab("Position") +
+  ylab("Fst") +
   theme(axis.title=element_text(face="bold", size=14)) +
   theme(axis.text=element_text(size=12)) +
   ggtitle("A. Lca03") +
@@ -395,8 +395,8 @@ p5<-ggplot(stats5$pairwise %>% as_tibble() %>% filter(fst > 0.85)) +
   geom_density_2d_filled(aes(x=position, y=fst), bins=10) +
   theme_bw() +
   theme(panel.grid = element_blank()) +
-  xlab("Fst") +
-  ylab("Position") +
+  xlab("Position") +
+  ylab("Fst") +
   theme(axis.title=element_text(face="bold", size=14)) +
   theme(axis.text=element_text(size=12)) +
   ggtitle("B. Lca05") +
@@ -440,9 +440,9 @@ p20<-ggplot(stats20$pairwise %>% as_tibble() %>% filter(fst > 0.85)) +
   geom_density_2d_filled(aes(x=position, y=fst), bins=10) +
   theme_bw() +
   theme(panel.grid = element_blank()) +
-  xlab("Fst") +
-  ylab("Position") +
-  theme(axis.title=element_text(face="bold", size=14)) +
+  xlab("Position") +
+  ylab("Fst") +
+   theme(axis.title=element_text(face="bold", size=14)) +
   theme(axis.text=element_text(size=12)) +
   ggtitle("C. Lca20") +
   theme(plot.title=element_text(size=14, face="bold", hjust=0)) 
