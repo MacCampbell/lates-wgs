@@ -417,10 +417,15 @@ lc20homs %>% select(Run) %>% write_tsv(file="meta/lc20-homs.tsv", col_names = FA
 
 ```{sh, eval=FALSE}
 bcftools view -S meta/lc20-homs.tsv outputs/608/NC_066852.1-sub.vcf.gz  -O z > outputs/608/NC_066852.1-homs.vcf.gz    
+bcftools view -r NC_066852.1 -S meta/lc20-homs.tsv outputs/608/wgs-05.vcf.gz -O z > outputs/608/NC_066852.1-whole-chrom-homs.vcf.gz    
+
 ```
 
 ```{r}
 lc20<-import.snpR.data(genotypes = "outputs/608/NC_066852.1-homs.vcf.gz", 
+      sample.meta = lc20homs)
+
+lc20c<-import.snpR.data(genotypes = "outputs/608/NC_066852.1-whole-chrom-homs.vcf.gz", 
       sample.meta = lc20homs)
 ```
 
@@ -432,6 +437,9 @@ p$plot$pca
 ```{r}
 mylc20<- calc_pairwise_fst(lc20, "Genotype", method = "WC")
 stats20<- get.snpR.stats(mylc20, "Genotype", stats ="fst")
+
+mylc20c<- calc_pairwise_fst(lc20c, "Genotype", method = "WC")
+stats20c<- get.snpR.stats(mylc20c, "Genotype", stats ="fst")
 ```
 
 
@@ -450,6 +458,20 @@ p20<-ggplot(stats20$pairwise %>% as_tibble() %>% filter(fst > 0.85)) +
 p20
 ```
 
+```{r}
+p20c<-ggplot(stats20c$pairwise %>% as_tibble() %>% filter(fst > 0.85)) +
+  geom_density_2d_filled(aes(x=position, y=fst), bins=10) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  xlab("Position") +
+  ylab("Fst") +
+   theme(axis.title=element_text(face="bold", size=14)) +
+  theme(axis.text=element_text(size=12)) +
+  ggtitle("C. Lca20") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0)) 
+
+p20c
+```
 
 ```{r}
 ggarrange(p3,p5,p20, ncol=1)
