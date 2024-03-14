@@ -315,7 +315,6 @@ ggplot(p3) +
 
 ## Read in chroms and split
 
-Using a pruned version 
 ```{r}
 
 wgsmeta<-meta %>% select(Run, Region, Lineage)
@@ -366,6 +365,10 @@ points(maxXY)
 ```
 ```{r}
 maxXY %>% as_tibble() %>% filter(y>0.98) %>% arrange(x) %>% write_csv("outputs/608/lc03-local-maxima.csv")
+
+maxXY %>%  as_tibble() %>% filter(y>0.98) %>% arrange(x) %>% mutate(Chrom="NC_066835.1", Start=round(x)-1, Stop=round(x)+1, Feature=round(y, 2), Field="0", Strand="+") %>%
+  dplyr::select(-x, -y) %>% write_tsv("outputs/608/lc03-local-maxima.bed", col_names = FALSE)
+
 ```
 
 ```{r}
@@ -429,10 +432,13 @@ maxXY <- xyFromCell(r2, Which(r2==1, cells=TRUE))
 
 ```{r}
 image(x)
-points(maxXY)
+points(maxXY) 
 ```
 ```{r}
 maxXY %>% as_tibble() %>% filter(y>0.98) %>% arrange(x) %>% write_csv("outputs/608/lc05-local-maxima.csv")
+
+maxXY %>%  as_tibble() %>% filter(y>0.98) %>% arrange(x) %>% mutate(Chrom="NC_066837.1", Start=round(x)-1, Stop=round(x)+1, Feature=round(y, 2), Field="0", Strand="+") %>%
+  dplyr::select(-x, -y) %>% write_tsv("outputs/608/lc05-local-maxima.bed", col_names = FALSE)
 ```
 
 
@@ -509,6 +515,10 @@ points(maxXY)
 ```
 ```{r}
 maxXY %>% as_tibble() %>% filter(y>0.98) %>% arrange(x) %>% write_csv("outputs/608/lc20-local-maxima.csv")
+
+maxXY %>%  as_tibble() %>% filter(y>0.98) %>% arrange(x) %>% mutate(Chrom="NC_066852.1", Start=round(x)-1, Stop=round(x)+1, Feature=round(y, 2), Field="0", Strand="+") %>%
+  dplyr::select(-x, -y) %>% write_tsv("outputs/608/lc20-local-maxima.bed", col_names = FALSE)
+
 ```
 
 
@@ -549,5 +559,64 @@ ggarrange(p3,p5,p20, ncol=1)
 ggsave("outputs/608/fst-density.pdf", height=12, width=6.5)
 ```
 
+(base) ➜  fst-density head lc03-local-maxima.csv 
+x,y
+4434512.570570571,0.9978983184969785
+11228186.132132135,0.9971477179601851
+11594939.71771772,0.9816853469022395
 
 
+Looking around some peaks
+(enBank:XP_018556853.1;Name=XP_018556853.1;gbkey=CDS;gene=slc66a2;product=solute carrier family 66 member 2 isoform X2;protein_id=XP_018556853.1
+
+(base) ➜  genome-annotation cat GCF_001640805.2_TLL_Latcal_v3_genomic.gff | grep NC_066835 | awk '{ if ($4 > 4430000  && $4 < 4436000) print }'
+NC_066835.1	Gnomon	exon	4435702	4435835	.	-	.	ID=exon-XM_018701336.2-2;Parent=rna-XM_018701336.2;Dbxref=GeneID:108900348,GenBank:XM_018701336.2;gbkey=mRNA;gene=slc66a2;product=solute carrier family 66 member 2%2C transcript variant X1;transcript_id=XM_018701336.2
+NC_066835.1	Gnomon	exon	4433642	4433692	.	-	.	ID=exon-XM_018701336.2-3;Parent=rna-XM_018701336.2;Dbxref=GeneID:108900348,GenBank:XM_018701336.2;gbkey=mRNA;gene=slc66a2;product=solute carrier family 66 member 2%2C transcript variant X1;transcript_id=XM_018701336.2
+NC_066835.1	Gnomon	CDS	4435702	4435835	.	-	1	ID=cds-XP_018556852.1;Parent=rna-XM_018701336.2;Dbxref=GeneID:108900348,GenBank:XP_018556852.1;Name=XP_018556852.1;gbkey=CDS;gene=slc66a2;product=solute carrier family 66 member 2 isoform X1;protein_id=XP_018556852.1
+NC_066835.1	Gnomon	CDS	4433642	4433692	.	-	2	ID=cds-XP_018556852.1;Parent=rna-XM_018701336.2;Dbxref=GeneID:108900348,GenBank:XP_018556852.1;Name=XP_018556852.1;gbkey=CDS;gene=slc66a2;product=solute carrier family 66 member 2 isoform X1;protein_id=XP_018556852.1
+NC_066835.1	Gnomon	exon	4435702	4435835	.	-	.	ID=exon-XM_018701337.2-2;Parent=rna-XM_018701337.2;Dbxref=GeneID:108900348,GenBank:XM_018701337.2;gbkey=mRNA;gene=slc66a2;product=solute carrier family 66 member 2%2C transcript variant X2;transcript_id=XM_018701337.2
+NC_066835.1	Gnomon	CDS	4435702	4435835	.	-	1	ID=cds-XP_018556853.1;Parent=rna-XM_018701337.2;Dbxref=GeneID:108900348,GenBank:XP_018556853.1;Name=XP_018556853.1;gbkey=CDS;gene=slc66a2;product=solute carrier family 66 member 2 isoform X2;protein_id=XP_018556853.1
+
+slc66a2, hmm, this seems familiar!
+Oh, in smelt slc6a3	Solute carrier family 6 member3
+
+Members of the solute carrier family 6 including scl6a3 have been previously associated with adaptation to salinity variation in threespine sticklebacks (Gasterosteus aculeatus) as well as a scl6a3 specifically being identified as a candidate gene from freshwater and marine divergence (Hohenlohe et al. 2010; Guo et al. 2015).
+
+
+cat GCF_001640805.2_TLL_Latcal_v3_genomic.gff | grep NC_066835 | awk '{ if ($4 > 11210000 && $4 < 11220000) print }'
+(base) ➜  genome-annotation cat GCF_001640805.2_TLL_Latcal_v3_genomic.gff | grep NC_066835 | awk '{ if ($4 > 11210000 && $4 < 11220000) print }'
+
+NC_066835.1	Gnomon	exon	11210374	11210794	.	+	.	ID=exon-XR_001963358.1-4;Parent=rna-XR_001963358.1;Dbxref=GeneID:108897849,GenBank:XR_001963358.1;gbkey=ncRNA;gene=LOC108897849;product=uncharacterized LOC108897849;transcript_id=XR_001963358.1
+
+cat GCF_001640805.2_TLL_Latcal_v3_genomic.gff | grep NC_066835 | awk '{ if ($4 > 11580000 && $4 < 11600000) print }'
+Near: gene=nup153;product=nucleoporin
+in gene=ptdss1b;product=phosphatidylserine
+Predicted to enable L-serine-phosphatidylethanolamine phosphatidyltransferase activity. Predicted to be involved in phosphatidylserine biosynthetic process. Predicted to act upstream of or within lipid metabolic process. 
+near gene=LOC108898154;product=cytochrome b-c1 complex subunit
+
+making a bed file to find +- closest features
+
+cat lc03-local-maxima.bed lc05-local-maxima.bed lc20-local-maxima.bed > ~/Dropbox/Australian-fishes/barra-inversions/fst-density/local-maxima.bed
+
+(base) ➜  fst-density bedtools closest -a local-maxima.bed -b ../genome-annotation/lates.bed 
+NC_066833.1	4433513	4435513	1	0	+	NC_066833.1	4424205	4464338	XM_051066902.1	0	+
+NC_066833.1	4433513	4435513	1	0	+	NC_066833.1	4429411	4439246	XM_018704330.2	0	+
+NC_066833.1	11227186	11229186	1	0	+	NC_066833.1	11180641	11239114	XM_018704818.2	0	-
+NC_066833.1	11593940	11595940	0.98	0	+	NC_066833.1	11364237	11568867	XM_051070155.1	0	+
+NC_066835.1	9918036	9920036	1	0	+	NC_066835.1	9879534	9926105	XM_018697574.2	0	-
+NC_066835.1	14372162	14374162	1	0	+	NC_066835.1	14372772	14382518	XM_018685013.1	0	-
+NC_066835.1	18896248	18898248	1	0	+	NC_066835.1	18892437	18906822	XM_051068507.1	0	-
+NC_066835.1	23466973	23468973	1	0	+	NC_066835.1	23456425	23460832	XM_018686663.2	0	+
+NC_066852.1	9153386	9155386	1	0	+	NC_066852.1	9082853	9174863	XM_018692157.2	0	+
+NC_066852.1	15368384	15370384	1	0	+	NC_066852.1	15341888	15387344	XM_018691898.2	0	-
+NC_066852.1	19093334	19095334	1	0	+	NC_066852.1	19075879	19114210	XM_018692505.2	0	-
+
+-k 2 for nearest 2
+(base) ➜  fst-density bedtools closest -a local-maxima.bed -b ../genome-annotation/lates.bed -d -k 2 > closest.bed 
+
+cut -f 10 closest.bed | while read line; do grep $line ../genome-annotation/GCF_001640805.2_TLL_Latcal_v3_genomic.gff | grep "Parent=gene" >> parent-genes-for-bed-closest.txt; done;
+
+cygb2 - cytoglobin oxygen transport
+nomo development
+
+NC_066852.1	Gnomon	mRNA	9174986	9178108	.	-	.	ID=rna-XM_018692155.2;Parent=gene-LOC108893796;Dbxref=GeneID:108893796,GenBank:XM_018692155.2;Name=XM_018692155.2;gbkey=mRNA;gene=LOC108893796;model_evidence=Supporting evidence includes similarity to: 4 Proteins;product=spermatogenesis-associated protein 22%2C transcript variant X3;transcript_id=XM_018692155.2
