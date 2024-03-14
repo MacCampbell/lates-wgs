@@ -369,6 +369,7 @@ maxXY %>% as_tibble() %>% filter(y>0.98) %>% arrange(x) %>% write_csv("outputs/6
 maxXY %>%  as_tibble() %>% filter(y>0.98) %>% arrange(x) %>% mutate(Chrom="NC_066835.1", Start=round(x)-1, Stop=round(x)+1, Feature=round(y, 2), Field="0", Strand="+") %>%
   dplyr::select(-x, -y) %>% write_tsv("outputs/608/lc03-local-maxima.bed", col_names = FALSE)
 
+stats$pairwise %>% as_tibble() %>% write_csv("outputs/608/lc03-fst.csv")
 ```
 
 ```{r}
@@ -439,6 +440,8 @@ maxXY %>% as_tibble() %>% filter(y>0.98) %>% arrange(x) %>% write_csv("outputs/6
 
 maxXY %>%  as_tibble() %>% filter(y>0.98) %>% arrange(x) %>% mutate(Chrom="NC_066837.1", Start=round(x)-1, Stop=round(x)+1, Feature=round(y, 2), Field="0", Strand="+") %>%
   dplyr::select(-x, -y) %>% write_tsv("outputs/608/lc05-local-maxima.bed", col_names = FALSE)
+
+stats5$pairwise %>% as_tibble() %>% write_csv("outputs/608/lc05-fst.csv")
 ```
 
 
@@ -518,6 +521,8 @@ maxXY %>% as_tibble() %>% filter(y>0.98) %>% arrange(x) %>% write_csv("outputs/6
 
 maxXY %>%  as_tibble() %>% filter(y>0.98) %>% arrange(x) %>% mutate(Chrom="NC_066852.1", Start=round(x)-1, Stop=round(x)+1, Feature=round(y, 2), Field="0", Strand="+") %>%
   dplyr::select(-x, -y) %>% write_tsv("outputs/608/lc20-local-maxima.bed", col_names = FALSE)
+
+stats20$pairwise %>% as_tibble() %>% write_csv("outputs/608/lc20-fst.csv")
 
 ```
 
