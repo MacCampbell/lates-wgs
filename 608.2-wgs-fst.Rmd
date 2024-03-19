@@ -1,0 +1,24 @@
+---
+title: "608.2-wgs-fst"
+output: html_document
+date: "2024-03-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(snpR)
+```
+
+Let's pull the genotype data from the fish, removing Australian samples
+
+```{r}
+genos<-read_csv("meta/inversion-genotypes.csv")
+```
+
+```{r}
+genos %>% filter(Lineage !="AUS+NG") %>% filter(Lineage !="IND") %>% filter(DataType=="RAD") %>% filter(Genotype !="Het") %>% group_by(Chrom, DataType,Genotype) %>% summarize(Count=n())
+```
