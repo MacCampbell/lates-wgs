@@ -1,0 +1,72 @@
+---
+title: "900-lakdiva"
+output: html_document
+date: "2024-05-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+Sequenced 150 bp pe on a novaseq
+
+Lane	Sample Name	Paired Reads	Data Yield (bp)
+150bp Paired End - Flowcell ID: 22KM77LT3
+7	12-1A	83,967,562	25.36 Gb
+12-2A	111,926,702	33.80 Gb
+12-3A	83,917,724	25.34 Gb
+12-4A	81,371,582	24.57 Gb
+12-5A	89,870,104	27.14 Gb
+13-1A	88,117,390	26.61 Gb
+13-2A	110,779,590	33.46 Gb
+13-3A	99,227,904	29.97 Gb
+14-1A	97,398,835	29.41 Gb
+14-2A	117,971,280	35.63 Gb
+Total	964,548,673	291.29 Gb
+
+```{r}
+library(tidyverse)
+```
+
+Validating checksums
+
+
+Include with meta, align,
+ bash ../../doAlign-zipped.sh samples.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
+
+Also, these data are 150 bp pe sequencing, most of the data is 100 bp pe
+
+Trim off 50 bp, can use seqtk
+
+then:    
+
+_1_ doIbs PCA/admixture.     
+
+_2_ Call SNPs with japonicus for rooted phylo (Species Tree)
+
+
+```{r}
+m71<-read_csv("meta/71-Indo-split.csv")
+m71 %>% filter(Region=="Sri Lanka")
+```
+
+## Trim
+e.g. seqtk trimfq -e 50 data/new-data/NS01_RA.fastq > data/new-data-trim/NS01_RA.fastq
+
+module load seqtk/1.3 
+module load parallel
+srun -p high -time 01:00:00 --nodes=1 parallel -j 10 < 900.1-trim.sh
+
+```{r}
+coms<-m71 %>% filter(Region=="Sri Lanka") %>% mutate(Command1=paste0("seqtk trimfq -e 50 data/lakdiva/", Run, "-R1.fastq.gz | gzip > data/lakdiva-trim/", Run, "-R1.fastq.gz")) %>% mutate(Command2=paste0("seqtk trimfq -e 50 data/lakdiva/", Run, "-R2.fastq.gz | gzip > data/lakdiva-trim/", Run, "-R2.fastq.gz")) %>% select(Command1, Command2)
+
+c<-c(coms$Command1, coms$Command2)
+c %>% as_tibble() %>% write_tsv("900.1-trim.sh", col_names = FALSE)
+```
+
+Questions:
+
+Placement of lakdiva vs. other lineages?    
+Genetic structure of lakdiva present?    
+
+
