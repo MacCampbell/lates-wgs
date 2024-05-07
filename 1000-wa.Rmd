@@ -1,0 +1,93 @@
+---
+title: "1000-wa"
+output: html_document
+date: "2024-05-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(raster)
+library(ozmaps)
+```
+
+```{r}
+d<-read_csv("~/Dropbox/Australian-fishes/wa-barra/240506-barramundi-mac-edit.csv")
+# Some NA individuals bugger up this. I suppose replace missing with mean
+# https://stackoverflow.com/questions/9322773/how-to-replace-na-with-mean-by-group-subset
+impute.mean <- function(x) replace(x, is.na(x), mean(x, na.rm = TRUE))
+
+dg<-d %>% filter(gene==TRUE) %>% group_by(site_1, site_2) %>% 
+      mutate(
+        Latitude = impute.mean(lat),
+        Longitude = impute.mean(lon)  
+    ) %>%
+  summarize(Latitude=mean(Latitude), Longitude=mean(Longitude), Count=n()) %>%
+  mutate(`Sample Size`=ifelse(Count > 100, 100, Count))
+
+dg  %>% arrange(-Latitude)
+```
+
+
+## Get WA
+```{r}
+oz <- ozmap_data("states")
+ggplot(oz) +
+  geom_sf()
+```
+
+```{r}
+# here eric implements something and I copy it
+tidy_subset <- function(x, longlat) {
+  x@data$id <- rownames(x@data)
+  x.f <- broom::tidy(x) %>%
+    dplyr::left_join(., x@data, by = "id") %>%
+    dplyr::tbl_df() %>%
+    filter(long > longlat[1],
+           long < longlat[2],
+           lat > longlat[3],
+           lat < longlat[4])
+}
+
+```
+
+```{r}
+domain <- c(min(dg$Longitude)-9, max(dg$Longitude)+5, min(dg$Latitude)-6, max(dg$Latitude)+2)
+```
+
+
+```{r, eval=FALSE}
+nat.earth<-stack("~/github/fish-lake/data/earth/NE2_HR_LC_SR_W_DR/NE2_HR_LC_SR_W_DR.tif")
+
+nat.crop <- crop(nat.earth, y=extent(domain))
+
+rast.table <- data.frame(xyFromCell(nat.crop, 1:ncell(nat.crop)),
+                         getValues(nat.crop/255))
+
+
+rast.table$rgb <- with(rast.table, rgb(NE2_HR_LC_SR_W_DR_1,
+                                       NE2_HR_LC_SR_W_DR_2,
+                                       NE2_HR_LC_SR_W_DR_3,
+                                       1))
+
+save(rast.table, file="data/earth/rast.rda")
+```
+
+```{r}
+load("data/earth/rast.rda")
+ggplot() +
+  geom_raster(data = rast.table, mapping = aes(x = x, y = y), fill = rast.table$rgb, interpolate = TRUE)  +
+  geom_sf(data=oz, fill=NA) +
+  geom_jitter(data=dg, aes(x=Longitude, y=Latitude, size=`Sample Size`, fill=`Sample Size`), pch=21, alpha=0.75) +
+  coord_sf(xlim = c(domain[1]+1,domain[2]-1), ylim=c(domain[3]+1, domain[4]-1)) +
+  ylab("Latitude/n") +
+  xlab("\nLongitude") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_c(option="magma")
+
+ggsave("outputs/1000/samples-052024.jpeg")
+```

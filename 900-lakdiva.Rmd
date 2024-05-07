@@ -35,7 +35,6 @@ Include with meta, align,
  bash ../../doAlign-zipped.sh samples.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
 
 Also, these data are 150 bp pe sequencing, most of the data is 100 bp pe
-
 Trim off 50 bp, can use seqtk
 
 then:    
@@ -55,7 +54,7 @@ e.g. seqtk trimfq -e 50 data/new-data/NS01_RA.fastq > data/new-data-trim/NS01_RA
 
 module load seqtk/1.3 
 module load parallel
-srun -p high -time 01:00:00 --nodes=1 parallel -j 10 < 900.1-trim.sh
+srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 900.1-trim.sh
 
 ```{r}
 coms<-m71 %>% filter(Region=="Sri Lanka") %>% mutate(Command1=paste0("seqtk trimfq -e 50 data/lakdiva/", Run, "-R1.fastq.gz | gzip > data/lakdiva-trim/", Run, "-R1.fastq.gz")) %>% mutate(Command2=paste0("seqtk trimfq -e 50 data/lakdiva/", Run, "-R2.fastq.gz | gzip > data/lakdiva-trim/", Run, "-R2.fastq.gz")) %>% select(Command1, Command2)
@@ -64,9 +63,46 @@ c<-c(coms$Command1, coms$Command2)
 c %>% as_tibble() %>% write_tsv("900.1-trim.sh", col_names = FALSE)
 ```
 
+Align.... Our new fish have much higher coverage than the old fish.
 Questions:
 
 Placement of lakdiva vs. other lineages?    
 Genetic structure of lakdiva present?    
 
 
+Generate PCA and GL file
+
+```{r}
+m70<-m71 %>% filter(Lineage != "japonicus") 
+m70 %>% select(Path) %>% write_tsv(file="bamlists/70.bamlist", col_names = FALSE)
+m70 %>% select(Run) %>% write_tsv(file="bamlists/70.names", col_names = FALSE)
+```
+
+```{sh, eval=FALSE}
+srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/70.bamlist -rf genome/lates-lgs.txt \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 63 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1000/70-ibs-90 > outputs/1000/70-ibs-90.out 2> outputs/1000/70-ibs-90.err &
+	
+
+srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1000/70-ibs-90.beagle.gz -K 2 -o outputs/1000/70-K2 &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1000/70-ibs-90.beagle.gz -K 3 -o outputs/1000/70-K3 &
+srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1000/70-ibs-90.beagle.gz -K 4 -o outputs/1000/70-K4 &
+srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1000/70-ibs-90.beagle.gz -K 5 -o outputs/1000/70-K5 &
+
+
+srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1000/70-ibs-90.beagle.gz -K 6 -o outputs/1000/70-K6 &
+
+# Generate GLS without doIBS
+srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/60.bamlist -rf genome/lates-lgs.txt \
+-anc  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 54 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 \
+-doMajorMinor 1 -doPost 1 -doMaf 1 -SNP_pval 1e-6 \
+-minMaf 0.05 \
+-out outputs/1000/70-gls-90 > outputs/1000/70-gls-90.out 2> outputs/1000/70-gls-90.err &
+
+```
