@@ -72,7 +72,7 @@ Questions:
 
 Placement of lakdiva vs. other lineages?    
 Genetic structure of lakdiva present?    
-
+Are the homozygous for inversion genotypes?
 
 Generate PCA and GL file
 
@@ -96,8 +96,6 @@ srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -li
 srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1000/70-ibs-90.beagle.gz -K 3 -o outputs/1000/70-K3 &
 srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1000/70-ibs-90.beagle.gz -K 4 -o outputs/1000/70-K4 &
 srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1000/70-ibs-90.beagle.gz -K 5 -o outputs/1000/70-K5 &
-
-
 srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1000/70-ibs-90.beagle.gz -K 6 -o outputs/1000/70-K6 &
 
 # Generate GLS without doIBS
@@ -123,3 +121,34 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 
 ```
 
+
+Create pruned vcf
+```{sh, eval=FALSE}
+plink --tped snps-wgs.tped --tfam snps-wgs.tfam  --out plink-binary --recode --allow-extra-chr --noweb
+plink --ped plink-binary.ped --map plink-binary.map --recode vcf --allow-extra-chr -out plink
+bgzip plink.vcf 
+tabix plink.vcf.gz
+
+#renaming vcf in 403 locally
+bcftools reheader --samples bamlists/61-sample-names.txt -o outputs/403/renamed.vcf.gz outputs/403/plink.vcf.gz
+
+bcftools +prune -l 0.20 -w 10000 outputs/403/renamed.vcf.gz > outputs/403/pruned.vcf
+bcftools +prune -l 0.30 -w 10000 outputs/403/renamed.vcf.gz > outputs/403/pruned-03.vcf
+```
+
+in 403 locally   
+
+in 403
+```{sh, eval=FALSE}
+~/github/mccloud-rrt/vcf2phylip.py -i pruned.vcf 
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-03.vcf 
+
+```
+
+```{sh, eval=FALSE}
+iqtree -s pruned.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
+iqtree -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo
+iqtree -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo -o DRR391968
+iqtree -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m GTR+ASC -bb 10000 --redo -o DRR391968
+raxmlHPC-PTHREADS -T 3 -m ASC_GTRGAMMA --asc-corr lewis -p 2 -s  pruned.min4.phy.varsites.phy  -n asc -o DRR391968 
+```

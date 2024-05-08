@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 library(tidyverse)
 library(raster)
 library(ozmaps)
+library(ggrepel)
 ```
 
 ```{r}
@@ -28,7 +29,9 @@ dg<-d %>% filter(gene==TRUE) %>% group_by(site_1, site_2) %>%
   summarize(Latitude=mean(Latitude), Longitude=mean(Longitude), Count=n()) %>%
   mutate(`Sample Size`=ifelse(Count > 100, 100, Count))
 
-dg  %>% arrange(-Latitude)
+dg  %>% arrange(Latitude)
+
+site2<-dg %>% group_by(site_2) %>% summarize(Latitude=mean(Latitude), Longitude=mean(Longitude), `Total Samples`=sum(Count))
 ```
 
 
@@ -83,11 +86,42 @@ ggplot() +
   geom_sf(data=oz, fill=NA) +
   geom_jitter(data=dg, aes(x=Longitude, y=Latitude, size=`Sample Size`, fill=`Sample Size`), pch=21, alpha=0.75) +
   coord_sf(xlim = c(domain[1]+1,domain[2]-1), ylim=c(domain[3]+1, domain[4]-1)) +
-  ylab("Latitude/n") +
+  ylab("Latitude\n") +
   xlab("\nLongitude") +
   theme_bw() +
   theme(panel.grid=element_blank()) +
   scale_fill_viridis_c(option="magma")
 
 ggsave("outputs/1000/samples-052024.jpeg")
+```
+
+
+
+## Pilbara Rivers and Kimberley Locs
+
+```{r}
+pbr<-read_tsv("meta/pilbara-rivers.tsv")
+locs<-read_tsv("meta/kimberley-locs.tsv")
+locs
+```
+
+
+```{r}
+ggplot() +
+  geom_raster(data = rast.table, mapping = aes(x = x, y = y), fill = rast.table$rgb, interpolate = TRUE)  +
+  geom_sf(data=oz, fill=NA) +
+  geom_jitter(data=dg, aes(x=Longitude, y=Latitude, size=`Sample Size`, fill=`Sample Size`), pch=21, alpha=0.75) +
+  geom_point(data=pbr, aes(x=Longitude, y=Latitude), pch=23, fill="red", alpha=0.75, size=4) +
+  geom_point(data=locs, aes(x=Longitude, y=Latitude), pch=22, fill="blue", alpha=0.75, size=4) +
+  geom_text_repel(data=pbr, aes(x=Longitude, y=Latitude, label=River)) +
+  geom_text_repel(data=locs, aes(x=Longitude, y=Latitude, label=Location)) +
+ # geom_text_repel(data=site2, aes(x=Longitude, y=Latitude, label=site_2), max.overlaps = Inf) +
+  coord_sf(xlim = c(domain[1]+1,domain[2]-1), ylim=c(domain[3]+1, domain[4]-1)) +
+  ylab("Latitude\n") +
+  xlab("\nLongitude") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_c(option="magma")
+
+ggsave("outputs/1000/samples-052024-pbr.jpeg")
 ```
