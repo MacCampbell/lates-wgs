@@ -26,6 +26,7 @@ Total	964,548,673	291.29 Gb
 
 ```{r}
 library(tidyverse)
+library(ggpubr)
 ```
 
 Validating checksums
@@ -51,6 +52,10 @@ m71 %>% filter(Region=="Sri Lanka")
 m71 %>% select(Path) %>% write_tsv(file="bamlists/71.bamlist", col_names = FALSE)
 m71 %>% select(Run) %>% write_tsv(file="bamlists/71.names", col_names = FALSE)
 
+ind<-m71 %>% filter(Lineage %in% c("IND","lakdiva"))
+ind %>% select(Path) %>% write_tsv(file="bamlists/ind.bamlist", col_names = FALSE)
+ind %>% select(Run) %>% write_tsv(file="bamlists/ind.names", col_names = FALSE)
+
 ```
 
 ## Trim
@@ -68,6 +73,12 @@ c %>% as_tibble() %>% write_tsv("900.1-trim.sh", col_names = FALSE)
 ```
 
 Align.... Our new fish have much higher coverage than the old fish.
+
+Set up to downsample to ~7X 
+```{r}
+down <- m70 %>% filter
+```
+
 Questions:
 
 Placement of lakdiva vs. other lineages?    
@@ -83,44 +94,133 @@ m70 %>% select(Run) %>% write_tsv(file="bamlists/70.names", col_names = FALSE)
 ```
 
 ```{sh, eval=FALSE}
-srun -p high -t 16:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
+srun -p high -t 32:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
 -bam bamlists/70.bamlist -rf genome/lates-lgs.txt \
 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 63 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
--out outputs/1000/70-ibs-90 > outputs/1000/70-ibs-90.out 2> outputs/1000/70-ibs-90.err &
+-out outputs/900/70-ibs-90 > outputs/900/70-ibs-90.out 2> outputs/900/70-ibs-90.err &
 	
 
-srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1000/70-ibs-90.beagle.gz -K 2 -o outputs/1000/70-K2 &
-srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1000/70-ibs-90.beagle.gz -K 3 -o outputs/1000/70-K3 &
-srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1000/70-ibs-90.beagle.gz -K 4 -o outputs/1000/70-K4 &
-srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1000/70-ibs-90.beagle.gz -K 5 -o outputs/1000/70-K5 &
-srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1000/70-ibs-90.beagle.gz -K 6 -o outputs/1000/70-K6 &
+srun -p high -t 8:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
+-bam bamlists/70.bamlist -r NC_066833.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 63 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/900/70-ibs-90-lca01 > outputs/900/70-ibs-90-lca01.out 2> outputs/900/70-ibs-90-lca01.err &
+
+srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/70-ibs-90.beagle.gz -K 2 -o outputs/900/70-K2 &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/70-ibs-90.beagle.gz -K 3 -o outputs/900/70-K3 &
+srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/70-ibs-90.beagle.gz -K 4 -o outputs/900/70-K4 &
+srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/70-ibs-90.beagle.gz -K 5 -o outputs/900/70-K5 &
+srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/70-ibs-90.beagle.gz -K 6 -o outputs/900/70-K6 &
 
 # Generate GLS without doIBS
-srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 2  \
+srun -p high -t 32:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 2  \
 -bam bamlists/60.bamlist -rf genome/lates-lgs.txt \
 -anc  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 54 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 \
 -doMajorMinor 1 -doPost 1 -doMaf 1 -SNP_pval 1e-6 \
 -minMaf 0.05 \
--out outputs/1000/70-gls-90 > outputs/1000/70-gls-90.out 2> outputs/1000/70-gls-90.err &
+-out outputs/900/70-gls-90 > outputs/900/70-gls-90.out 2> outputs/900/70-gls-90.err &
 
 ```
 
 
+Visualize covMat
+
+
+
+```{r}
+meta<-m70
+meta$Region<-factor(meta$Region, levels=c("Queensland","Northern Territory","Papua New Guinea",
+                                              "Indonesia-K","Indonesia-SJ","Indonesia-SU","Philippines",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India Eastern Coast","India Western Coast","Sri Lanka"))
+
+
+min(meta$Coverage)
+max(meta$Coverage)
+mean(meta$Coverage)
+round(median(meta$Coverage),2)
+```
+
+```{r}
+m <- as.matrix(read.table("outputs/900/70-ibs-90-lca01.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+```
+
+
+For figure  
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta) 
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+pc12<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Region, shape=Lineage), size=3, alpha=0.75) +
+#  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("A") +
+  theme(plot.title = element_text(size=18, face="bold")) +
+  scale_shape_manual(values=c(21,23,25,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "none")
+
+pc12
+```
+```{r}
+text13<-covs  %>% select(Run, Region, V1, V3, Lineage) %>% filter(Lineage %in% c("IND","lakdiva")) %>% 
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
+
+pc13<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V3, fill=Region, shape=Lineage), size=3, alpha=0.75) +
+  geom_text_repel(data=text13, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC3", " ", round((100*var[3]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=18, face="bold")) +
+  scale_shape_manual(values=c(21,23,25,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+
+pc13
+```
+
+```{r}
+ggarrange(pc12,pc13,ncol=2,widths=c(1,1.3))
+ggsave("outputs/900/combined-wgspcs.pdf", width=13, height=6)
+ggsave("outputs/900/combined-wgspcs.jpeg", width=13, height=6)
+
+```
 # Phylogeny with japonicus
 
+At 95% threshold 
 ```{sh, eval=FALSE}
 srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
 -minInd 68 -bam bamlists/71.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--rf genome/lates-lgs.txt -out outputs/1000/snps-wgs  \
+-rf genome/lates-lgs.txt -out outputs/900/snps-wgs  \
 -minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
--doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1000/snps-wgs.out 2> outputs/1000/snps-wgs.err &
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/900/snps-wgs.out 2> outputs/900/snps-wgs.err &
 
 ```
 
+1795511 variants in plink file
 
 Create pruned vcf
 ```{sh, eval=FALSE}
@@ -130,25 +230,33 @@ bgzip plink.vcf
 tabix plink.vcf.gz
 
 #renaming vcf in 403 locally
-bcftools reheader --samples bamlists/61-sample-names.txt -o outputs/403/renamed.vcf.gz outputs/403/plink.vcf.gz
-
+bcftools reheader --samples bamlists/71.names outputs/900/plink.vcf.gz | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.20 -w 10000  > outputs/1000/pruned.vcf
 bcftools +prune -l 0.20 -w 10000 outputs/403/renamed.vcf.gz > outputs/403/pruned.vcf
 bcftools +prune -l 0.30 -w 10000 outputs/403/renamed.vcf.gz > outputs/403/pruned-03.vcf
 ```
 
-in 403 locally   
-
-in 403
+locally
 ```{sh, eval=FALSE}
+conda activate py2
 ~/github/mccloud-rrt/vcf2phylip.py -i pruned.vcf 
-~/github/mccloud-rrt/vcf2phylip.py -i pruned-03.vcf 
 
+conda deactivate
 ```
 
 ```{sh, eval=FALSE}
-iqtree -s pruned.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
-iqtree -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo
-iqtree -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo -o DRR391968
-iqtree -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m GTR+ASC -bb 10000 --redo -o DRR391968
+iqtree2 -s pruned.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
+iqtree2 -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo -o DRR391968
+iqtree2 -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m GTR+ASC -bb 10000 --redo -o DRR391968
 raxmlHPC-PTHREADS -T 3 -m ASC_GTRGAMMA --asc-corr lewis -p 2 -s  pruned.min4.phy.varsites.phy  -n asc -o DRR391968 
+```
+
+# SNP Calls without japonicus
+
+```{sh, eval=FALSE}
+srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 67 -bam bamlists/70.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf genome/lates-lgs.txt -out outputs/900/snps-wgs-cal  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/900/snps-wgs-cal.out 2> outputs/900/snps-wgs-cal.err &
+
 ```
