@@ -15,6 +15,12 @@ library(ozmaps)
 library(ggrepel)
 ```
 
+
+
+Al Harry notes:
+The fish from Cone Bay are mostly the (presumed) escapees based on their high density in areas adjacent to sea pens. Morphologically they look a little different and their size at sex change seems to be much smaller than elsewhere. I’ve heard a few theories as to why, but nobody has given me a definitive answer yet!
+
+
 ```{r}
 d<-read_csv("~/Dropbox/Australian-fishes/wa-barra/240506-barramundi-mac-edit.csv")
 # Some NA individuals bugger up this. I suppose replace missing with mean
@@ -125,3 +131,25 @@ ggplot() +
 
 ggsave("outputs/1000/samples-052024-pbr.jpeg")
 ```
+
+
+
+# Rough estimate of sampling
+
+```{r}
+dg %>% arrange(-Latitude)
+```
+
+Cone Bay should sample all. N=18+82
+
+Others, let's downsample to 30.    
+
+
+```{r}
+conebay<-dg %>% filter(site_2=="Cone Bay") %>% mutate(ToSequence=Count) %>% select(-Count, -`Sample Size`)
+others<-dg %>% filter(site_2!="Cone Bay")  %>% mutate(ToSequence=ifelse(Count > 30, 30, Count)) %>% select(-Count, -`Sample Size`)
+toseq<-others %>% bind_rows(conebay)
+toseq %>% ungroup() %>% summarize(Sum=sum(ToSequence))
+```
+
+860 fish

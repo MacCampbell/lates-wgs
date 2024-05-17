@@ -85,6 +85,12 @@ down <- m70 %>% filter (Lineage == "lakdiva" ) %>% mutate(Frac=7/Coverage) %>%
 down %>% select(Command) %>% write_tsv(file="900.1-downsample-sl.sh", col_names = FALSE)
 ```
 
+module load parallel
+srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 900.1-downsample-sl.sh
+
+don't forget to index!!!
+
+
 Questions:
 
 Placement of lakdiva vs. other lineages?    
