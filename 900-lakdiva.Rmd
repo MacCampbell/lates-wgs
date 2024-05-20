@@ -27,6 +27,7 @@ Total	964,548,673	291.29 Gb
 ```{r}
 library(tidyverse)
 library(ggpubr)
+library(ggrepel)
 ```
 
 Validating checksums
@@ -48,7 +49,7 @@ _2_ Call SNPs with japonicus for rooted phylo (Species Tree)
 ```{r}
 m71<-read_csv("meta/71-Indo-split.csv")
 m71 %>% filter(Region=="Sri Lanka")
-
+m70<-m71 %>% filter(Lineage != "japonicus")
 m71 %>% select(Path) %>% write_tsv(file="bamlists/71.bamlist", col_names = FALSE)
 m71 %>% select(Run) %>% write_tsv(file="bamlists/71.names", col_names = FALSE)
 
@@ -102,6 +103,10 @@ Generate PCA and GL file
 ```{r}
 m70<-m71 %>% filter(Lineage != "japonicus") 
 m70 %>% select(Path) %>% write_tsv(file="bamlists/70.bamlist", col_names = FALSE)
+m70 %>% mutate(Path2=ifelse(Lineage=="lakdiva",paste0("/data/downsample/", Run, ".reduced.bam"),Path)) %>%
+  select(Path2) %>% write_tsv(file="bamlists/70-down.bamlist", col_names = FALSE)
+
+
 m70 %>% select(Run) %>% write_tsv(file="bamlists/70.names", col_names = FALSE)
 ```
 
@@ -434,5 +439,12 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -rf genome/lates-lgs.txt -out outputs/900/snps-wgs-cal  \
 -minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/900/snps-wgs-cal.out 2> outputs/900/snps-wgs-cal.err &
+```
 
+```{sh, eval=FALSE}
+srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 67 -bam bamlists/70-down.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf genome/lates-lgs.txt -out outputs/900/snps-wgs-cal  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/900/snps-wgs-down.out 2> outputs/900/snps-wgs-down.err &
 ```
