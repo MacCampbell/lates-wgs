@@ -103,7 +103,7 @@ Generate PCA and GL file
 ```{r}
 m70<-m71 %>% filter(Lineage != "japonicus") 
 m70 %>% select(Path) %>% write_tsv(file="bamlists/70.bamlist", col_names = FALSE)
-m70 %>% mutate(Path2=ifelse(Lineage=="lakdiva",paste0("/data/downsample/", Run, ".reduced.bam"),Path)) %>%
+m70 %>% mutate(Path2=ifelse(Lineage=="lakdiva",paste0("data/downsample/", Run, ".reduced.bam"),Path)) %>%
   select(Path2) %>% write_tsv(file="bamlists/70-down.bamlist", col_names = FALSE)
 
 
@@ -128,7 +128,7 @@ srun -p high -t 8:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/900/70-ibs-90-lca01 > outputs/900/70-ibs-90-lca01.out 2> outputs/900/70-ibs-90-lca01.err &
 
-#dropping inversion chroms
+#dropping inversion chroms 5564715
 srun -p high -t 32:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
 -bam bamlists/70.bamlist -rf meta/lates-lgs-no-inv.txt \
 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
@@ -153,6 +153,13 @@ srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -li
 srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/70-ibs-90.beagle.gz -K 4 -o outputs/900/70-K4 &
 srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/70-ibs-90.beagle.gz -K 5 -o outputs/900/70-K5 &
 srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/70-ibs-90.beagle.gz -K 6 -o outputs/900/70-K6 &
+
+srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/70-ibs-90-noinv.beagle.gz -K 2 -o outputs/900/70-K2-noinv &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/70-ibs-90-noinv.beagle.gz -K 3 -o outputs/900/70-K3-noinv &
+srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/70-ibs-90-noinv.beagle.gz -K 4 -o outputs/900/70-K4-noinv &
+srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/70-ibs-90-noinv.beagle.gz -K 5 -o outputs/900/70-K5-noinv &
+srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/70-ibs-90-noinv.beagle.gz -K 6 -o outputs/900/70-K6-noinv &
+
 
 # Generate GLS without doIBS
 srun -p high -t 32:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 2  \
@@ -457,9 +464,9 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 ```{sh, eval=FALSE}
 srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
 -minInd 67 -bam bamlists/70-down.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--rf genome/lates-lgs.txt -out outputs/900/snps-wgs-cal  \
+-rf genome/lates-lgs.txt -out outputs/900/snps-wgs-cal-down  \
 -minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/900/snps-wgs-down.out 2> outputs/900/snps-wgs-down.err &
 ```
 
-Can always drop inversion chroms!
+Don't forget to filter inversion chroms!
