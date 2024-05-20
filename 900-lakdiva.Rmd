@@ -412,6 +412,7 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 ```
 
 1795511 variants in plink file
+NC_066833.1,NC_066834.1,NC_066836.1,NC_066838.1,NC_066839.1,NC_066840.1,NC_066841.1,NC_066842.1,NC_066843.1,NC_066844.1,NC_066845.1,NC_066846.1,NC_066847.1,NC_066848.1,NC_066849.1,NC_066850.1,NC_066851.1,NC_066853.1,NC_066854.1,NC_066855.1,NC_066856.1
 
 Create pruned vcf
 ```{sh, eval=FALSE}
@@ -421,9 +422,7 @@ bgzip plink.vcf
 tabix plink.vcf.gz
 
 #renaming vcf in 403 locally
-bcftools reheader --samples bamlists/71.names outputs/900/plink.vcf.gz | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.20 -w 10000  > outputs/1000/pruned.vcf
-bcftools +prune -l 0.20 -w 10000 outputs/403/renamed.vcf.gz > outputs/403/pruned.vcf
-bcftools +prune -l 0.30 -w 10000 outputs/403/renamed.vcf.gz > outputs/403/pruned-03.vcf
+bcftools view -r NC_066833.1,NC_066834.1,NC_066836.1,NC_066838.1,NC_066839.1,NC_066840.1,NC_066841.1,NC_066842.1,NC_066843.1,NC_066844.1,NC_066845.1,NC_066846.1,NC_066847.1,NC_066848.1,NC_066849.1,NC_066850.1,NC_066851.1,NC_066853.1,NC_066854.1,NC_066855.1,NC_066856.1 outputs/900/plink.vcf.gz | bcftools reheader --samples bamlists/71.names   | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.20 -w 10000  > outputs/900/pruned.vcf
 ```
 
 locally
@@ -433,6 +432,8 @@ conda activate py2
 
 conda deactivate
 ```
+
+12398
 
 ```{sh, eval=FALSE}
 iqtree2 -s pruned.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
