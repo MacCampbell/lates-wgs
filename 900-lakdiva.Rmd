@@ -128,6 +128,16 @@ srun -p high -t 8:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/900/70-ibs-90-lca01 > outputs/900/70-ibs-90-lca01.out 2> outputs/900/70-ibs-90-lca01.err &
 
+#dropping inversion chroms
+srun -p high -t 32:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
+-bam bamlists/70.bamlist -rf meta/lates-lgs-no-inv.txt \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 63 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/900/70-ibs-90-noinv > outputs/900/70-ibs-90-noinv.out 2> outputs/900/70-ibs-90-noinv.err &
+
+
 
 srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/70-ibs-90-lca01.beagle.gz -K 2 -o outputs/900/70-K2 &
 srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/70-ibs-90-lca01.beagle.gz -K 3 -o outputs/900/70-K3 &
@@ -441,6 +451,8 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/900/snps-wgs-cal.out 2> outputs/900/snps-wgs-cal.err &
 ```
 
+
+
 ```{sh, eval=FALSE}
 srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
 -minInd 67 -bam bamlists/70-down.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
@@ -448,3 +460,5 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/900/snps-wgs-down.out 2> outputs/900/snps-wgs-down.err &
 ```
+
+Can always drop inversion chroms!
