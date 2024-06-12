@@ -323,14 +323,24 @@ ggplot(rdf) +
 PlotAdmix("outputs/900/70-K2.qopt", meta)
 ```
 
-
+```{r}
+PlotAdmix("outputs/900/70-K2-noinv.qopt", meta)
+```
 ```{r}
 PlotAdmix("outputs/900/70-K3.qopt", meta)
 ```
 
 
 ```{r}
+PlotAdmix("outputs/900/70-K3-noinv.qopt", meta)
+```
+
+```{r}
 PlotAdmix("outputs/900/70-K4.qopt", meta)
+```
+
+```{r}
+PlotAdmix("outputs/900/70-K4-noinv.qopt", meta)
 ```
 
 ```{r}

@@ -34,14 +34,29 @@ plink --vcf NC_066852.1-thinned.wheader.vcf --r2 inter-chr --ld-window-r2 0.3 --
 
 
 ```{r}
-lc<-read.delim("outputs/608/vcf/NC_066852.1-thinned.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>%  filter(R2 >0.7)
+lc<-read.delim("outputs/608/vcf/NC_066852.1-thinned.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>%  filter(R2 >0.8)
 
   ggplot(lc) +
   geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
   scale_color_gradient(low="khaki1", high="red") + 
   theme_bw()
+  
+ggsave("outputs/608/lca-20-thinned.jpeg")
 ```
 
+bcftools view -r NC_066852.1 outputs/608/wgs-05.vcf.gz | bcftools +prune -m 0.20 -w 100 > outputs/608/NC_066852.1-pruned.vcf
+plink --vcf NC_066852.1-pruned.vcf --r2 inter-chr --ld-window-r2 0.3 --out NC_066852.1-pruned.ldf --allow-extra-chr --double-id
+
+```{r}
+lc<-read.delim("outputs/608/NC_066852.1-pruned.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>%  filter(R2 >0.7)
+
+  ggplot(lc) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw()
+  
+ggsave("outputs/608/lca-20-pruned.jpeg")
+```
 
 ```{sh, eval=FALSE}
 for f in *1.vcf.gz; do plink --vcf $f --r2 inter-chr gz --ld-window-r2 0.5 --out `basename $f vcf`ldf --allow-extra-chr --double-id; done;

@@ -125,6 +125,7 @@ tabix plink.vcf.gz
 bcftools reheader --samples bamlists/190-sample-names.txt outputs/607/plink.vcf.gz |  bcftools +fill-tags | bcftools view -q 0.05:minor -O z > outputs/607/snps-05.vcf.gz  
 
 bcftools +prune -l 0.20 -w 10000 outputs/607/snps-05.vcf.gz -O z > outputs/607/pruned.vcf.gz
+
 ```
 
 ### Checking signals
@@ -669,4 +670,91 @@ ggarrange(lc03pc12 + ggtitle(label="A. Lca03") + theme(plot.title = element_text
           ncol = 1, heights=c(1.5,1,1))
 
 ggsave("outputs/607/inversion-pcas.pdf", width=11, height=13)
+```
+
+
+## LD
+
+outputs/607/NC_066852.1-sub.vcf.gz is only inversion zone:
+
+bcftools view -r NC_066833.1 outputs/607/snps-05.vcf.gz -O z > outputs/607/NC_066833.1-whole-chrom.vcf.gz    
+bcftools view -r NC_066835.1 outputs/607/snps-05.vcf.gz -O z > outputs/607/NC_066835.1-whole-chrom.vcf.gz    
+bcftools view -r NC_066837.1 outputs/607/snps-05.vcf.gz -O z > outputs/607/NC_066837.1-whole-chrom.vcf.gz    
+bcftools view -r NC_066852.1 outputs/607/snps-05.vcf.gz -O z > outputs/607/NC_066852.1-whole-chrom.vcf.gz    
+
+plink --vcf NC_066833.1-whole-chrom.vcf.gz --r2 inter-chr --ld-window-r2 0.3 --out NC_066833.1-ldf --allow-extra-chr --double-id
+plink --vcf NC_066835.1-whole-chrom.vcf.gz --r2 inter-chr --ld-window-r2 0.3 --out NC_066835.1-ldf --allow-extra-chr --double-id
+plink --vcf NC_066837.1-whole-chrom.vcf.gz --r2 inter-chr --ld-window-r2 0.3 --out NC_066837.1-ldf --allow-extra-chr --double-id
+plink --vcf NC_066852.1-whole-chrom.vcf.gz --r2 inter-chr --ld-window-r2 0.3 --out NC_066852.1-ldf --allow-extra-chr --double-id
+
+
+```{r}
+ld<-read.delim("outputs/607/NC_066835.1-ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>%  filter(R2 >0.8)
+
+l03<-  ggplot(ld) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw() +
+  xlab("\nSNP A\n")+
+  ylab("\nSNP B\n")+
+  ggtitle("A. Lca03") +
+  theme(plot.title=element_text(size=14, face="bold"))
+
+l03
+ggsave("outputs/607/lca-03.jpeg")
+```
+
+```{r}
+ld<-read.delim("outputs/607/NC_066837.1-ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>%  filter(R2 >0.8)
+
+l05<-  ggplot(ld) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw() +
+  xlab("\nSNP A\n")+
+  ylab("\nSNP B\n")+
+  ggtitle("B. Lca05") +
+  theme(plot.title=element_text(size=14, face="bold"))
+
+l05
+ggsave("outputs/607/lca-05.jpeg")
+```
+
+```{r}
+ld<-read.delim("outputs/607/NC_066852.1-ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>%  filter(R2 >0.8)
+
+l20<-  ggplot(ld) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw() +
+  xlab("\nSNP A\n")+
+  ylab("\nSNP B\n")+
+  ggtitle("C. Lca20") +
+  theme(plot.title=element_text(size=14, face="bold"))
+
+l20
+ggsave("outputs/607/lca-20.jpeg")
+```
+
+```{r}
+ld<-read.delim("outputs/607/NC_066833.1-ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>%  filter(R2 >0.8)
+
+l01<-  ggplot(ld) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw() +
+  xlab("\nSNP A\n")+
+  ylab("\nSNP B\n")+
+  ggtitle("D. Lca01") +
+  theme(plot.title=element_text(size=14, face="bold"))
+
+l01
+ggsave("outputs/607/lca-01.jpeg")
+```
+
+```{r}
+ggarrange(l03,l05,l20,l01)
+ggsave("outputs/607/Figure-3.jpeg", width=10,height=8)
+ggsave("outputs/607/Figure-3.pdf", width=10,height=8)
+
 ```

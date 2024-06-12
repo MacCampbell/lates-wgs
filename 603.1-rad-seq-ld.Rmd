@@ -77,10 +77,16 @@ lapply(files, plotLd)
 lc01<-read.delim("outputs/606/vcf/NC_066833.1.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
   filter(R2 >0.8)
 
-ggplot(lc01) +
+d<-ggplot(lc01) +
   geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
   scale_color_gradient(low="khaki1", high="red") + 
-  theme_bw()
+  theme_bw() +
+  xlab("\nSNP A\n")+
+  ylab("\nSNP B\n")+
+  ggtitle("D. Lca01") +
+  theme(plot.title=element_text(size=14, face="bold"))
+
+d
 ```
 
 #Expecting High LD
@@ -89,32 +95,55 @@ ggplot(lc01) +
 lc05<-read.delim("outputs/606/vcf/NC_066837.1.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
   filter(R2 >0.8)
 
-ggplot(lc05) +
+b<-ggplot(lc05) +
   geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
   scale_color_gradient(low="khaki1", high="red") + 
-  theme_bw()
+   theme_bw() +
+  xlab("\nSNP A\n")+
+  ylab("\nSNP B\n")+
+  ggtitle("B. Lca05") +
+  theme(plot.title=element_text(size=14, face="bold"))
+b
 ```
 
 
 ```{r}
-lc03<-read.delim("outputs/600/sea/NC_066835.1.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
-  filter(R2 >0.5) 
+lc03<-read.delim("outputs/606/vcf/NC_066835.1.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
+  filter(R2 >0.8) 
 
-ggplot(lc03) +
+a<-ggplot(lc03) +
   geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
   scale_color_gradient(low="khaki1", high="red") + 
-  theme_bw()
+   theme_bw() +
+  xlab("\nSNP A\n")+
+  ylab("\nSNP B\n")+
+  ggtitle("A. Lca03") +
+  theme(plot.title=element_text(size=14, face="bold"))
+
+a
 ```
 
 
 
 ```{r}
-lc20<-read.delim("outputs/600/sea/NC_066852.1.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
-  filter(R2 >0.5)
+lc20<-read.delim("outputs/606/vcf/NC_066852.1.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
+  filter(R2 >0.8)
 
-ggplot(lc20) +
+c<-ggplot(lc20) +
   geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
   scale_color_gradient(low="khaki1", high="red") + 
-  theme_bw()
+   theme_bw() +
+  xlab("\nSNP A\n")+
+  ylab("\nSNP B\n")+
+  ggtitle("C. Lca20") +
+  theme(plot.title=element_text(size=14, face="bold"))
+
+c
 ```
 
+```{r}
+ggarrange(a,b,c,d)
+ggsave("outputs/603/Supplemental Figure SX.jpeg", width=10,height=8)
+ggsave("outputs/603/Supplemental Figure SX.pdf", width=10,height=8)
+
+```
