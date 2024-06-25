@@ -26,6 +26,10 @@ Total	964,548,673	291.29 Gb
 
 ```{r}
 library(tidyverse)
+library(ggtree)
+library(phangorn)
+library(tanggle)
+library(phytools)
 library(ggpubr)
 library(ggrepel)
 ```
@@ -480,3 +484,139 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 ```
 
 Don't forget to filter inversion chroms!
+
+Or not, whatever
+
+1594493 snps in 
+
+snps-wgs-cal-down 
+
+```{sh, eval=FALSE}
+plink --tped snps-wgs-cal-down.tped --tfam snps-wgs-cal-down.tfam  --out snps-wgs-cal-down-binary --recode --allow-extra-chr --noweb
+plink --ped snps-wgs-cal-down-binary.ped --map snps-wgs-cal-down-binary.map --recode vcf --allow-extra-chr -out snps-wgs-cal-down-plink
+bgzip snps-wgs-cal-down-plink.vcf 
+tabix snps-wgs-cal-down-plink.vcf.gz
+
+#renaming vcf in 900 locally
+bcftools view -r NC_066833.1,NC_066834.1,NC_066836.1,NC_066838.1,NC_066839.1,NC_066840.1,NC_066841.1,NC_066842.1,NC_066843.1,NC_066844.1,NC_066845.1,NC_066846.1,NC_066847.1,NC_066848.1,NC_066849.1,NC_066850.1,NC_066851.1,NC_066853.1,NC_066854.1,NC_066855.1,NC_066856.1 outputs/900/snps-wgs-cal-down-plink.vcf.gz| bcftools reheader --samples bamlists/70.names   | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.20 -w 10000  > outputs/900/snps-wgs-cal-down-plink-pruned.vcf
+```
+
+
+```{sh, eval=FALSE}
+conda activate py2
+~/github/mccloud-rrt/vcf2phylip.py -i snps-wgs-cal-down-plink-pruned.vcf
+
+conda deactivate
+```
+
+70 20658
+70 9941 with varsites
+```{sh, eval=FALSE}
+iqtree2 -s snps-wgs-cal-down-plink-pruned.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
+iqtree2 -s snps-wgs-cal-down-plink-pruned.min4.phy.varsites.phy -T AUTO -st DNA -m GTR+ASC -bb 10000 --redo 
+```
+
+
+the tree
+
+```{r}
+tree<-read.tree("outputs/900/snps-wgs-cal-down-plink-pruned.min4.phy.varsites.phy.contree")
+t1<-midpoint.root(tree)
+t2<-ggtree(t1) + geom_nodelab(aes(label=node))
+
+t2
+```
+
+```{r}
+#t3<-as.polytomy(t1, feature='node.label', fun=function(x) as.numeric(x) < 50)
+
+t<-t1
+
+t<-ggtree(t, layout = 'circular')
+
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[e$label < 90,]
+e <- e[e$label >= 75,]
+```
+
+```{r}
+u<-t %<+% meta + #bind_rows(m58, rm) +
+  geom_point(data=e,  fill="gray50", cex=3, alpha=1, pch=22) +
+  geom_point(data=d,  fill="black", cex=3, alpha=1, pch=22) +
+  geom_tippoint(aes(x=x+0.002,fill=Region, shape=Lineage), cex=3) + 
+  geom_tiplab(aes(label=Region, x=x+0.01), align = FALSE, size=3) +
+  #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
+  scale_shape_manual(values=c(21,23,25,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(0,.15) +
+  scale_fill_viridis_d(option="H") +
+  theme(legend.position = "none") +
+  geom_treescale(x = 0)
+
+u
+
+ggsave("outputs/900/concatenated-tree-70inds.jpeg", width=9, height=9)
+```
+
+
+Network version
+
+```{r}
+dat<-read.dna(file="outputs/900/snps-wgs-cal-down-plink-pruned.min4.phy")
+write.nexus.data(dat, file="outputs/900/snps-wgs-cal-down-plink-pruned.min4.nex")
+```
+
+```{r}
+net<-read.nexus.networx("outputs/900/pruned-down-noinv.network")
+```
+
+```{r}
+g<-ggsplitnet(net)  
+g$data<-left_join(g$data, meta, by=c("label"="Run")) 
+
+n<-g + 
+  geom_tippoint(aes(shape=Lineage, fill=Region), cex=5, alpha=1.00) +
+  geom_tiplab2(data=g$data %>% filter(Lineage=='lakdiva')) +
+  geom_tiplab2(data=g$data %>% filter(Lineage!='lakdiva'), aes(label=Region)) +
+  scale_shape_manual(values = c(21,23,25,24)) +
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(-.06,.04) +
+  ylim(-.05,.05)
+
+n
+ggsave("outputs/900/wgs-network.jpeg", width=12, height=10)
+ggsave("outputs/900/wgs-network.pdf", width=12, height=10)
+
+```
+
+
+## Only lakdiva
+
+```{r}
+lak<-m71 %>% filter(Lineage %in% c("lakdiva"))
+lak %>% select(Path) %>% write_tsv(file="bamlists/lak.bamlist", col_names = FALSE)
+lak %>% select(Run) %>% write_tsv(file="bamlists/lak.names", col_names = FALSE)
+```
+
+10 samples.  
+
+```{sh, eval=FALSE}
+srun -p high -t 32:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
+-bam bamlists/lak.bamlist -rf genome/lates-lgs.txt \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 8 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/900/lak-ibs-80 > outputs/900/lak-ibs-80.out 2> outputs/900/lak-ibs-80.err &
+
+```
