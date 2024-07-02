@@ -64,6 +64,10 @@ ind %>% select(Run) %>% write_tsv(file="bamlists/ind.names", col_names = FALSE)
 
 ```
 
+```{r}
+m71 %>% filter(Region=="Sri Lanka") %>% write_csv("meta/sl-meta.csv")
+```
+
 ## Trim
 e.g. seqtk trimfq -e 50 data/new-data/NS01_RA.fastq > data/new-data-trim/NS01_RA.fastq
 
@@ -619,4 +623,86 @@ srun -p high -t 32:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/900/lak-ibs-80 > outputs/900/lak-ibs-80.out 2> outputs/900/lak-ibs-80.err &
 
+```
+
+	-> Number of sites retained after filtering: 4784503 
+
+
+
+```{r}
+m <- as.matrix(read.table("outputs/900/lak-ibs-80.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+```
+
+
+For figure  
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(lak)
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+pc12<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Locality, shape=Lineage), size=3, alpha=0.75) +
+#  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="magma") +
+  ggtitle("A") +
+  theme(plot.title = element_text(size=18, face="bold")) +
+ scale_shape_manual(values=c(25)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+ theme(legend.position = "none")
+
+pc12
+```
+```{r}
+text13<-covs  %>% select(Run, Region, V1, V3, Lineage) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
+
+pc13<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V3, fill=Locality, shape=Lineage), size=3, alpha=0.75) +
+#  geom_text_repel(data=text13, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC3", " ", round((100*var[3]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="magma") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=18, face="bold")) +
+  scale_shape_manual(values=c(25)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+
+pc13
+```
+
+```{r}
+ggarrange(pc12,pc13,ncol=2,widths=c(1,1.3))
+ggsave("outputs/900/lak-wgspcs.pdf", width=13, height=6)
+ggsave("outputs/900/lak-wgspcs.jpeg", width=13, height=6)
+
+```
+
+
+admixture.   
+
+```{sh, eval=FALSE}
+srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/lak-ibs-80.beagle.gz -K 2 -o outputs/900/lak-K2 &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/lak-ibs-80.beagle.gz -K 3 -o outputs/900/lak-K3 &
+srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/lak-ibs-80.beagle.gz -K 4 -o outputs/900/lak-K4 &
+srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/lak-ibs-80.beagle.gz -K 5 -o outputs/900/lak-K5 &
+srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/lak-ibs-80.beagle.gz -K 6 -o outputs/900/lak-K6 &
+```
+
+
+```{r}
+PlotAdmix("outputs/900/lak-K2.qopt", lak)
 ```

@@ -1,0 +1,11 @@
+Run,BioSample,Sample,Region,Locality,Aligned,Filtered,Coverage,Path,Lineage
+Mannar1,12_1A,12_1A,Sri Lanka,Mannar Fish Market,168610392,155762957,22.6966,data/lakdiva-trim/Mannar1.sort.flt.bam,lakdiva
+Mannar2,12_2A,12_2A,Sri Lanka,Mannar Fish Market,224624541,206845642,30.1013,data/lakdiva-trim/Mannar2.sort.flt.bam,lakdiva
+Mannar3,12_3A,12_3A,Sri Lanka,Mannar Fish Market,168332672,155977838,22.7513,data/lakdiva-trim/Mannar3.sort.flt.bam,lakdiva
+Mannar4,12_4A,12_4A,Sri Lanka,Mannar Fish Market,163155137,151346967,22.0586,data/lakdiva-trim/Mannar4.sort.flt.bam,lakdiva
+Mannar5,12_5A,12_5A,Sri Lanka,Mannar Fish Market,80168630,167462999,24.3929,data/lakdiva-trim/Mannar5.sort.flt.bam,lakdiva
+Trinco1,13_1A,13_1A,Sri Lanka,"Trinco Fish Market - ""Pullmodai""",176637323,164908980,23.9665,data/lakdiva-trim/Trinco1.sort.flt.bam,lakdiva
+Trinco2,13_2A,13_2A,Sri Lanka,"Trinco Fish Market - ""Pullmodai""",222090489,204042258,29.644,data/lakdiva-trim/Trinco2.sort.flt.bam,lakdiva
+Trinco3,13_3A,13_3A,Sri Lanka,"Trinco Fish Market - ""Pullmodai""",198881902,184142133,26.6088,data/lakdiva-trim/Trinco3.sort.flt.bam,lakdiva
+Jaffna1,14_1A,14_1A,Sri Lanka,Jaffna Fish Market,195232101,181938779,26.4441,data/lakdiva-trim/Jaffna1.sort.flt.bam,lakdiva
+Jaffna2,14_2A,14_2A,Sri Lanka,Jaffna Fish Market,236459155,217961587,31.5948,data/lakdiva-trim/Jaffna2.sort.flt.bam,lakdiva
