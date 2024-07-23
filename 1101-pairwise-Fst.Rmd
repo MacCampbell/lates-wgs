@@ -1,0 +1,291 @@
+---
+title: "202-pairwise-Fst"
+output: html_document
+date: "2023-08-26"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(viridis)
+library(ggpubr)
+library(grid)
+```
+
+Calculating pairwise Fst with ANGSD. Will need to redo with non-inversion regions
+
+_1_ SFS need things organized like so
+
+poplist
+
+bamlist for each pop
+
+meta   
+
+```{r}
+m2<-read_csv("meta/58-Indo-split.csv")
+bamlist<-read_tsv("bamlists/downsample-58.bamlist", col_names=c("Downsample"))
+m2$Path<-bamlist$Downsample
+m2$Region<-factor(m2$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
+                                              "Indonesia-K","Indonesia-SJ","Indonesia-SU",
+                                      "Philippines","Vietnam","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
+
+m2<-m2 %>% mutate(Lineage=ifelse(Region %in% c("India Eastern Coast","India Western Coast"), "IND",
+                       ifelse(Region %in% c("Northern Territory","Queensland","Papua New Guinea"), "AUS+NG","SEA")))
+
+
+m3<-filter(m2,! Region %in% c("Indonesia-SU","Vietnam") )
+m3 %>% group_by(Lineage, Region) %>% summarize(Count=n())
+```
+
+
+```{r}
+Region<-m3 %>% select(Region)
+Region$Region<-gsub(" ","", Region$Region)
+write_tsv(Region %>% unique(), file="poplists/poplist.txt", col_names = FALSE)
+
+pops<-unique(Region$Region)
+m3$pop<-gsub(" ","", m3$Region)
+```
+
+```{r}
+writeBamlist<-function(Pop, Meta) {
+  write_tsv(Meta %>% filter(pop==Pop) %>% select(Path), col_names = FALSE, file=paste0("poplists/",Pop,".bamlist"))
+  
+}
+```
+
+```{r}
+lapply(pops,writeBamlist, m3)
+```
+
+Note, not necessary to do this I think, but if so, need to include Vietnam/Indonesia for 58 inds
+```{r}
+writeLineage<-function(Lin, Meta) {
+  write_tsv(Meta %>% filter(Lineage==Lin) %>% select(Path), col_names = FALSE, file=paste0("poplists/",Lin,".bamlist"))
+  
+}
+lapply(c("AUS+NG","SEA","IND"),writeLineage, m2)
+
+Lineage<-m2 %>% select(Lineage)
+write_tsv(Lineage %>% unique(), file="poplists/poplist2.txt", col_names = FALSE)
+
+```
+then sbatch 202.1-calc-sfs.sh
+
+Then to calc pairwise fst, need pairwise list, should be 9*(9-1)/2 = 36 options.
+or
+10*(10-1)/2 = 45 options
+```{r}
+#https://stackoverflow.com/questions/48961247/how-do-i-create-all-unique-pairwise-combinations-of-my-sample-dataset
+x<-unique(m3$pop)
+y<-apply(combn(x,2),2,paste,collapse='\t')
+y
+write.table(y, file="poplists/pairwise-list.txt", quote = FALSE, row.names = FALSE, col.names = FALSE)
+```
+
+poplists/pairwise-list.txt is made
+
+Also, what about main lineages?     
+
+```{r}
+x<-unique(m3$Lineage)
+y<-apply(combn(x,2),2,paste,collapse='\t')
+y
+write.table(y, file="poplists/lineage-list.txt", quote = FALSE, row.names = FALSE, col.names = FALSE)
+```
+
+Running 202.2
+
+ sbatch 202.1-calc-fst.sh, seeing what we need
+
+```{r}
+list<-read_tsv("poplists/pairwise-list.txt", col_names=c("Pop1","Pop2")) %>% mutate(Position=1:n())
+fst<-read_tsv("outputs/202/pwfst.all", col_names=c("Pop1","Pop2","Unweighted","Weighted"))
+
+fsts<-list %>% left_join(fst)
+fsts
+
+```
+```{r}
+incomplete<-fsts %>% filter(is.na(Weighted)==TRUE)
+incomplete
+write_tsv(incomplete %>% select(Pop1, Pop2), col_names = FALSE, file="poplists/pairwise-list2.txt")
+```
+```{r, eval=TRUE}
+
+fsts2<-fsts %>% rename(Population2=Pop1, Population1=Pop2) %>% rename(Pop2=Population2, Pop1=Population1)
+fsts3<-bind_rows(fsts,fsts2)
+fsts<-fsts3
+fsts$Pop1<-factor(fsts$Pop1, levels=c("NorthernTerritory","Queensland","PapuaNewGuinea",
+                                              "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "IndiaEasternCoast","IndiaWesternCoast"))
+
+fsts$Pop2<-factor(fsts$Pop2, levels=c("NorthernTerritory","Queensland","PapuaNewGuinea",
+                                              "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "IndiaEasternCoast","IndiaWesternCoast"))
+```
+
+Indonesia.sfs is empty, splitting into KJ anD SU
+
+
+oom event for thailand, need to up mem allocation (to 124 GB)
+
+Make symmetric    
+
+```{r}
+list2<-list %>% rename(Population2=Pop1, Population1=Pop2) %>% rename(Pop2=Population2, Pop1=Population1)
+list3<-bind_rows(list,list2)
+
+```
+
+```{r}
+list3$Pop1<-factor(list3$Pop1, levels=c("NorthernTerritory","Queensland","PapuaNewGuinea",
+                                              "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "IndiaEasternCoast","IndiaWesternCoast"))
+
+list3$Pop2<-factor(list3$Pop2, levels=c("NorthernTerritory","Queensland","PapuaNewGuinea",
+                                             "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "IndiaEasternCoast","IndiaWesternCoast"))
+
+ggplot(list3) +
+    geom_raster(aes(x=Pop1, y=Pop2, fill=Position))  +
+    theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) 
+
+```
+```{r}
+back<-viridis(n=2, option="cividis")
+```
+
+```{r}
+fstplot<-ggplot(fsts) +
+  geom_raster(aes(x=Pop1, y=Pop2, fill=Weighted)) +
+  geom_text(aes(x=Pop1, y=Pop2, label=sprintf("%.2f", Weighted)), color="white", fontface="bold") +
+  scale_fill_viridis_c(option="cividis", direction=-1, alpha=1) +
+  xlab("\nRegion") +
+  ylab("Region\n") +
+  theme_bw() +
+  theme(panel.background = element_rect(fill=back[1])) +
+  theme(panel.grid = element_blank()) +
+ # scale_x_discrete(labels=c("AUE","PNG","INA","MAL","THA")) +
+#  scale_y_discrete(labels=c("AUW","AUE","PNG","INA","MAL")) +
+  theme(axis.text=element_text(size=12)) +
+  theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
+  theme(axis.title = element_text(size=14, face="bold")) +
+  ggtitle("A") +
+  theme(plot.title=element_text(size=16, face="bold")) +
+  scale_x_discrete(labels=c("Northern Territory","Queensland","Papua New Guinea",
+                                             "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast")) +
+   scale_y_discrete(labels=c("Northern Territory","Queensland","Papua New Guinea",
+                                             "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
+fstplot
+```
+
+__3_ Nucleotide diversity
+
+```{sh, eval=FALSE}
+#Get .sfs (folded)
+realSFS out.saf.idx -P 24 -fold 1 > out.sfs
+realSFS saf2theta out.saf.idx -outname out -sfs out.sfs -fold 1
+#Then, Estimate for every Chromosome/scaffold
+thetaStat do_stat out.thetas.idx
+```
+
+I have .sfs in 202.1-calc-sfs.sh      
+
+See 202.3 calculatign TW, TP, TajD etc
+
+
+
+cat poplists/poplist.txt | while read pop; do echo $pop; awk 'NR == 1 {print "Population" "\t" $0 ; next;}{print FILENAME "\t" $0 ;}' outputs/202/$pop-thetas-stat.pestPG > outputs/202/$pop-diversity.stats; done;
+
+
+done;
+awk 'NR == 1 {print "Population" "\t" $0 ; next;}{print FILENAME "\t" $0 ;}' outputs/202/Cambodia-thetas-stat.pestPG
+
+```{r}
+files<-list.files("outputs/202", pattern="*diversity.stats", full.names = TRUE)
+files
+
+stats<-lapply(files, read_tsv) %>% bind_rows()
+```
+
+```{r}
+stats2<-stats %>% select(Population, Chr, tW, tP, Tajima, nSites) 
+stats2$Population<-gsub("outputs/202/","",stats2$Population)
+stats2$Population<-gsub("-thetas-stat.pestPG","",stats2$Population)
+stats2$Population<-factor(stats2$Population, levels=c("NorthernTerritory","Queensland","PapuaNewGuinea",
+                                             "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "IndiaEasternCoast","IndiaWesternCoast"))
+stats2<-stats2 %>%
+  mutate(Lineage=ifelse(Population %in% c("IndiaEasternCoast","IndiaWesternCoast"), "IND",
+                       ifelse(Population %in% c("NorthernTerritory","Queensland","PapuaNewGuinea"), "AUS+NG","SEA")))
+
+```
+
+
+```{r}
+blank <- grid.rect(gp=gpar(col="white"))
+```
+
+```{r}
+pi<-ggplot(stats2) +
+  geom_boxplot(aes(x=Population, y=tP, fill=Lineage), outlier.size = 0.25,  alpha=0.50)  +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
+  xlab("\nRegion") +
+  ylab("Theta Pi\n") +
+  scale_fill_viridis_d() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=16, face="bold")) +
+  theme(axis.title = element_text(size=12, face="bold")) +
+  scale_x_discrete(labels=c("Northern Territory","Queensland","Papua New Guinea",
+                                             "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
+
+
+taj<-ggplot(stats2) +
+  geom_boxplot(aes(x=Population, y=Tajima, fill=Lineage), outlier.size = 0.25, alpha=0.50)  +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
+  xlab("\nRegion") +
+  ylab("Tajima's D\n") +
+  scale_fill_viridis_d() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  ggtitle("C") +
+  theme(plot.title = element_text(size=16, face="bold")) +
+  theme(axis.title = element_text(size=12, face="bold"))  +
+  scale_x_discrete(labels=c("Northern Territory","Queensland","Papua New Guinea",
+                                             "Indonesia-K", "Indonesia-SJ","Philippines","Cambodia","Thailand",
+                                              "India Eastern Coast","India Western Coast"))
+
+pi
+```
+
+```{r}
+ggarrange(pi, blank, taj, ncol=3, widths=c(5,1,5))
+
+ggsave("outputs/202/stats.pdf", width=8, height=4)
+```
+  
+```{r}
+ggarrange(ggplotGrob(ggarrange(fstplot+theme(legend.position = "none"), blank, nrow=2, heights=c(5,1))),
+ggplotGrob(ggarrange(pi, blank, taj, ncol=3, widths=c(5,1,5))), nrow=2, heights = c(1,.8))
+
+ggsave("outputs/202/stats.pdf", width=8, height=10)
+ggsave("outputs/202/stats.jpeg", width=8, height=10)
+
+```
+
+```{r}
+stats2 %>% group_by(Population) %>% summarize(Pi=median(tP), Taj=median(Tajima)) 
+```
