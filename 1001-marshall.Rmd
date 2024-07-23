@@ -1,0 +1,217 @@
+---
+title: "1001-marshall"
+output: html_document
+date: "2024-07-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(viridis)
+library(ggtree)
+library(phytools)
+library(pegas)
+```
+
+Merged marshall cr data with Vij et al popset data.
+
+in data/marshall/cytb/ml/combined-trimmed.fasta
+
+```{sh, eval=FALSE}
+iqtree2 -s combined-trimmed.fasta -st DNA -m MFP -bb 10000 --redo
+
+```
+
+
+
+```{r}
+tree<-read.tree("data/marshall-cytb/ml/combined-trimmed.fasta.contree")
+tree<-midpoint.root(tree)
+t1<-ggtree(tree) + geom_tiplab()
+t1
+```
+eek.  Nj version
+
+```{r}
+tree<-read.nexus("data/marshall-cytb/ml/combined-trimmed-nj.tre")
+tree<-midpoint.root(tree)
+t1<-ggtree(tree) + geom_tiplab(size=2)
+t1
+
+ggsave("outputs/1001/mt-dna-nj-tree.pdf", height=20, width=8.5)
+```
+
+What about with alignment trimming.
+
+```{sh, eval=FALSE}
+bmge -i combined-trimmed.fasta -t DNA -of tmsa.fasta
+iqtree2 -s tmsa.fasta -st DNA -m MFP -bb 10000 --redo
+
+```
+
+261 characters
+
+```{r}
+tree<-read.tree("data/marshall-cytb/ml/tmsa.fasta.contree")
+tree<-midpoint.root(tree)
+t1<-ggtree(tree) + geom_tiplab()
+t1
+```
+
+```{r}
+tree<-read.nexus("data/marshall-cytb/ml/tmsa-nj.tre")
+tree<-midpoint.root(tree)
+t1<-ggtree(tree) + geom_tiplab(size=2)
+t1
+```
+
+# Removing ind seqs and adding in ppd singapore ones
+```{sh, eval=FALSE}
+mafft no-ind.fasta > no-ind-realign.fasta
+
+iqtree2 -s no-ind-realign.fasta -st DNA -m MFP -bb 10000 --redo
+
+```
+
+
+
+
+```{r}
+tree<-read.tree("data/marshall-cytb/ml/no-ind-realign.fasta.contree")
+tree<-midpoint.root(tree) 
+t1<-ggtree(tree, layout = "radial") + geom_tiplab()
+t1
+```
+
+```{r}
+t3<-as.polytomy(tree, feature='node.label', fun=function(x) as.numeric(x) < 50)
+
+t<-t3
+
+t<-ggtree(t, layout = "radial")
+
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[e$label < 90,]
+e <- e[e$label >= 75,]
+```
+
+```{r}
+u<-t +# %<+% m + #bind_rows(m58, rm) +
+  geom_point(data=e,  fill="gray50", cex=2, alpha=1, pch=21) +
+  geom_point(data=d,  fill="black", cex=2, alpha=1, pch=21) +
+  geom_tiplab2(size=1) +
+  #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(0,.07) +
+  theme(legend.position = "none") +
+  geom_treescale()
+
+u
+ggsave("outputs/1001/cr-ml-tree.pdf", width=6, height=6)
+```
+network version
+
+```{r}
+Naso<-read.dna(file="data/marshall-cytb/ml/no-ind-for-network.fas", format="fasta")
+labels(Naso)
+```
+ 
+```{r}
+#Naso<-Naso[labels(Naso) %in% m47$Region,]
+```
+
+```{r}
+NasoHaps <- haplotype(Naso)
+NasoHaps
+```
+
+```{r}
+NasoNet <- haploNet(NasoHaps)
+plot(NasoNet, size=attr(NasoNet,"freq"), fast=FALSE)
+```
+
+
+```{r}
+ind.hap<-with(
+  utils::stack(setNames(attr(NasoHaps, "index"), rownames(NasoHaps))),
+  table(hap=ind, individuals=rownames(Naso)[values])
+ )
+temp<-ind.hap %>% as_tibble()
+ind.hap
+```
+
+```{r}
+temp %>% filter(individuals %in% c("I","IND","S","T")) %>% filter(n>0) %>% group_by(hap, individuals) %>% summarize(Count=sum(n))
+```
+Ashburton
+DeGrey
+Kar=Australian origin fishes in https://link.springer.com/article/10.1007/s10126-005-5051-z
+
+```{r}
+names<-sort(rownames(Naso)) %>% unique()
+```
+
+```{r}
+cols<-viridis(n=length(names), option="H")
+```
+`
+
+```{r}
+plot(NasoNet, size=attr(NasoNet, "freq"), scale.ratio = 5, cex = 1, pie=ind.hap, labels = TRUE, bg=cols)
+ 
+legend("topright", names, text.col = cols)
+```
+
+```{r}
+pdf("outputs/1001/marshall-seqs.pdf", width=12, height=12)
+plot(NasoNet, size=attr(NasoNet, "freq"), scale.ratio = 4, cex = 1, pie=ind.hap, labels = TRUE, bg=cols)
+ 
+legend("topright", names, text.col = cols)
+
+dev.off()
+```
+
+
+## Reduce haplots
+
+```{r}
+x<-subset(NasoHaps, minfreq = 5, maxfreq = Inf)
+plot(x, size=attr(x, "freq"))
+```
+
+
+```{r}
+ind.hapx<-with(
+  utils::stack(setNames(attr(x, "index"), rownames(x))),
+  table(hap=ind, individuals=rownames(Naso)[values])
+ )
+ind.hapx
+```
+
+```{r}
+names<-sort(colnames(ind.hapx)) %>% unique()
+names
+```
+
+```{r}
+cols<-viridis(n=length(names), option="H")
+```
+`
+
+```{r}
+plot(haploNet(x)) 
+```
+

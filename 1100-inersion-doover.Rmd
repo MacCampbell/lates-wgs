@@ -1,0 +1,499 @@
+---
+title: "1100-inversion-doover"
+output: html_document
+date: "2024-07-23"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(tidyverse)
+library(ggpubr)
+library(phytools)
+library(tanggle)
+library(phangorn)
+library(viridis)
+library(ggpubr)
+```
+
+We're going to redo the analyses of Campbell and Becker without inversions to see if it meaningfully changes anything. 
+Redoing 401.   
+
+Generate PCA and GL file
+
+```{sh, eval=FALSE}
+srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/60.bamlist -rf meta/no-inv.txt \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 54 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/401/60-ibs-90 > outputs/401/60-ibs-90.out 2> outputs/401/60-ibs-90.err &
+	
+
+srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/401/60-ibs-90.beagle.gz -K 2 -o outputs/401/60-K2 &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/401/60-ibs-90.beagle.gz -K 3 -o outputs/401/60-K3 &
+srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/401/60-ibs-90.beagle.gz -K 4 -o outputs/401/60-K4 &
+srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/401/60-ibs-90.beagle.gz -K 5 -o outputs/401/60-K5 &
+
+
+srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/401/60-ibs-90.beagle.gz -K 6 -o outputs/401/60-K6 &
+
+# Generate GLS without doIBS
+srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/60.bamlist -rf genome/lates-lgs.txt \
+-anc  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 54 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 \
+-doMajorMinor 1 -doPost 1 -doMaf 1 -SNP_pval 1e-6 \
+-minMaf 0.05 \
+-out outputs/401/60-gls-90 > outputs/401/60-gls-90.out 2> outputs/401/60-gls-90.err &
+
+```
+
+	-> Number of sites retained after filtering: 7321852 
+
+
+
+```{r}
+meta<-read_csv("meta/60-Indo-split.csv")
+meta$Region<-factor(meta$Region, levels=c("Queensland","Northern Territory","Papua New Guinea",
+                                              "Indonesia-K","Indonesia-SJ","Indonesia-SU","Philippines",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India Eastern Coast","India Western Coast"))
+
+
+min(meta$Coverage)
+max(meta$Coverage)
+mean(meta$Coverage)
+round(median(meta$Coverage),2)
+```
+
+```{r}
+m <- as.matrix(read.table("outputs/401/60-ibs-90.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+```
+
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta)
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Region), pch=21, alpha=0.75) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("Genome-Wide PCA of L. calcarifer WGS Data") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+ggsave("outputs/401/lates-c-genome-wide-pca-12.jpeg")
+```
+For figure  
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta) 
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+pc12<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Region, shape=Lineage), size=3, alpha=0.75) +
+#  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "none")
+
+pc12
+```
+```{r}
+text13<-covs  %>% select(Run, Region, V1, V3) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
+
+pc13<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V3, fill=Region, shape=Lineage), size=3, alpha=0.75) +
+ # geom_text_repel(data=text13, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC3", " ", round((100*var[3]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+
+pc13
+```
+
+```{r}
+ggarrange(pc12,pc13,ncol=2,widths=c(1,1.4))
+ggsave("outputs/401/combined-wgspcs.pdf", width=11, height=5)
+ggsave("outputs/401/combined-wgspcs.jpeg", width=11, height=5)
+
+```
+
+
+## Plot as one figure. 
+
+Get set of cols.    
+```{r}
+cs<-viridis(6, option = "A", alpha = 0.75)
+csdf<-cs %>% as_tibble() %>% rename(Color=value) %>% mutate(x=1:n())
+
+ggplot(csdf) +
+  geom_point(aes(x=x), fill=csdf$Color, y=1, pch=21, cex=5)+
+ylim(0,2)
+```
+
+First labels     
+
+```{r, echo=FALSE}
+PlotAdmix<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Last col empty
+q<-q[1:length(colnames(q))-1]
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  ylab("Q\n") +
+  theme(legend.position = "") +
+  theme(axis.text = element_text(size=10, face="bold")) +
+  theme(axis.title.y=element_text(size=14, face="bold")) +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  #theme(axis.text.x=element_blank()) +
+  scale_fill_viridis_d(option="viridis") +
+  theme(axis.ticks.x = element_blank())
+
+}
+```
+
+```{r}
+PlotAdmix("outputs/401/60-K2.qopt", meta)
+```
+
+
+```{r}
+PlotAdmix("outputs/401/60-K3.qopt", meta)
+```
+```{r}
+PlotAdmix("outputs/401/60-K4.qopt", meta)
+```
+
+```{r}
+PlotAdmix("outputs/401/60-K5.qopt", meta)
+```
+
+
+```{r}
+PlotAdmixNoLabs2<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Last col empty
+q<-q[1:length(colnames(q))-1]
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  ylab("Q\n") +
+  theme(legend.position = "") +
+  theme(axis.text = element_text(size=10, face="bold")) +
+  theme(axis.title.y=element_text(size=14, face="bold")) +
+ #scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+#  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  theme(axis.text.x=element_blank()) +
+  #scale_fill_viridis_d(option="viridis") +
+  scale_fill_manual(values=cs[2:1])+
+  theme(axis.ticks.x = element_blank())
+
+}
+
+
+k2<-PlotAdmixNoLabs2("outputs/400/60-K2.qopt", meta)
+k2
+```
+
+
+```{r}
+PlotAdmixNoLabs3<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Last col empty
+q<-q[1:length(colnames(q))-1]
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  ylab("Q\n") +
+  theme(legend.position = "") +
+  theme(axis.text = element_text(size=10, face="bold")) +
+  theme(axis.title.y=element_text(size=14, face="bold")) +
+ #scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+#  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  theme(axis.text.x=element_blank()) +
+  #scale_fill_viridis_d(option="viridis") +
+  scale_fill_manual(values=c("#000004BF","#8C2981BF","#3B0F70BF"))+
+  theme(axis.ticks.x = element_blank())
+
+}
+k3<-PlotAdmixNoLabs3("outputs/400/60-K3.qopt", meta)
+k3
+```
+
+```{r}
+PlotAdmixNoLabs4<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Last col empty
+q<-q[1:length(colnames(q))-1]
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  ylab("Q\n") +
+  theme(legend.position = "") +
+  theme(axis.text = element_text(size=10, face="bold")) +
+  theme(axis.title.y=element_text(size=14, face="bold")) +
+ #scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+#  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  theme(axis.text.x=element_blank()) +
+  #scale_fill_viridis_d(option="viridis") +
+  scale_fill_manual(values=c("#8C2981BF","#000004BF","#DE4968BF","#3B0F70BF"))+
+  theme(axis.ticks.x = element_blank())
+
+}
+k4<-PlotAdmixNoLabs4("outputs/401/60-K4.qopt", meta)
+k4
+```
+
+```{r}
+PlotAdmix5<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Last col empty
+q<-q[1:length(colnames(q))-1]
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  ylab("Q\n") +
+  theme(legend.position = "") +
+  theme(axis.text = element_text(size=10, face="bold")) +
+  theme(axis.title.y=element_text(size=14, face="bold")) +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  #scale_fill_viridis_d(option="viridis") +
+  scale_fill_manual(values=c("#FE9F6DBF","#000004BF","#DE4968BF","#8C2981BF","#3B0F70BF"))
+
+}
+k5<-PlotAdmix5("outputs/401/60-K5.qopt", meta)
+k5
+```
+
+Let's plot.
+
+```{r}
+ggarrange(k2,k3,k4,k5, ncol=1, heights = c(1,1,1,1.55))
+
+ggsave("outputs/401/combined-k-plots.pdf", width=11, height=8.5)
+```
+
+## Calling SNPs
+
+
+```{sh, eval=FALSE}
+srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 54 -bam bamlists/60.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf genome/lates-lgs.txt -out outputs/401/snps-wgs  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/401/snps-wgs.out 2> outputs/401/snps-wgs.err &
+
+```
+	-> Number of sites retained after filtering: 3327142 
+
+Creating a vcf
+
+```{sh, eval=FALSE}
+plink --tped snps-wgs.tped --tfam snps-wgs.tfam  --out plink-binary --recode --allow-extra-chr --noweb
+plink --ped plink-binary.ped --map plink-binary.map --recode vcf --allow-extra-chr -out plink
+bgzip plink.vcf 
+tabix plink.vcf.gz
+
+#renaming vcf
+bcftools reheader --samples bamlists/60-sample-names.txt -o outputs/401/renamed.vcf.gz outputs/401/plink.vcf.gz
+
+bcftools +prune -l 0.20 -w 10000 outputs/401/renamed.vcf.gz > outputs/401/pruned.vcf
+bcftools +prune -l 0.30 -w 10000 outputs/401/renamed.vcf.gz > outputs/401/pruned-03.vcf
+```
