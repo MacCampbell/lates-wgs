@@ -123,13 +123,13 @@ Can run like this:
 out<-read_csv("outputs/1201/aa-PofZ.csv", col_names = c("Sequence ID","Region","NoName","P0","P1","F1","F2","0-BX","1-BX"), skip=1)
 
 long<-out %>% pivot_longer(cols = 4:9, names_to = c("Class"), values_to = c("Prob"))
+long$Region<-gsub("-SU","-K",long$Region)
 
 
 long$Region<-factor(long$Region, levels=c("Queensland","Northern-Territory","Papua-New-Guinea",
                                            "Indonesia-K","Indonesia-SJ","Indonesia-SU","Philippines",
                                               "Vietnam","Cambodia","Thailand", "Bangladesh",
                                               "India-Eastern-Coast","India-Western-Coast"))
-
 long$Class<-factor(long$Class, levels=c("P0","P1","F1","F2","0-BX","1-BX"))
 l2<-long %>% arrange(Region)
 l2$`Sequence ID`<-as.factor(l2$`Sequence ID`)
@@ -151,7 +151,8 @@ ggplot(l2) +
   theme_bw()+
   theme(panel.grid=element_blank()) +
   theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
-  xlab("Sequence ID")
+  xlab("Sequence ID") +
+  theme(strip.text=element_text(angle=45, size=8))
 
 
 ggsave("outputs/1201/trial-new-hybrids.pdf", width=12, height=6)
