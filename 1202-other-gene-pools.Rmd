@@ -48,8 +48,8 @@ Downsample
 gl2<-gl[gl$pop %in% c("Cambodia","Indonesia-SJ","Vietnam", "Thailand","Philippines",
                       "India-Eastern-Coast","India-Western-Coast","Bangladesh"),]
 
-gl2<-gl[gl$pop %in% c("Cambodia","Thailand","Indonesia-SJ",
-                      "India-Eastern-Coast","India-Western-Coast","Bangladesh"),]
+gl2<-gl[gl$pop %in% c("Cambodia","Thailand","Indonesia-SJ","Indonesia-K","Indonesia-SU",
+                      "Queensland","Northern-Territory","Papua-New-Guinea"),]
 ```
 
 gl2<-gl[gl$pop %in% c("India Eastern Coast","India Western Coast","Cambodia"),]
@@ -81,7 +81,8 @@ structure$plot
 
 ```{r}
 hyb <- gl.nhybrids(gl3,
-p0=c("Indian-Western-Coast","Bangladesh","India-Eastern-Coast"),
+p0=c("Queensland","Northern-Territory","Papua-New-Guinea"),
+p1=c("Indonesia-K","Indonesia-SU"),
 method="AvgPIC",
 nhyb.directory="~/github/newhybrids", # Specify as necessary
 outpath="~/github/lates-wgs/outputs/1202",  # Specify as necessary, usually getwd() [= workspace]
