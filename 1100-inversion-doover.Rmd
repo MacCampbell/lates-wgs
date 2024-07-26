@@ -16,7 +16,7 @@ library(phytools)
 library(tanggle)
 library(phangorn)
 library(viridis)
-library(ggpubr)
+library(ggrepel)
 ```
 
 We're going to redo the analyses of Campbell and Becker without inversions to see if it meaningfully changes anything. 
@@ -36,10 +36,8 @@ srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 
 srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1100/60-ibs-90.beagle.gz -K 2 -o outputs/1100/60-K2 &
 srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1100/60-ibs-90.beagle.gz -K 3 -o outputs/1100/60-K3 &
-srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1100/60-ibs-90.beagle.gz -K 4 -o outputs/1100/60-K4 &
-srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1100/60-ibs-90.beagle.gz -K 5 -o outputs/1100/60-K5 &
-
-
+srun -p high -t 08:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1100/60-ibs-90.beagle.gz -K 4 -o outputs/1100/60-K4 &
+srun -p high -t 08:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1100/60-ibs-90.beagle.gz -K 5 -o outputs/1100/60-K5 &
 srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1100/60-ibs-90.beagle.gz -K 6 -o outputs/1100/60-K6 &
 
 # Generate GLS without doIBS
@@ -291,7 +289,7 @@ ggplot(rdf) +
 }
 
 
-k2<-PlotAdmixNoLabs2("outputs/400/60-K2.qopt", meta)
+k2<-PlotAdmixNoLabs2("outputs/1100/60-K2.qopt", meta)
 k2
 ```
 
@@ -348,7 +346,7 @@ ggplot(rdf) +
   theme(axis.ticks.x = element_blank())
 
 }
-k3<-PlotAdmixNoLabs3("outputs/400/60-K3.qopt", meta)
+k3<-PlotAdmixNoLabs3("outputs/1100/60-K3.qopt", meta)
 k3
 ```
 

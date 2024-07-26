@@ -36,11 +36,9 @@ srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 	
 
 srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1200/60-ibs-90.beagle.gz -K 2 -o outputs/1200/60-K2 &
-srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1200/60-ibs-90.beagle.gz -K 3 -o outputs/1200/60-K3 &
-srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1200/60-ibs-90.beagle.gz -K 4 -o outputs/1200/60-K4 &
-srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1200/60-ibs-90.beagle.gz -K 5 -o outputs/1200/60-K5 &
-
-
+srun -p high -t 07:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1200/60-ibs-90.beagle.gz -K 3 -o outputs/1200/60-K3 &
+srun -p high -t 07:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1200/60-ibs-90.beagle.gz -K 4 -o outputs/1200/60-K4 &
+srun -p high -t 07:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1200/60-ibs-90.beagle.gz -K 5 -o outputs/1200/60-K5 &
 srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1200/60-ibs-90.beagle.gz -K 6 -o outputs/1200/60-K6 &
 
 # Generate GLS without doIBS
@@ -237,6 +235,9 @@ PlotAdmix("outputs/1200/60-K4.qopt", meta)
 PlotAdmix("outputs/1200/60-K5.qopt", meta)
 ```
 
+```{r}
+PlotAdmix("outputs/1200/60-K6.qopt", meta)
+```
 
 ```{r}
 PlotAdmixNoLabs2<- function(file, meta) {
@@ -292,7 +293,7 @@ ggplot(rdf) +
 }
 
 
-k2<-PlotAdmixNoLabs2("outputs/400/60-K2.qopt", meta)
+k2<-PlotAdmixNoLabs2("outputs/1200/60-K2.qopt", meta)
 k2
 ```
 
@@ -349,7 +350,7 @@ ggplot(rdf) +
   theme(axis.ticks.x = element_blank())
 
 }
-k3<-PlotAdmixNoLabs3("outputs/400/60-K3.qopt", meta)
+k3<-PlotAdmixNoLabs3("outputs/1200/60-K3.qopt", meta)
 k3
 ```
 
@@ -483,7 +484,7 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 
 ```
 	-> Number of sites retained after filtering: 3327142 
-	-> After removal of inversion regions
+	-> After removal of inversion regions 2879219
 
 Creating a vcf
 
@@ -493,9 +494,15 @@ plink --ped plink-binary.ped --map plink-binary.map --recode vcf --allow-extra-c
 bgzip plink.vcf 
 tabix plink.vcf.gz
 
-#renaming vcf
+
+#renaming vcf bcftools/1.13
+
 bcftools reheader --samples bamlists/60-sample-names.txt -o outputs/1200/renamed.vcf.gz outputs/1200/plink.vcf.gz
 
-bcftools +prune -l 0.20 -w 10000 outputs/1200/renamed.vcf.gz > outputs/1200/pruned.vcf
-bcftools +prune -l 0.30 -w 10000 outputs/1200/renamed.vcf.gz > outputs/1200/pruned-03.vcf
+#--nsites-per-win 
+bcftools +prune -m 0.20 -w 100kb outputs/1200/renamed.vcf.gz > outputs/1200/pruned.vcf
+bcftools +prune -m 0.30 -w 50kb --nsites-per-win 1 outputs/1200/renamed.vcf.gz > outputs/1200/pruned.vcf
+
+
+bcftools +prune -m 0.30 -w 100kb outputs/1200/renamed.vcf.gz > outputs/1200/pruned-03.vcf
 ```

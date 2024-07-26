@@ -1,0 +1,125 @@
+---
+title: "1203-radseq"
+output: html_document
+date: "2024-07-26"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message=FALSE)
+```
+
+```{r}
+meta<-read_csv("meta/190.csv")
+```
+
+Excluding inversion and pruning 
+```{sh, eval=FALSE}
+bcftools view -r NC_066833.1,NC_066834.1,NC_066836.1,NC_066838.1,NC_066839.1,NC_066840.1,NC_066841.1,NC_066842.1,NC_066843.1,NC_066844.1,NC_066845.1,NC_066846.1,NC_066847.1,NC_066848.1,NC_066849.1,NC_066850.1,NC_066851.1,NC_066853.1,NC_066854.1,NC_066855.1,NC_066856.1  outputs/607/snps-05.vcf.gz | bcftools +prune -m 0.30 -w 50kb --nsites-per-win 1 > outputs/1203/pruned.vcf
+
+```
+
+82088 variants reduced to 7277
+
+
+```{r}
+m<-meta
+m$Region<-gsub(" ","-",m$Region)
+vcf <-read.vcfR("outputs/1203/pruned.vcf") 
+gl<-vcfR2genlight(vcf)
+gl$pop<-as.factor(m$Region)
+```
+Downsample here
+```{r}
+
+gl2<-gl[gl$pop %in% c("INA","MAL","THA","India-Eastern-Coast","India-Western-Coast","Bangladesh","Cambodia","Indonesia-SJ",
+                      "Thailand","Vietnam","Philippines","Indonesia-SU","Indonesia-K"),]
+
+```
+
+
+
+
+```{r}
+glx<-gl2
+glx <- gl.compliance.check(glx) 
+
+gl3<-gl.filter.maf(glx, threshold = 0.25)
+gl3<-gl.filter.allna(gl3)
+gl3
+```
+
+```{r}
+snp<-import.snpR.data(gl3)
+```
+
+```{r}
+structure<-plot_structure(snp, facet=c("pop"), #facet.order = c("Vietnam","Cambodia","Thailand","Indonesia-SJ",
+                     # "Bangladesh","India-Eastern-Coast","India-Western-Coast"),
+               k=c(2,3,4))
+```
+
+
+```{r}
+structure$plot
+```
+
+```{r}
+hyb <- gl.nhybrids(gl3,
+p0=c("India-Western-Coast","India-Eastern-Coast","Bangladesh"),
+p1=c("Indonesia-K","Indonesia-SU"),
+method="AvgPIC",
+nhyb.directory="~/github/newhybrids", # Specify as necessary
+outpath="~/github/lates-wgs/outputs/1203",  # Specify as necessary, usually getwd() [= workspace]
+BurnIn=10000,
+sweeps=10000,
+verbose=3,
+plot=FALSE)
+
+```
+
+
+Can run like this: 
+
+(base) Macs-MacBook-Pro-2:newhybrids mac$ ./newhybsng -d ~/github/lates-wgs/outputs/1201/nhyb.txt  --no-gui
+
+```{r}
+out<-read_csv("outputs/1203/aa-PofZ.csv", col_names = c("Sequence ID","Region","NoName","P0","P1","F1","F2","0-BX","1-BX"), skip=1)
+
+long<-out %>% pivot_longer(cols = 4:9, names_to = c("Class"), values_to = c("Prob"))
+
+
+long$Region<-factor(long$Region, levels=c("Queensland","Northern-Territory","Papua-New-Guinea",
+                                           "Indonesia-K","Indonesia-SU","Indonesia-SJ","INA","MAL","Philippines",
+                                              "Vietnam","Cambodia","Thailand","THA", "Bangladesh",
+                                              "India-Eastern-Coast","India-Western-Coast"))
+
+long$Class<-factor(long$Class, levels=c("P0","P1","F1","F2","0-BX","1-BX"))
+l2<-long %>% arrange(Region)
+l2$`Sequence ID`<-as.factor(l2$`Sequence ID`)
+
+l2
+```
+
+COMM_LINE_OPTS: GtypFreqCategory : 0  :  Pure_0  :  1.000000  0.000000  0.000000    
+COMM_LINE_OPTS: GtypFreqCategory : 1  :  Pure_1  :  0.000000  0.000000  1.000000    
+COMM_LINE_OPTS: GtypFreqCategory : 2  :  F1  :  0.000000  1.000000  0.000000      
+COMM_LINE_OPTS: GtypFreqCategory : 3  :  F2  :  0.250000  0.500000  0.250000      
+COMM_LINE_OPTS: GtypFreqCategory : 4  :  0_BX  :  0.500000  0.500000  0.000000       
+COMM_LINE_OPTS: GtypFreqCategory : 5  :  1_BX  :  0.000000  0.500000  0.500000       
+```{r}
+ggplot(l2) + 
+  geom_tile(aes(x=`Sequence ID`, y=Class, fill=Prob)) +
+  scale_fill_viridis_c(direction=-1) +
+  facet_grid(.~Region, scales="free_x", space="free" ) +
+  theme_bw()+
+  theme(panel.grid=element_blank()) +
+  theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
+  xlab("Sequence ID")
+
+
+ggsave("outputs/1203/rad-seq.pdf", width=12, height=6)
+```
+
+```{r}
+```
+

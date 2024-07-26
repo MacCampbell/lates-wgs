@@ -1,0 +1,166 @@
+---
+title: "1201-no-inv-newhybrids"
+output: html_document
+date: "2024-07-25"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+
+```{r}
+library(tidyverse)
+library(snpR)
+library(adegenet)
+library(pcadapt)
+library(ggpubr)
+library(dartR)
+library(vcfR)
+```
+
+
+
+
+```{r}
+meta<-read_csv("meta/60-Indo-split.csv")
+meta$Region<-gsub(" ","-", meta$Region)
+meta$Region<-factor(meta$Region, levels=c("Queensland","Northern-Territory","Papua-New-Guinea",
+                                           "Indonesia-K","Indonesia-SJ","Indonesia-SU","Philippines",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India-Eastern-Coast","India-Western-Coast"))
+
+
+min(meta$Coverage)
+max(meta$Coverage)
+mean(meta$Coverage)
+round(median(meta$Coverage),2)
+```
+
+```{sh, eval=FALSE}
+bcftools view -r NC_066833.1,NC_066834.1,NC_066836.1,NC_066838.1,NC_066839.1,NC_066840.1,NC_066841.1,NC_066842.1,NC_066843.1,NC_066844.1,NC_066845.1,NC_066846.1,NC_066847.1,NC_066848.1,NC_066849.1,NC_066850.1,NC_066851.1,NC_066853.1,NC_066854.1,NC_066855.1,NC_066856.1 outputs/401/pruned.vcf.gz > outputs/1201/no-inv.vcf
+
+bcftools view -r NC_066835.1:1-17500000 outputs/401/pruned.vcf.gz > outputs/1201/inv.vcf
+```
+
+
+```{r}
+m<-meta
+vcf <-read.vcfR("outputs/1200/pruned.vcf") # from recalled and pruned snps in 1200
+gl<-vcfR2genlight(vcf)
+gl$pop<-as.factor(m$Region)
+```
+
+Downsample
+```{r}
+
+#gl2<-gl[gl$pop %in% c("Indonesia-SJ","Vietnam","Cambodia","Thailand",
+ #                     "Bangladesh","India Eastern Coast","Indian Western Cost"),]
+
+#Checking status of Thai fish
+#gl2<-gl[gl$pop %in% c("Vietnam","Cambodia","Thailand","Indonesia-SJ","Philippines","Indonesia-SU","Indonesia-K",
+ #                    "Bangladesh","India-Eastern-Coast","India-Western-Coast"),]
+
+#gl2<-gl[gl$pop %in% c("Vietnam","Cambodia","Thailand","Indonesia-SJ","Indonesia-SU","Indonesia-K",
+ #                    "Bangladesh","India-Eastern-Coast","India-Western-Coast"),]
+
+
+
+gl2<-gl[gl$pop %in% c("Cambodia","Indonesia-SJ","Indonesia-K","Indonesia-SU", "Thailand","Vietnam","Philippines",
+                     "Bangladesh","India-Eastern-Coast","India-Western-Coast"),]
+
+```
+
+gl2<-gl[gl$pop %in% c("India Eastern Coast","India Western Coast","Cambodia"),]
+
+
+
+```{r}
+glx<-gl2
+glx <- gl.compliance.check(glx) 
+```
+```{r}
+gl3<-gl.filter.maf(glx, threshold = 0.25)
+gl3<-gl.filter.allna(gl3)
+gl3
+```
+
+```{r}
+snp<-import.snpR.data(gl3)
+```
+
+```{r}
+structure<-plot_structure(snp, facet=c("pop"), #facet.order = c("Vietnam","Cambodia","Thailand","Indonesia-SJ",
+                     # "Bangladesh","India-Eastern-Coast","India-Western-Coast"),
+               k=c(2,3,4))
+```
+
+```{r}
+structure$plot
+```
+
+```{r}
+hyb <- gl.nhybrids(gl3,
+p0=c("India-Western-Coast","Bangladesh"),
+p1=c("Indonesia-K","Indonesia-SU"),
+threshold=0.01,
+method="AvgPIC",
+nhyb.directory="~/github/newhybrids", # Specify as necessary
+outpath="~/github/lates-wgs/outputs/1201",  # Specify as necessary, usually getwd() [= workspace]
+BurnIn=100000,
+sweeps=50000,
+verbose=3,
+plot=FALSE)
+
+```
+
+
+Can run like this: 
+
+(base) Macs-MacBook-Pro-2:newhybrids mac$ ./newhybsng -d ~/github/lates-wgs/outputs/1201/nhyb.txt  --no-gui
+
+```{r}
+out<-read_csv("outputs/1201/aa-PofZ.csv", col_names = c("Sequence ID","Region","NoName","P0","P1","F1","F2","0-BX","1-BX"), skip=1)
+
+long<-out %>% pivot_longer(cols = 4:9, names_to = c("Class"), values_to = c("Prob"))
+
+
+long$Region<-factor(long$Region, levels=c("Queensland","Northern-Territory","Papua-New-Guinea",
+                                           "Indonesia-K","Indonesia-SJ","Indonesia-SU","Philippines",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India-Eastern-Coast","India-Western-Coast"))
+
+long$Class<-factor(long$Class, levels=c("P0","P1","F1","F2","0-BX","1-BX"))
+l2<-long %>% arrange(Region)
+l2$`Sequence ID`<-as.factor(l2$`Sequence ID`)
+
+l2 %>% filter(Region=="Bangladesh")
+```
+
+COMM_LINE_OPTS: GtypFreqCategory : 0  :  Pure_0  :  1.000000  0.000000  0.000000    
+COMM_LINE_OPTS: GtypFreqCategory : 1  :  Pure_1  :  0.000000  0.000000  1.000000    
+COMM_LINE_OPTS: GtypFreqCategory : 2  :  F1  :  0.000000  1.000000  0.000000      
+COMM_LINE_OPTS: GtypFreqCategory : 3  :  F2  :  0.250000  0.500000  0.250000      
+COMM_LINE_OPTS: GtypFreqCategory : 4  :  0_BX  :  0.500000  0.500000  0.000000       
+COMM_LINE_OPTS: GtypFreqCategory : 5  :  1_BX  :  0.000000  0.500000  0.500000       
+```{r}
+ggplot(l2) + 
+  geom_tile(aes(x=`Sequence ID`, y=Class, fill=Prob)) +
+  scale_fill_viridis_c(direction=-1) +
+  facet_grid(.~Region, scales="free_x", space="free" ) +
+  theme_bw()+
+  theme(panel.grid=element_blank()) +
+  theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
+  xlab("Sequence ID")
+
+
+ggsave("outputs/1201/trial-new-hybrids.pdf", width=12, height=6)
+```
+
+
+The cambodian fish with mtdna are... 598 and 599 These are consistently F2s
+
+```{r}
+```
+
+

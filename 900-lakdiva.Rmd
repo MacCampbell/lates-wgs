@@ -26,6 +26,7 @@ Total	964,548,673	291.29 Gb
 
 ```{r}
 library(tidyverse)
+library(dartR)
 library(ggtree)
 library(phangorn)
 library(tanggle)
@@ -446,9 +447,18 @@ plink --ped plink-binary.ped --map plink-binary.map --recode vcf --allow-extra-c
 bgzip plink.vcf 
 tabix plink.vcf.gz
 
-#renaming vcf in 403 locally
+#renaming vcf   locally
 bcftools view -r NC_066833.1,NC_066834.1,NC_066836.1,NC_066838.1,NC_066839.1,NC_066840.1,NC_066841.1,NC_066842.1,NC_066843.1,NC_066844.1,NC_066845.1,NC_066846.1,NC_066847.1,NC_066848.1,NC_066849.1,NC_066850.1,NC_066851.1,NC_066853.1,NC_066854.1,NC_066855.1,NC_066856.1 outputs/900/plink.vcf.gz | bcftools reheader --samples bamlists/71.names   | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.20 -w 10000  > outputs/900/pruned.vcf
 ```
+
+
+
+
+
+
+
+
+
 
 locally
 ```{sh, eval=FALSE}
@@ -503,6 +513,163 @@ tabix snps-wgs-cal-down-plink.vcf.gz
 
 #renaming vcf in 900 locally
 bcftools view -r NC_066833.1,NC_066834.1,NC_066836.1,NC_066838.1,NC_066839.1,NC_066840.1,NC_066841.1,NC_066842.1,NC_066843.1,NC_066844.1,NC_066845.1,NC_066846.1,NC_066847.1,NC_066848.1,NC_066849.1,NC_066850.1,NC_066851.1,NC_066853.1,NC_066854.1,NC_066855.1,NC_066856.1 outputs/900/snps-wgs-cal-down-plink.vcf.gz| bcftools reheader --samples bamlists/70.names   | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.20 -w 10000  > outputs/900/snps-wgs-cal-down-plink-pruned.vcf
+
+bcftools view -r NC_066833.1,NC_066834.1,NC_066836.1,NC_066838.1,NC_066839.1,NC_066840.1,NC_066841.1,NC_066842.1,NC_066843.1,NC_066844.1,NC_066845.1,NC_066846.1,NC_066847.1,NC_066848.1,NC_066849.1,NC_066850.1,NC_066851.1,NC_066853.1,NC_066854.1,NC_066855.1,NC_066856.1 outputs/900/snps-wgs-cal-down-plink.vcf.gz| bcftools reheader --samples bamlists/70.names   | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.30 -w 50kb --nsites-per-win 1 > outputs/900/newhybrids.vcf
+
+
+bcftools view -r NC_066835.1:1-17500000 outputs/900/snps-wgs-cal-down-plink.vcf.gz| bcftools reheader --samples bamlists/70.names   | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.30 -w 50kb --nsites-per-win 1 > outputs/900/newhybrids-lca03inv.vcf
+
+bcftools view -r NC_066837.1:5247652- outputs/900/snps-wgs-cal-down-plink.vcf.gz| bcftools reheader --samples bamlists/70.names   | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.30 -w 50kb --nsites-per-win 1 > outputs/900/newhybrids-lca05inv.vcf
+```
+
+## Inversion zone
+
+```{r}
+m<-m70
+#vcf <-read.vcfR("outputs/900/newhybrids.vcf")
+vcf<-read.vcfR("outputs/900/newhybrids-lca05inv.vcf")
+gl<-vcfR2genlight(vcf)
+gl$pop<-as.factor(m$Region)
+```
+
+Downsample
+```{r}
+
+#Checking status of Thai fish
+gl2<-gl[gl$pop %in% c("Vietnam","Cambodia","Thailand","Indonesia-SU","Indonesia-K","Indonesia-SJ", "Philippines",
+                     "Bangladesh","India Eastern Coast","Sri Lanka", "India Western Coast"),]
+
+glx<-gl2
+glx <- gl.compliance.check(glx) 
+
+
+gl3<-gl.filter.maf(glx, threshold = 0.05)
+gl3<-gl.filter.allna(gl3)
+gl3
+```
+
+```{r, eval=FALSE}
+hyb <- gl.nhybrids(gl3,
+p0=c("India Western Coast"),
+method="AvgPIC",
+threshold = 0,
+nhyb.directory="~/github/newhybrids", # Specify as necessary
+outpath="~/github/lates-wgs/outputs/900",  # Specify as necessary, usually getwd() [= workspace]
+BurnIn=10000,
+sweeps=10000,
+verbose=3,
+plot=FALSE)
+
+```
+
+
+```{r}
+out<-read_csv("outputs/900/aa-PofZ.csv",col_names = c("Sequence ID","Region","NoName","P0","P1","F1","F2","F1xP0","F1xP1"), skip=1)
+out %>% arrange(Region)
+```
+
+```{r}
+long<-out %>% pivot_longer(cols = 4:9, names_to = c("Class"), values_to = c("Prob"))
+long$Class<-gsub("NA","P0",long$Class)
+
+long$Region<-factor(long$Region, levels=c("Queensland","Northern Territory","Papua New Guinea",
+                                           "Indonesia-K","Indonesia-SJ","Indonesia-SU","Philippines",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India Eastern Coast","Sri Lanka", "India Western Coast"))
+
+long$Class<-factor(long$Class, levels=c("P0","P1","F1","F2","F1xP0","F1xP1"))
+l2<-long %>% arrange(Region)
+l2$`Sequence ID`<-as.factor(l2$`Sequence ID`)
+```
+
+```{r}
+ggplot(l2) + 
+  geom_tile(aes(x=`Sequence ID`, y=Class, fill=Prob)) +
+  scale_fill_viridis_c(direction=-1) +
+  facet_grid(.~Region, scales="free_x", space="free" ) +
+  theme_bw()+
+  theme(panel.grid=element_blank()) +
+  theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
+  xlab("Sequence ID")
+
+
+ggsave("outputs/900/trial-new-hybrids-lca05-inversion.pdf", width=12, height=6)
+```
+
+Hey! That matches our expectations pretty well!
+All F1s.
+
+## Genome-wide
+
+```{r}
+m<-m70
+vcf <-read.vcfR("outputs/900/newhybrids.vcf")
+gl<-vcfR2genlight(vcf)
+gl$pop<-as.factor(m$Region)
+```
+
+Downsample
+```{r}
+
+#Checking status of Thai fish
+gl2<-gl[gl$pop %in% c("Vietnam","Cambodia","Thailand","Indonesia-SU","Indonesia-K","Indonesia-SJ", "Philippines",
+                     "Bangladesh","India Eastern Coast","Sri Lanka", "India Western Coast"),]
+
+glx<-gl2
+glx <- gl.compliance.check(glx) 
+
+
+gl3<-gl.filter.maf(glx, threshold = 0.2)
+gl3<-gl.filter.allna(gl3)
+gl3
+```
+
+```{r, eval=FALSE}
+hyb <- gl.nhybrids(gl3,
+p0=c("India Western Coast"),
+method="AvgPIC",
+threshold = 0,
+nhyb.directory="~/github/newhybrids", # Specify as necessary
+outpath="~/github/lates-wgs/outputs/900",  # Specify as necessary, usually getwd() [= workspace]
+BurnIn=10000,
+sweeps=10000,
+verbose=3,
+plot=FALSE)
+
+```
+
+
+```{r}
+out<-read_csv("outputs/900/aa-PofZ.csv",col_names = c("Sequence ID","Region","NoName","P0","P1","F1","F2","F1xP0","F1xP1"), skip=1)
+out %>% arrange(Region)
+```
+
+```{r}
+long<-out %>% pivot_longer(cols = 4:9, names_to = c("Class"), values_to = c("Prob"))
+long$Class<-gsub("NA","P0",long$Class)
+
+long$Region<-factor(long$Region, levels=c("Queensland","Northern Territory","Papua New Guinea",
+                                           "Indonesia-K","Indonesia-SJ","Indonesia-SU","Philippines",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India Eastern Coast","Sri Lanka", "India Western Coast"))
+
+long$Class<-factor(long$Class, levels=c("P0","P1","F1","F2","F1xP0","F1xP1"))
+l2<-long %>% arrange(Region)
+l2$`Sequence ID`<-as.factor(l2$`Sequence ID`)
+```
+
+```{r}
+ggplot(l2) + 
+  geom_tile(aes(x=`Sequence ID`, y=Class, fill=Prob)) +
+  scale_fill_viridis_c(direction=-1) +
+  facet_grid(.~Region, scales="free_x", space="free" ) +
+  theme_bw()+
+  theme(panel.grid=element_blank()) +
+  theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
+  xlab("Sequence ID")
+
+
+ggsave("outputs/900/trial-new-hybrids.pdf", width=12, height=6)
 ```
 
 
