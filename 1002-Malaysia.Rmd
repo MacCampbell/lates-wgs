@@ -1,0 +1,103 @@
+---
+title: "1002-Malaysia"
+output: html_document
+date: "2024-07-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+
+```{r}
+library(tidyverse)
+library(raster)
+library(mapdata)
+library(ggrepel)
+```
+
+```{r}
+
+malaysia<-map_data("world",region="Malaysia")
+peninsula<-malaysia %>% filter(long<105)
+dg<-malaysia
+```
+
+```{r}
+sites<-read_tsv("outputs/1002/sample-sites.tsv")
+sites
+````
+
+```{r}
+ggplot(peninsula) +
+  geom_polygon(aes(x=long, y=lat, group=group), size=1, color="black", fill="NA", linewidth=0.5) +
+  geom_point(data=sites, aes(x=Longitude, y=Latitude, fill=`Drainage`), pch=21, alpha=0.75) +
+  geom_text_repel(data=sites, aes(x=Longitude, y=Latitude, label=paste0(Drainage,"\n",Location))) +
+  scale_fill_viridis_d(option="H") + 
+  coord_fixed(ratio=1.3)
+
+```
+
+
+
+
+```{r}
+# here eric implements something and I copy it
+tidy_subset <- function(x, longlat) {
+  x@data$id <- rownames(x@data)
+  x.f <- broom::tidy(x) %>%
+    dplyr::left_join(., x@data, by = "id") %>%
+    dplyr::tbl_df() %>%
+    filter(long > longlat[1],
+           long < longlat[2],
+           lat > longlat[3],
+           lat < longlat[4])
+}
+
+```
+
+```{r}
+domain <- c(min(dg$long)-4, max(dg$long)+4, min(dg$lat)-4, max(dg$lat)+4)
+```
+
+
+```{r, eval=FALSE}
+nat.earth<-stack("~/github/fish-lake/data/earth/NE2_HR_LC_SR_W_DR/NE2_HR_LC_SR_W_DR.tif")
+
+nat.crop <- crop(nat.earth, y=extent(domain))
+
+rast.table <- data.frame(xyFromCell(nat.crop, 1:ncell(nat.crop)),
+                         getValues(nat.crop/255))
+
+
+rast.table$rgb <- with(rast.table, rgb(NE2_HR_LC_SR_W_DR_1,
+                                       NE2_HR_LC_SR_W_DR_2,
+                                       NE2_HR_LC_SR_W_DR_3,
+                                       1))
+
+save(rast.table, file="outputs/1002/rast.rda")
+```
+
+
+
+
+```{r}
+load("outputs/1002/rast.rda")
+ggplot() +
+  geom_raster(data = rast.table, mapping = aes(x = x, y = y), fill = rast.table$rgb, interpolate = TRUE)  +
+  geom_polygon(data=malaysia,aes(x=long, y=lat, group=group), size=1, color="black", fill="NA", linewidth=0.25) +
+  geom_point(data=sites, aes(x=Longitude, y=Latitude, fill=`Drainage`), pch=21, alpha=0.75) +
+  geom_text_repel(data=sites, aes(x=Longitude, y=Latitude, label=paste0(Drainage,"\n",Location)), size=3) +
+  scale_fill_viridis_d(option="H") + 
+  ylab("Latitude\n") +
+  xlab("\nLongitude") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  theme(legend.position = "none") +
+  coord_fixed(1.3, xlim=c(97,108), ylim=c(0,9))
+ggsave("outputs/1002/potential-sample-sites.jpeg")
+```
+
+Code for meeting    
+
+7p3k3td
