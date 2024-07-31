@@ -43,6 +43,7 @@ paste files.txt newnames.txt | awk '{print "mv " $1 " " $2}' > commands
 m81<-read_csv("meta/81-Indo-split.csv")
 m81 %>% filter(Region %in% c("Mainstream","OceanPick"))
 ```
+## Trim   
 
 ```{r}
 coms<-m81 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% mutate(Command1=paste0("seqtk trimfq -e 50 data/hatcheries/", BioSample, "_R1.fastq.gz | gzip > data/hatch-trim/", BioSample, "_R1.fastq.gz")) %>% mutate(Command2=paste0("seqtk trimfq -e 50 data/hatcheries/", Run, "_R2.fastq.gz | gzip > data/lakdiva-trim/", Run, "_R2.fastq.gz")) %>% select(Command1, Command2)
@@ -50,4 +51,23 @@ coms<-m81 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% mutate(Command
 c<-c(coms$Command1, coms$Command2)
 c %>% as_tibble() %>% write_tsv("901.1-trim.sh", col_names = FALSE)
 ```
-## Trim   
+
+module load seqtk/1.3 
+module load parallel
+
+srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 901.1-trim.sh
+
+Set up to downsample to ~7X 
+
+
+```{r}
+down <- m81 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% mutate(Frac=7/Coverage) %>% 
+  mutate(Command = paste0("samtools view -bs ", Frac, " ", Path, " > ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam"))
+
+down %>% select(Command) %>% write_tsv(file="901.1-downsample-sl.sh", col_names = FALSE)
+```
+
+module load parallel
+srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 900.1-downsample-sl.sh
+
+don't forget to index!!!
