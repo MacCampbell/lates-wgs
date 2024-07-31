@@ -1,0 +1,53 @@
+---
+title: "901-hatchery-strains"
+output: html_document
+date: "2024-07-31"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+
+```{r}
+library(tidyverse)
+library(dartR)
+library(ggtree)
+library(phangorn)
+library(tanggle)
+library(phytools)
+library(ggpubr)
+library(ggrepel)
+```
+
+Validating checksums
+md5sum -c checksums.md5
+
+all OK!     
+
+Mainstream-1 Mainstream-2 Mainstream-3 Mainstream-4 Mainstream-5
+
+OceanPick-1 OceanPick-11 OceanPick-15 OceanPick-16 OceanPick-17 OceanPick-20 OceanPick-3 OceanPick-5 OceanPick-8
+
+Include with meta, align,
+ bash ../../doAlign-zipped.sh samples.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
+
+Also, these data are 150 bp pe sequencing, most of the data is 100 bp pe
+Trim off 50 bp, can use seqtk
+
+perl -pe 's/_\d+.+_R/_R/g' 
+
+paste files.txt newnames.txt | awk '{print "mv " $1 " " $2}' > commands
+
+```{r}
+m81<-read_csv("meta/81-Indo-split.csv")
+m81 %>% filter(Region %in% c("Mainstream","OceanPick"))
+```
+
+```{r}
+coms<-m81 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% mutate(Command1=paste0("seqtk trimfq -e 50 data/hatcheries/", BioSample, "-R1.fastq.gz | gzip > data/hatch-trim/", BioSample, "-R1.fastq.gz")) %>% mutate(Command2=paste0("seqtk trimfq -e 50 data/hatcheries/", BioSample, "-R2.fastq.gz | gzip > data/hatch-trim/", BioSample, "-R2.fastq.gz")) %>% select(Command1, Command2)
+
+c<-c(coms$Command1, coms$Command2)
+c %>% as_tibble() %>% write_tsv("901.1-trim.sh", col_names = FALSE)
+```
+## Trim   

@@ -873,3 +873,120 @@ srun -p high -t 06:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -li
 ```{r}
 PlotAdmix("outputs/900/lak-K2.qopt", lak)
 ```
+
+## Silly trial
+
+
+```{r}
+m<-read_csv("~/Downloads/m80-sorted.csv")
+
+m$pop<-gsub("0","F",m$Pheno)
+m$pop<-gsub("1","M",m$pop)
+m$pop<-as.factor(m$pop)
+
+#(base) ➜  Downloads bcftools view -r NC_061078.1:15021030-15313438 reordered.vcf.gz | bcftools +fill-tags > sub.vcf 
+#bcftools view -r NC_061078.1:15021030-15313438 reordered.vcf.gz | bcftools +fill-tags | bcftools view -i 'MAF<0.35' > sub.vcf
+vcf <-read.vcfR("~/Downloads/sub.vcf")
+gl<-vcfR2genlight(vcf)
+gl$pop<-as.factor(m$pop)
+```
+
+Downsample
+```{r}
+gl$ploidy<-as.integer(rep(2,80))
+glx<-gl
+glx <- gl.compliance.check(glx) 
+
+
+
+gl3<-gl.filter.maf(glx, threshold = 0.15)
+
+gl3<-gl.filter.allna(gl3)
+gl3
+```
+
+```{r, eval=FALSE}
+hyb <- gl.nhybrids(gl3,
+method="AvgPIC",
+p0="F",
+nhyb.directory="~/github/newhybrids", # Specify as necessary
+outpath="~/Downloads",  # Specify as necessary, usually getwd() [= workspace]
+BurnIn=50000,
+sweeps=900000,
+verbose=3,
+plot=FALSE)
+
+```
+
+
+
+```{r}
+out<-read_csv("~/Downloads/aa-PofZ.csv",col_names = c("Sequence ID","Region","NoName","P0","P1","F1","F2","F1xP0","F1xP1"), skip=1)
+out %>% filter(Region=="M")
+```
+
+```{r}
+long<-out %>% pivot_longer(cols = 4:9, names_to = c("Class"), values_to = c("Prob"))
+
+long$Class<-factor(long$Class, levels=c("P0","P1","F1","F2","F1xP0","F1xP1"))
+l2<-long %>% arrange(Region)
+l2$`Sequence ID`<-as.factor(l2$`Sequence ID`)
+```
+
+```{r}
+ggplot(l2) + 
+  geom_tile(aes(x=`Sequence ID`, y=Class, fill=Prob)) +
+  scale_fill_viridis_c(direction=-1) +
+  facet_grid(.~Region, scales="free_x", space="free" ) +
+  theme_bw()+
+  theme(panel.grid=element_blank()) +
+  theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
+  xlab("Sequence ID")
+```
+
+Assigment of females to p0
+
+```{r}
+out %>% group_by(Region) %>% summarize(Count=n())
+out %>% filter(Region=="F") %>% filter(P0>0.9) %>% summarize(Count=n())
+out %>% filter(Region=="M") %>% filter(F1>0.9) %>% summarize(Count=n())
+
+```
+
+34/38 females
+22/42 males
+
+```{r}
+out %>% filter(Region=="F") %>% filter(P0<0.9)
+```
+
+Pop out as males
+901071	F	NoName	0.0000	0	1.00000	0.00000	0.0000	0
+701931	F	NoName	0.0000	0	0.99988	0.00012	0.0000	0
+902671	F	NoName	0.0000	0	1.00000	0.00000	0.0000	0
+110381	F	NoName	0.0086	0	0.00000	0.00000	0.9914	0
+
+Individual heterozygosities:
+
+```{r}
+vcf <-read.vcfR("~/Downloads/top-sites.vcf")
+gl<-vcfR2genlight(vcf)
+gl$pop<-as.factor(m$pop)
+```
+
+```{r}
+snp<-import.snpR.data(gl)
+```
+
+```{r}
+hs<-calc_hs(snp)
+hs <- get.snpR.stats(hs, stats = "hs")
+hs
+```
+
+```{r}
+table<-hs$sample %>% as_tibble()
+table<-table %>% mutate(Call=ifelse(hs == 0, "Female", "Male")) 
+
+table%>% select(pop, Call) %>% group_by(pop,Call) %>% summarize(Count=n())
+```
