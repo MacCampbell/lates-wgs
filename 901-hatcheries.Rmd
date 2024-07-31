@@ -55,17 +55,22 @@ m81 %>% filter(Region %in% c("Mainstream","OceanPick"))
 merge<-m81 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% 
   mutate(Command=paste0("cat data/hatcheries/",BioSample, "_*R1.fastq.gz > data/hatcheries/", Run, "_R1.fastq.gz")) %>% select(Command) %>%
   write_tsv("901.1-merge.sh", col_names = FALSE)
+
+merge<-m81 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% 
+  mutate(Command=paste0("cat data/hatcheries/",BioSample, "_*R2.fastq.gz > data/hatcheries/", Run, "_R2.fastq.gz")) %>% select(Command) %>%
+  write_tsv("901.1-merge2.sh", col_names = FALSE)
 ```
 
 module load parallel
 
 srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=15 parallel -j 15 < 901.1-merge.sh
+srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=15 parallel -j 15 < 901.1-merge2.sh
 
 
 ## Trim   
 
 ```{r}
-coms<-m81 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% mutate(Command1=paste0("seqtk trimfq -e 50 data/hatcheries/", BioSample, "_R1.fastq.gz | gzip > data/hatch-trim/", BioSample, "_R1.fastq.gz")) %>% mutate(Command2=paste0("seqtk trimfq -e 50 data/hatcheries/", BioSample, "_R2.fastq.gz | gzip > data/lakdiva-trim/", Run, "_R2.fastq.gz")) %>% select(Command1, Command2)
+coms<-m81 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% mutate(Command1=paste0("seqtk trimfq -e 50 data/hatcheries/", Run, "_R1.fastq.gz | gzip > data/hatch-trim/", Run, "_R1.fastq.gz")) %>% mutate(Command2=paste0("seqtk trimfq -e 50 data/hatcheries/", Run, "_R2.fastq.gz | gzip > data/lakdiva-trim/", Run, "_R2.fastq.gz")) %>% select(Command1, Command2)
 
 c<-c(coms$Command1, coms$Command2)
 c %>% as_tibble() %>% write_tsv("901.1-trim.sh", col_names = FALSE)
@@ -74,7 +79,7 @@ c %>% as_tibble() %>% write_tsv("901.1-trim.sh", col_names = FALSE)
 module load seqtk/1.3 
 module load parallel
 
-srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 901.1-trim.sh
+srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=15 parallel -j 15 < 901.1-trim.sh
 
 Set up to downsample to ~7X 
 
