@@ -46,7 +46,7 @@ m81 %>% filter(Region %in% c("Mainstream","OceanPick"))
 ## Trim   
 
 ```{r}
-coms<-m81 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% mutate(Command1=paste0("seqtk trimfq -e 50 data/hatcheries/", BioSample, "_R1.fastq.gz | gzip > data/hatch-trim/", BioSample, "_R1.fastq.gz")) %>% mutate(Command2=paste0("seqtk trimfq -e 50 data/hatcheries/", Run, "_R2.fastq.gz | gzip > data/lakdiva-trim/", Run, "_R2.fastq.gz")) %>% select(Command1, Command2)
+coms<-m81 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% mutate(Command1=paste0("seqtk trimfq -e 50 data/hatcheries/", BioSample, "_R1.fastq.gz | gzip > data/hatch-trim/", BioSample, "_R1.fastq.gz")) %>% mutate(Command2=paste0("seqtk trimfq -e 50 data/hatcheries/", BioSample, "_R2.fastq.gz | gzip > data/lakdiva-trim/", Run, "_R2.fastq.gz")) %>% select(Command1, Command2)
 
 c<-c(coms$Command1, coms$Command2)
 c %>% as_tibble() %>% write_tsv("901.1-trim.sh", col_names = FALSE)
