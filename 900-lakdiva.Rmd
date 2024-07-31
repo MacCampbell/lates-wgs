@@ -77,7 +77,7 @@ module load parallel
 srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 901.1-trim.sh
 
 ```{r}
-coms<-m71 %>% filter(Region=="Sri Lanka") %>% mutate(Command1=paste0("seqtk trimfq -e 50 data/lakdiva/", Run, "_R1.fastq.gz | gzip > data/lakdiva-trim/", Run, "_R1.fastq.gz")) %>% mutate(Command2=paste0("seqtk trimfq -e 50 data/lakdiva/", Run, "_R2.fastq.gz | gzip > data/lakdiva-trim/", Run, "_R2.fastq.gz")) %>% select(Command1, Command2)
+coms<-m71 %>% filter(Region=="Sri Lanka") %>% mutate(Command1=paste0("seqtk trimfq -e 50 data/lakdiva/", Run, "-R1.fastq.gz | gzip > data/lakdiva-trim/", Run, "-R1.fastq.gz")) %>% mutate(Command2=paste0("seqtk trimfq -e 50 data/lakdiva/", Run, "-R2.fastq.gz | gzip > data/lakdiva-trim/", Run, "-R2.fastq.gz")) %>% select(Command1, Command2)
 
 c<-c(coms$Command1, coms$Command2)
 c %>% as_tibble() %>% write_tsv("900.1-trim.sh", col_names = FALSE)
