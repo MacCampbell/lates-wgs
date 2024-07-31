@@ -29,6 +29,11 @@ Mainstream-1 Mainstream-2 Mainstream-3 Mainstream-4 Mainstream-5
 
 OceanPick-1 OceanPick-11 OceanPick-15 OceanPick-16 OceanPick-17 OceanPick-20 OceanPick-3 OceanPick-5 OceanPick-8
 
+These fish were sequenced across multiple lanes, symbolically linking all files.. 
+working command
+
+ cat Mainstream-1_*R1.fastq.gz > Mainstream1_R1.fastq.gz 
+
 Include with meta, align,
  bash ../../doAlign-zipped.sh samples.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
 
@@ -43,6 +48,20 @@ paste files.txt newnames.txt | awk '{print "mv " $1 " " $2}' > commands
 m81<-read_csv("meta/81-Indo-split.csv")
 m81 %>% filter(Region %in% c("Mainstream","OceanPick"))
 ```
+## combine
+ cat Mainstream-1_*R1.fastq.gz > Mainstream1_R1.fastq.gz 
+
+```{r}
+merge<-m81 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% 
+  mutate(Command=paste0("cat data/hatcheries/",BioSample, "_*R1.fastq.gz > data/hatcheries/", Run, "_R1.fastq.gz")) %>% select(Command) %>%
+  write_tsv("901.1-merge.sh", col_names = FALSE)
+```
+
+module load parallel
+
+srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=15 parallel -j 15 < 901.1-merge.sh
+
+
 ## Trim   
 
 ```{r}
