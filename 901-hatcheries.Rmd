@@ -87,10 +87,11 @@ align.
 
  bash ../../doAlign-zipped.sh samples.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
 
+downsample, don't forget to index!!!
 
 ```{r}
 down <- m86 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% mutate(Frac=7/Coverage) %>% 
-  mutate(Command = paste0("samtools view -bs ", Frac, " ", "data/hatch-trim/",Run,".sort.flt.bam", " > ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam"))
+  mutate(Command = paste0("samtools view -bs ", Frac, " ", "data/hatch-trim/",Run,".sort.flt.bam", " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam", " ; samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam")) 
 
 down %>% select(Command) %>% write_tsv(file="901.1-downsample-sl.sh", col_names = FALSE)
 ```
@@ -98,7 +99,6 @@ down %>% select(Command) %>% write_tsv(file="901.1-downsample-sl.sh", col_names 
 module load parallel
 srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 901.1-downsample-sl.sh
 
-don't forget to index!!!
 
 
 # Generate PCA and GL file
@@ -112,7 +112,7 @@ m85 %>% select(Run) %>% write_tsv(file="bamlists/85.names", col_names = FALSE)
 
 ```{sh, eval=FALSE}
 srun -p high -t 8:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
--bam bamlists/85-down.bamlist -r NC_066835.1 \
+-bam bamlists/85-down.bamlist -r NC_066835.1:1-17500000 \
 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 77 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
@@ -120,7 +120,7 @@ srun -p high -t 8:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=
 -out outputs/901/85-ibs-90-lca03 > outputs/901/85-ibs-90-lca03.out 2> outputs/901/85-ibs-90-lca03.err &
 
 srun -p high -t 8:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
--bam bamlists/85-down.bamlist -r NC_066837.1 \
+-bam bamlists/85-down.bamlist -r NC_066837.1:5247652- \
 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 77 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
@@ -128,7 +128,7 @@ srun -p high -t 8:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=
 -out outputs/901/85-ibs-90-lca05 > outputs/901/85-ibs-90-lca05.out 2> outputs/901/85-ibs-90-lca05.err &
 
 srun -p high -t 8:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
--bam bamlists/85-down.bamlist -r NC_066852.1 \
+-bam bamlists/85-down.bamlist -r NC_066852.13500000- \
 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 77 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
