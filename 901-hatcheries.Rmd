@@ -91,9 +91,12 @@ downsample, don't forget to index!!!
 
 ```{r}
 down <- m86 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% mutate(Frac=7/Coverage) %>% 
-  mutate(Command = paste0("samtools view -bs ", Frac, " ", "data/hatch-trim/",Run,".sort.flt.bam", " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam", " ; samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam")) 
+  mutate(Command = paste0("samtools view -bs ", Frac, " ", "data/hatch-trim/",Run,".sort.flt.bam", " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam")) %>%
+           mutate(Command2 = paste0("samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam;")) 
 
 down %>% select(Command) %>% write_tsv(file="901.1-downsample-sl.sh", col_names = FALSE)
+down %>% select(Command2) %>% write_tsv(file="901.1-downsample-sl-index.sh", col_names = FALSE)
+
 ```
 
 module load parallel
