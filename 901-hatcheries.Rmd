@@ -101,6 +101,8 @@ down %>% select(Command2) %>% write_tsv(file="901.1-downsample-sl-index.sh", col
 
 module load parallel
 srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 901.1-downsample-sl.sh
+srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 901.1-downsample-sl-index.sh
+
 
 
 
