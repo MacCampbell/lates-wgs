@@ -60,28 +60,28 @@ SRR3183252,SAMN04482517,SRS1283155,India Eastern Coast,NA,81810791,62876243,12.3
 SRR26358744,SAMN37541109,SRS19173540,Bangladesh,Bakhkhali River,49704585,46328960,10.0176,data/split/SRR26358744.sort.flt.bam,IND
 SRR26402930,SAMN37541109,SRS19173540,Bangladesh,Bakhkhali River,50013614,46662535,10.0569,data/split/SRR26402930.sort.flt.bam,IND
 DRR391968,SAMD00509453,DRR391968,Japan,Shimanto River Kochi,972202037,621949413,110.071,data/downsample/DRR391968.reduced.bam,japonicus
-Mannar1,12_1A,12_1A,Sri Lanka,Mannar Fish Market,168610392,155762957,22.6966,data/lakdiva-trim/Mannar1.sort.flt.bam,lakdiva
-Mannar2,12_2A,12_2A,Sri Lanka,Mannar Fish Market,224624541,206845642,30.1013,data/lakdiva-trim/Mannar2.sort.flt.bam,lakdiva
-Mannar3,12_3A,12_3A,Sri Lanka,Mannar Fish Market,168332672,155977838,22.7513,data/lakdiva-trim/Mannar3.sort.flt.bam,lakdiva
-Mannar4,12_4A,12_4A,Sri Lanka,Mannar Fish Market,163155137,151346967,22.0586,data/lakdiva-trim/Mannar4.sort.flt.bam,lakdiva
-Mannar5,12_5A,12_5A,Sri Lanka,Mannar Fish Market,80168630,167462999,24.3929,data/lakdiva-trim/Mannar5.sort.flt.bam,lakdiva
-Trinco1,13_1A,13_1A,Sri Lanka,"Trinco Fish Market - ""Pullmodai""",176637323,164908980,23.9665,data/lakdiva-trim/Trinco1.sort.flt.bam,lakdiva
-Trinco2,13_2A,13_2A,Sri Lanka,"Trinco Fish Market - ""Pullmodai""",222090489,204042258,29.644,data/lakdiva-trim/Trinco2.sort.flt.bam,lakdiva
-Trinco3,13_3A,13_3A,Sri Lanka,"Trinco Fish Market - ""Pullmodai""",198881902,184142133,26.6088,data/lakdiva-trim/Trinco3.sort.flt.bam,lakdiva
-Jaffna1,14_1A,14_1A,Sri Lanka,Jaffna Fish Market,195232101,181938779,26.4441,data/lakdiva-trim/Jaffna1.sort.flt.bam,lakdiva
-Jaffna2,14_2A,14_2A,Sri Lanka,Jaffna Fish Market,236459155,217961587,31.5948,data/lakdiva-trim/Jaffna2.sort.flt.bam,lakdiva
-Mainstream1,Mainstream-1,Mainstream1,Mainstream,Mainstream,,,,data/hatchery-trim/Mainstream1.sort.flt.bam,Mainstream
-Mainstream2,Mainstream-2,Mainstream2,Mainstream,Mainstream,,,,data/hatchery-trim/Mainstream2.sort.flt.bam,Mainstream
-Mainstream3,Mainstream-3,Mainstream3,Mainstream,Mainstream,,,,data/hatchery-trim/Mainstream3.sort.flt.bam,Mainstream
-Mainstream4,Mainstream-4,Mainstream4,Mainstream,Mainstream,,,,data/hatchery-trim/Mainstream4.sort.flt.bam,Mainstream
-Mainstream5,Mainstream-5,Mainstream5,Mainstream,Mainstream,,,,data/hatchery-trim/Mainstream5.sort.flt.bam,Mainstream
-OceanPick11,OceanPick-11,OceanPick11,OceanPick,OceanPick,,,,data/hatchery-trim/OceanPick11.sort.flt.bam,OceanPick
-OceanPick15,OceanPick-15,OceanPick15,OceanPick,OceanPick,,,,data/hatchery-trim/OceanPick15.sort.flt.bam,OceanPick
-OceanPick16,OceanPick-16,OceanPick16,OceanPick,OceanPick,,,,data/hatchery-trim/OceanPick16.sort.flt.bam,OceanPick
-OceanPick17,OceanPick-17,OceanPick17,OceanPick,OceanPick,,,,data/hatchery-trim/OceanPick17.sort.flt.bam,OceanPick
-OceanPick1,OceanPick-1,OceanPick1,OceanPick,OceanPick,,,,data/hatchery-trim/OceanPick1.sort.flt.bam,OceanPick
-OceanPick20,OceanPick-20,OceanPick20,OceanPick,OceanPick,,,,data/hatchery-trim/OceanPick20.sort.flt.bam,OceanPick
-OceanPick2,OceanPick-2,OceanPick2,OceanPick,OceanPick,,,,data/hatchery-trim/OceanPick2.sort.flt.bam,OceanPick
-OceanPick3,OceanPick-3,OceanPick3,OceanPick,OceanPick,,,,data/hatchery-trim/OceanPick3.sort.flt.bam,OceanPick
-OceanPick5,OceanPick-5,OceanPick5,OceanPick,OceanPick,,,,data/hatchery-trim/OceanPick5.sort.flt.bam,OceanPick
-OceanPick8,OceanPick-8,OceanPick8,OceanPick,OceanPick,,,,data/hatchery-trim/OceanPick8.sort.flt.bam,OceanPick
+Mannar1,12_1A,12_1A,Sri Lanka,Mannar Fish Market,168610392,155762957,22.6966,data/downsample/Mannar1.sort.flt.bam,lakdiva
+Mannar2,12_2A,12_2A,Sri Lanka,Mannar Fish Market,224624541,206845642,30.1013,data/downsample/Mannar2.sort.flt.bam,lakdiva
+Mannar3,12_3A,12_3A,Sri Lanka,Mannar Fish Market,168332672,155977838,22.7513,data/downsample/Mannar3.sort.flt.bam,lakdiva
+Mannar4,12_4A,12_4A,Sri Lanka,Mannar Fish Market,163155137,151346967,22.0586,data/downsample/Mannar4.sort.flt.bam,lakdiva
+Mannar5,12_5A,12_5A,Sri Lanka,Mannar Fish Market,80168630,167462999,24.3929,data/downsample/Mannar5.sort.flt.bam,lakdiva
+Trinco1,13_1A,13_1A,Sri Lanka,"Trinco Fish Market - ""Pullmodai""",176637323,164908980,23.9665,data/downsample/Trinco1.sort.flt.bam,lakdiva
+Trinco2,13_2A,13_2A,Sri Lanka,"Trinco Fish Market - ""Pullmodai""",222090489,204042258,29.644,data/downsample/Trinco2.sort.flt.bam,lakdiva
+Trinco3,13_3A,13_3A,Sri Lanka,"Trinco Fish Market - ""Pullmodai""",198881902,184142133,26.6088,data/downsample/Trinco3.sort.flt.bam,lakdiva
+Jaffna1,14_1A,14_1A,Sri Lanka,Jaffna Fish Market,195232101,181938779,26.4441,data/downsample/Jaffna1.sort.flt.bam,lakdiva
+Jaffna2,14_2A,14_2A,Sri Lanka,Jaffna Fish Market,236459155,217961587,31.5948,data/downsample/Jaffna2.sort.flt.bam,lakdiva
+Mainstream1,Mainstream-1,Mainstream1,Mainstream,Mainstream,,,,data/downsample/Mainstream1.sort.flt.bam,Mainstream
+Mainstream2,Mainstream-2,Mainstream2,Mainstream,Mainstream,,,,data/downsample/Mainstream2.sort.flt.bam,Mainstream
+Mainstream3,Mainstream-3,Mainstream3,Mainstream,Mainstream,,,,data/downsample/Mainstream3.sort.flt.bam,Mainstream
+Mainstream4,Mainstream-4,Mainstream4,Mainstream,Mainstream,,,,data/downsample/Mainstream4.sort.flt.bam,Mainstream
+Mainstream5,Mainstream-5,Mainstream5,Mainstream,Mainstream,,,,data/downsample/Mainstream5.sort.flt.bam,Mainstream
+OceanPick11,OceanPick-11,OceanPick11,OceanPick,OceanPick,,,,data/downsample/OceanPick11.sort.flt.bam,OceanPick
+OceanPick15,OceanPick-15,OceanPick15,OceanPick,OceanPick,,,,data/downsample/OceanPick15.sort.flt.bam,OceanPick
+OceanPick16,OceanPick-16,OceanPick16,OceanPick,OceanPick,,,,data/downsample/OceanPick16.sort.flt.bam,OceanPick
+OceanPick17,OceanPick-17,OceanPick17,OceanPick,OceanPick,,,,data/downsample/OceanPick17.sort.flt.bam,OceanPick
+OceanPick1,OceanPick-1,OceanPick1,OceanPick,OceanPick,,,,data/downsampleOceanPick1.sort.flt.bam,OceanPick
+OceanPick20,OceanPick-20,OceanPick20,OceanPick,OceanPick,,,,data/downsample/OceanPick20.sort.flt.bam,OceanPick
+OceanPick2,OceanPick-2,OceanPick2,OceanPick,OceanPick,,,,data/downsample/OceanPick2.sort.flt.bam,OceanPick
+OceanPick3,OceanPick-3,OceanPick3,OceanPick,OceanPick,,,,data/downsample/OceanPick3.sort.flt.bam,OceanPick
+OceanPick5,OceanPick-5,OceanPick5,OceanPick,OceanPick,,,,data/downsample/OceanPick5.sort.flt.bam,OceanPick
+OceanPick8,OceanPick-8,OceanPick8,OceanPick,OceanPick,,,,data/downsample/OceanPick8.sort.flt.bam,OceanPick

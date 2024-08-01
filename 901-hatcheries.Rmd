@@ -45,18 +45,18 @@ perl -pe 's/_\d+.+_R/_R/g'
 paste files.txt newnames.txt | awk '{print "mv " $1 " " $2}' > commands
 
 ```{r}
-m81<-read_csv("meta/81-Indo-split.csv")
-m81 %>% filter(Region %in% c("Mainstream","OceanPick"))
+m86<-read_csv("meta/86-Indo-split.csv")
+m86 %>% filter(Region %in% c("Mainstream","OceanPick"))
 ```
 ## combine
  cat Mainstream-1_*R1.fastq.gz > Mainstream1_R1.fastq.gz 
 
 ```{r}
-merge<-m81 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% 
+merge<-m86 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% 
   mutate(Command=paste0("cat data/hatcheries/",BioSample, "_*R1.fastq.gz > data/hatcheries/", Run, "_R1.fastq.gz")) %>% select(Command) %>%
   write_tsv("901.1-merge.sh", col_names = FALSE)
 
-merge<-m81 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% 
+merge<-m86 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% 
   mutate(Command=paste0("cat data/hatcheries/",BioSample, "_*R2.fastq.gz > data/hatcheries/", Run, "_R2.fastq.gz")) %>% select(Command) %>%
   write_tsv("901.1-merge2.sh", col_names = FALSE)
 ```
@@ -70,7 +70,7 @@ srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=15 pa
 ## Trim   
 
 ```{r}
-coms<-m81 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% mutate(Command1=paste0("seqtk trimfq -e 50 data/hatcheries/", Run, "_R1.fastq.gz | gzip > data/hatch-trim/", Run, "_R1.fastq.gz")) %>% mutate(Command2=paste0("seqtk trimfq -e 50 data/hatcheries/", Run, "_R2.fastq.gz | gzip > data/lakdiva-trim/", Run, "_R2.fastq.gz")) %>% select(Command1, Command2)
+coms<-m86 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% mutate(Command1=paste0("seqtk trimfq -e 50 data/hatcheries/", Run, "_R1.fastq.gz | gzip > data/hatch-trim/", Run, "_R1.fastq.gz")) %>% mutate(Command2=paste0("seqtk trimfq -e 50 data/hatcheries/", Run, "_R2.fastq.gz | gzip > data/hatch-trim/", Run, "_R2.fastq.gz")) %>% select(Command1, Command2)
 
 c<-c(coms$Command1, coms$Command2)
 c %>% as_tibble() %>% write_tsv("901.1-trim.sh", col_names = FALSE)
@@ -83,15 +83,150 @@ srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=15 pa
 
 Set up to downsample to ~7X 
 
+align.    
+
+ bash ../../doAlign-zipped.sh samples.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
+
 
 ```{r}
-down <- m81 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% mutate(Frac=7/Coverage) %>% 
-  mutate(Command = paste0("samtools view -bs ", Frac, " ", Path, " > ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam"))
+down <- m86 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% mutate(Frac=7/Coverage) %>% 
+  mutate(Command = paste0("samtools view -bs ", Frac, " ", "data/hatch-trim/",Run,".sort.flt.bam", " > ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam"))
 
 down %>% select(Command) %>% write_tsv(file="901.1-downsample-sl.sh", col_names = FALSE)
 ```
 
 module load parallel
-srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 900.1-downsample-sl.sh
+srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 901.1-downsample-sl.sh
 
 don't forget to index!!!
+
+
+# Generate PCA and GL file
+
+```{r}
+m85<-m86 %>% filter(Lineage != "japonicus") 
+m85 %>% select(Path) %>% write_tsv(file="bamlists/85-down.bamlist", col_names = FALSE)
+
+m85 %>% select(Run) %>% write_tsv(file="bamlists/85.names", col_names = FALSE)
+```
+
+```{sh, eval=FALSE}
+srun -p high -t 8:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
+-bam bamlists/85-down.bamlist -r NC_066835.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 77 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/901/85-ibs-90-lca03 > outputs/901/85-ibs-90-lca03.out 2> outputs/901/85-ibs-90-lca03.err &
+
+srun -p high -t 8:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
+-bam bamlists/85-down.bamlist -r NC_066837.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 77 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/901/85-ibs-90-lca05 > outputs/901/85-ibs-90-lca05.out 2> outputs/901/85-ibs-90-lca05.err &
+
+srun -p high -t 8:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
+-bam bamlists/85-down.bamlist -r NC_066852.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 77 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/901/85-ibs-90-lca20 > outputs/901/85-ibs-90-lca20.out 2> outputs/901/85-ibs-90-lca20.err &
+
+
+#dropping inversion chroms 
+srun -p high -t 32:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
+-bam bamlists/85-down.bamlist -rf meta/lates-lgs-no-inv.txt \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 77 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/901/85-ibs-90-noinv > outputs/901/85-ibs-90-noinv.out 2> outputs/901/85-ibs-90-noinv.err &
+
+
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/85-ibs-90-noinv.beagle.gz -K 2 -o outputs/901/85-K2 &
+srun -p high -t 07:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 3 -o outputs/901/85-K3 &
+srun -p high -t 07:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 4 -o outputs/901/85-K4 &
+srun -p high -t 08:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 5 -o outputs/901/85-K5 &
+srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 6 -o outputs/901/85-K6 &
+```
+
+
+## PCA
+
+```{r}
+meta<-m85
+meta$Region<-factor(meta$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
+                                              "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India Eastern Coast","India Western Coast","Sri Lanka"))
+
+
+min(meta$Coverage)
+max(meta$Coverage)
+mean(meta$Coverage)
+round(median(meta$Coverage),2)
+```
+
+```{r}
+m <- as.matrix(read.table("outputs/901/85-ibs-90.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+```
+
+
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta) 
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+pc12<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Region, shape=Lineage), size=3, alpha=0.75) +
+#  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("A") +
+  theme(plot.title = element_text(size=18, face="bold")) +
+  scale_shape_manual(values=c(21,23,25,24,25,25)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "none")
+
+pc12
+```
+```{r}
+text13<-covs  %>% select(Run, Region, V1, V3, Lineage) %>% filter(Lineage %in% c("IND","lakdiva")) %>% 
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
+
+pc13<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V3, fill=Region, shape=Lineage), size=3, alpha=0.75) +
+  geom_text_repel(data=text13, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC3", " ", round((100*var[3]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=18, face="bold")) +
+  scale_shape_manual(values=c(21,23,25,24,25,25)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+
+pc13
+```
+
+```{r}
+ggarrange(pc12,pc13,ncol=2,widths=c(1,1.3))
+ggsave("outputs/901/combined-wgspcs.pdf", width=13, height=6)
+ggsave("outputs/901/combined-wgspcs.jpeg", width=13, height=6)
+
+```
