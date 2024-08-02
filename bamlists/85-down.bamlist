@@ -73,8 +73,13 @@ data/downsample/Mainstream2.reduced.bam
 data/downsample/Mainstream3.reduced.bam
 data/downsample/Mainstream4.reduced.bam
 data/downsample/Mainstream5.reduced.bam
+data/downsample/OceanPick11.reduced.bam
 data/downsample/OceanPick15.reduced.bam
 data/downsample/OceanPick16.reduced.bam
 data/downsample/OceanPick17.reduced.bam
+data/downsampleOceanPick1.reduced.bam
+data/downsample/OceanPick20.reduced.bam
+data/downsample/OceanPick2.reduced.bam
 data/downsample/OceanPick3.reduced.bam
 data/downsample/OceanPick5.reduced.bam
+data/downsample/OceanPick8.reduced.bam

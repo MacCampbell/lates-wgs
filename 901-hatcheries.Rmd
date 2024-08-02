@@ -91,18 +91,14 @@ downsample, don't forget to index!!!
 
 ```{r}
 down <- m86 %>% filter(Region %in% c("Mainstream","OceanPick")) %>% mutate(Frac=7/Coverage) %>% 
-  mutate(Command = paste0("samtools view -bs ", Frac, " ", "data/hatch-trim/",Run,".sort.flt.bam", " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam")) %>%
-           mutate(Command2 = paste0("samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam;")) 
+  mutate(Command = paste0("samtools view -bs ", Frac, " ", "data/hatch-trim/",Run,".sort.flt.bam", " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;"," samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;")) 
 
 down %>% select(Command) %>% write_tsv(file="901.1-downsample-sl.sh", col_names = FALSE)
-down %>% select(Command2) %>% write_tsv(file="901.1-downsample-sl-index.sh", col_names = FALSE)
 
 ```
 
 module load parallel
 srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 901.1-downsample-sl.sh
-srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 901.1-downsample-sl-index.sh
-
 
 
 
@@ -140,6 +136,17 @@ srun -p high -t 8:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/901/85-ibs-90-lca20 > outputs/901/85-ibs-90-lca20.out 2> outputs/901/85-ibs-90-lca20.err &
 
+# NC_066833.1 only
+srun -p high -t 32:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
+-bam bamlists/85-down.bamlist -r NC_066833.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 77 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/901/85-ibs-90-noinv > outputs/901/85-ibs-90-noinv.out 2> outputs/901/85-ibs-90-noinv.err &
+
+#	-> Number of sites retained after filtering: 191224 
+
 
 #dropping inversion chroms 
 srun -p high -t 32:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
@@ -151,18 +158,26 @@ srun -p high -t 32:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -out outputs/901/85-ibs-90-noinv > outputs/901/85-ibs-90-noinv.out 2> outputs/901/85-ibs-90-noinv.err &
 
 
-srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/900/85-ibs-90-noinv.beagle.gz -K 2 -o outputs/901/85-K2 &
+srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 2 -o outputs/901/85-K2 &
 srun -p high -t 07:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 3 -o outputs/901/85-K3 &
 srun -p high -t 07:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 4 -o outputs/901/85-K4 &
 srun -p high -t 08:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 5 -o outputs/901/85-K5 &
 srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 6 -o outputs/901/85-K6 &
+
+## Calls
+srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
+-minInd 81 -bam bamlists/85-down.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf genome/lates-lgs.txt -out outputs/901/snps-wgs  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/901/snps-wgs.out 2> outputs/901/snps-wgs.err &
 ```
+
 
 
 ## PCA
 
 ```{r}
-meta<-m85
+meta<-m85 %>% filter(! Run %in% c("OceanPick11","OceanPick1","OceanPick20","OceanPick2","OceanPick8"))
 meta$Region<-factor(meta$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
                                               "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines",
                                               "Vietnam","Cambodia","Thailand", "Bangladesh",
@@ -176,7 +191,7 @@ round(median(meta$Coverage),2)
 ```
 
 ```{r}
-m <- as.matrix(read.table("outputs/901/85-ibs-90.covMat"))
+m <- as.matrix(read.table("outputs/901/85-ibs-90-noinv.covMat"))
 eig <- eigen(m)
 var<-eig$values/sum(eig$values)
 cumvar<-cumsum(eig$values)/sum(eig$values)
@@ -190,12 +205,12 @@ head(cumvar)
 ```{r}
 covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta) 
 
-text12<-covs %>% select(Run, Region, V1, V2) %>%
+text12<-covs %>% select(Run, Region, Lineage, V1, V2) %>% filter(Lineage %in% c("Mainstream","OceanPick","lakdiva")) %>%
   group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
 
 pc12<-ggplot(covs) +
   geom_point(aes(x=V1, y=V2, fill=Region, shape=Lineage), size=3, alpha=0.75) +
-#  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
   xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
   ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
   theme_bw() +
@@ -203,14 +218,16 @@ pc12<-ggplot(covs) +
   scale_fill_viridis_d(option="turbo") +
   ggtitle("A") +
   theme(plot.title = element_text(size=18, face="bold")) +
-  scale_shape_manual(values=c(21,23,25,24,25,25)) +
+  scale_shape_manual(values=c(21,23,25,22,22,24)) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
   theme(legend.position = "none")
 
 pc12
 ```
+
+
 ```{r}
-text13<-covs  %>% select(Run, Region, V1, V3, Lineage) %>% filter(Lineage %in% c("IND","lakdiva")) %>% 
+text13<-covs  %>% select(Run, Region, V1, V3, Lineage)  %>% filter(Lineage %in% c("Mainstream","OceanPick","lakdiva")) %>%
   group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
 
 pc13<-ggplot(covs) +
@@ -223,7 +240,7 @@ pc13<-ggplot(covs) +
   scale_fill_viridis_d(option="turbo") +
   ggtitle("B") +
   theme(plot.title = element_text(size=18, face="bold")) +
-  scale_shape_manual(values=c(21,23,25,24,25,25)) +
+  scale_shape_manual(values=c(21,23,25,22,22,24)) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) 
 
 pc13
@@ -234,4 +251,98 @@ ggarrange(pc12,pc13,ncol=2,widths=c(1,1.3))
 ggsave("outputs/901/combined-wgspcs.pdf", width=13, height=6)
 ggsave("outputs/901/combined-wgspcs.jpeg", width=13, height=6)
 
+```
+
+
+## Admix
+
+
+```{r, echo=FALSE}
+PlotAdmix<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Last col empty
+q<-q[1:length(colnames(q))-1]
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  ylab("Q\n") +
+  theme(legend.position = "") +
+  theme(axis.text = element_text(size=10, face="bold")) +
+  theme(axis.title.y=element_text(size=14, face="bold")) +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  #theme(axis.text.x=element_blank()) +
+  scale_fill_viridis_d(option="viridis") +
+  theme(axis.ticks.x = element_blank())
+
+}
+```
+
+```{r}
+PlotAdmix("outputs/901/85-K2.qopt", meta)
+```
+
+```{r}
+PlotAdmix("outputs/901/85-K3.qopt", meta)
+```
+
+
+```{r}
+PlotAdmix("outputs/901/85-K4.qopt", meta)
+```
+
+
+```{r}
+PlotAdmix("outputs/901/85-K5.qopt", meta)
+```
+
+# Calls
+
+```{sh, eval=FALSE}
+plink --tped snps-wgs.tped --tfam snps-wgs.tfam  --out snps-wgs-binary --recode --allow-extra-chr --noweb
+plink --ped snps-wgs-binary.ped --map snps-wgs-binary.map --recode vcf --allow-extra-chr -out snps-wgs-plink
+bgzip snps-wgs-plink.vcf 
+tabix snps-wgs-plink.vcf.gz
+
+#renaming vcf in 901 locally
+bcftools view -r NC_066833.1,NC_066834.1,NC_066836.1,NC_066838.1,NC_066839.1,NC_066840.1,NC_066841.1,NC_066842.1,NC_066843.1,NC_066844.1,NC_066845.1,NC_066846.1,NC_066847.1,NC_066848.1,NC_066849.1,NC_066850.1,NC_066851.1,NC_066853.1,NC_066854.1,NC_066855.1,NC_066856.1 outputs/901/snps-wgs-plink.vcf.gz| bcftools reheader --samples bamlists/85.names   | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.20 -w 10000  > outputs/901/snps-wgs-pruned.vcf
+
+bcftools view -r NC_066833.1,NC_066834.1,NC_066836.1,NC_066838.1,NC_066839.1,NC_066840.1,NC_066841.1,NC_066842.1,NC_066843.1,NC_066844.1,NC_066845.1,NC_066846.1,NC_066847.1,NC_066848.1,NC_066849.1,NC_066850.1,NC_066851.1,NC_066853.1,NC_066854.1,NC_066855.1,NC_066856.1 outputs/901/snps-wgs-plink.vcf.gz| bcftools reheader --samples bamlists/85.names   | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.30 -w 50kb --nsites-per-win 1 > outputs/901/newhybrids.vcf
+
+
+bcftools view -r NC_066835.1:1-17500000 outputs/901/snps-wgs-plink.vcf.gz| bcftools reheader --samples bamlists/85.names   | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.30 -w 50kb --nsites-per-win 1 > outputs/901/newhybrids-lca03inv.vcf
+
+bcftools view -r NC_066837.1:5247652- outputs/901/snps-wgs-plink.vcf.gz| bcftools reheader --samples bamlists/85.names   | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.30 -w 50kb --nsites-per-win 1 > outputs/901/newhybrids-lca05inv.vcf
 ```
