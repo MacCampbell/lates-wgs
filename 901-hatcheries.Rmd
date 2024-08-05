@@ -177,7 +177,7 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 ## PCA
  
 ```{r}
-meta<-m85 %>% filter(! Run %in% c("OceanPick8","OceanPick20"))
+meta<-m85 
 meta$Region<-factor(meta$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
                                               "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines",
                                               "Vietnam","Cambodia","Thailand", "Bangladesh",
