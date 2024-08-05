@@ -175,9 +175,9 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 
 
 ## PCA
-
+ 
 ```{r}
-meta<-m85 %>% filter(! Run %in% c("OceanPick11","OceanPick1","OceanPick20","OceanPick2","OceanPick8"))
+meta<-m85 %>% filter(! Run %in% c("OceanPick11","OceanPick1","OceanPick2"))
 meta$Region<-factor(meta$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
                                               "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines",
                                               "Vietnam","Cambodia","Thailand", "Bangladesh",
@@ -346,3 +346,5 @@ bcftools view -r NC_066835.1:1-17500000 outputs/901/snps-wgs-plink.vcf.gz| bcfto
 
 bcftools view -r NC_066837.1:5247652- outputs/901/snps-wgs-plink.vcf.gz| bcftools reheader --samples bamlists/85.names   | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.30 -w 50kb --nsites-per-win 1 > outputs/901/newhybrids-lca05inv.vcf
 ```
+
+

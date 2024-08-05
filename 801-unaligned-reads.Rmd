@@ -1,0 +1,246 @@
+---
+title: "801-unaligned-reads"
+output: html_document
+date: "2024-08-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+## Get unaligned reads
+
+`(base) maccamp@farm:~/lates-wgs/data/lakdiva$ cat names | while read line; do samtools view -b -f 4 $line.sort.bam > $line-unaligned.bam; done;` 
+`cat names | while read line; do samtools fastq $line-unaligned.bam > /home/maccamp/lates-wgs/outputs/801/$line.fastq; done;'
+Can run against diamond.   
+cat *.fastq > all-fish.fq
+
+srun -p high -t 8:00:00 --nodes=1 --mem=32G diamond blastx -d /home/maccamp/lates-wgs/outputs/800/ncbi-refseq -q all-fish.fq -o all-unaligned-refseq.tsv > all.out 2> all.err &
+
+cat all-unaligned-refseq.tsv  | awk '{ if ( $3>90 && $4 > 45) print}' 
+
+`# Fields: Query ID, Subject ID, Percentage of identical matches, Alignment length, Number of mismatches, Number of gap openings, Start of alignment in query, End of alignment in query, Start of alignment in subject, End of alignment in subject, Expected value, Bit score`
+
+cat all-unaligned-refseq.tsv | awk '{ if ( $3>90 && $4 > 45) print}'  | cut -f 2 | sort | uniq | sort | while read line; do grep $line ../800/ncbi-refseq.faa | grep -v "phage"; done;
+
+(base) maccamp@farm:~/lates-wgs/outputs/801$ cat all-unaligned-refseq.tsv | awk '{ if ( $3>90 && $4 > 45) print}'  | cut -f 2 | sort | uniq | sort | while read line; do grep $line ../800/ncbi-refseq.faa | grep -v "phage"; done;
+>YP_003970036.1 |putative DnaK/Hsp70 [Cafeteria roenbergensis virus BV-PW1]
+>YP_004894551.1 |heat shock 70 kDa protein-like protein [Megavirus chiliensis]
+>YP_007354398.1 |HSP70-like protein [Acanthamoeba polyphaga moumouvirus]
+>YP_009639255.1 |NinE family protein [Lederbergvirus BTP1]
+>YP_009639256.1 |protein ninF [Lederbergvirus BTP1]
+>YP_009639257.1 |NinG/ Rap DNA junction specific endonuclease [Lederbergvirus BTP1]
+>YP_009877362.1 |tail fiber protein [Peduovirus P24A7b]
+>YP_009877408.1 |tail fiber protein [Xuanwuvirus P884B11]
+>YP_010663786.1 |tail fiber protein [Peduovirus P2]
+>YP_010776364.1 |hypothetical protein QJ849_gp451 [Powai lake megavirus]
+>YP_010779557.1 |hypothetical protein QJ854_gp460 [Moumouvirus goulette]
+>YP_010781892.1 |putative heat shock 70 kDa protein [Tupanvirus soda lake]
+>YP_010788858.1 |heat shock 70 kDa protein-like protein [Megavirus baoshan]
+>YP_010789745.1 |heat shock 70 kDa protein-like protein [Moumouvirus australiensis]
+>YP_010841774.1 |heat shock 70 kda protein-like protein [Cotonvirus japonicus]
+>YP_031679.1 |Vpf402 [Villovirus Vf33]
+>YP_031685.1 |Vpf380 [Villovirus Vf33]
+
+ grep "Scale drop" ../800/ncbi-refseq.faa  | cut -f 1 -d ' ' | perl -pe 's/>//g' | while read line; do grep $line all-unaligned-refseq.tsv ; done;
+LH00144:179:22KM77LT3:7:1148:12437:8579/1	YP_009163787.1	50.0	38	19	0	118	5	319	356	6.57e-06	43.5
+LH00144:179:22KM77LT3:7:1148:12437:8579/2	YP_009163787.1	45.5	44	24	0	3	134	320	363	9.00e-06	43.1
+LH00144:179:22KM77LT3:7:1170:20093:9668/1	YP_009163787.1	40.8	49	29	0	148	2	304	352	8.10e-08	48.9
+LH00144:179:22KM77LT3:7:1289:13917:17263/1	YP_009163787.1	43.9	41	23	0	25	147	320	360	5.02e-06	43.9
+LH00144:179:22KM77LT3:7:2133:37420:5502/1	YP_009163787.1	45.0	40	22	0	2	121	323	362	1.69e-05	42.4
+LH00144:179:22KM77LT3:7:2211:12169:17279/1	YP_009163787.1	50.0	36	18	0	2	109	328	363	1.87e-06	45.1
+LH00144:179:22KM77LT3:7:2213:26843:2522/2	YP_009163787.1	38.5	52	28	1	6	149	330	381	3.89e-07	47.0
+LH00144:179:22KM77LT3:7:2235:23052:10982/2	YP_009163787.1	39.5	43	26	0	147	19	310	352	9.41e-06	43.1
+LH00144:179:22KM77LT3:7:2253:21711:12536/1	YP_009163787.1	54.3	35	16	0	107	3	198	232	1.69e-05	42.4
+LH00144:179:22KM77LT3:7:1278:49320:9492/2	YP_009163787.1	44.2	43	24	0	21	149	320	362	9.98e-07	45.8
+LH00144:179:22KM77LT3:7:2204:22553:27357/1	YP_009163787.1	56.8	44	19	0	5	136	302	345	6.01e-11	57.8
+LH00144:179:22KM77LT3:7:2204:22553:27357/2	YP_009163787.1	56.8	44	19	0	133	2	302	345	6.01e-11	57.8
+LH00144:179:22KM77LT3:7:1243:4116:29023/2	YP_009163809.1	44.9	49	26	1	2	148	142	189	2.00e-07	47.8
+LH00144:179:22KM77LT3:7:2169:6427:17166/1	YP_009163809.1	71.4	49	14	0	1	147	187	235	3.01e-18	77.4
+LH00144:179:22KM77LT3:7:2183:9682:25722/1	YP_009163813.1	74.0	50	12	1	3	149	130	179	2.07e-18	78.2
+LH00144:179:22KM77LT3:7:2212:18679:16542/1	YP_009163813.1	63.8	47	17	0	143	3	225	271	1.36e-14	67.8
+LH00144:179:22KM77LT3:7:2212:18679:16542/2	YP_009163813.1	70.8	48	14	0	6	149	90	137	1.95e-15	70.1
+LH00144:179:22KM77LT3:7:2209:33805:9139/1	YP_009163813.1	60.0	25	10	0	71	145	12	36	3.13e-05	41.6
+LH00144:179:22KM77LT3:7:2119:28914:28382/2	YP_009163818.1	52.4	42	20	0	23	148	15	56	1.69e-08	50.1
+LH00144:179:22KM77LT3:7:2297:44864:19426/1	YP_009163828.1	70.0	50	15	0	150	1	471	520	1.53e-15	70.9
+LH00144:179:22KM77LT3:7:1103:37772:13257/2	YP_009163828.1	63.8	47	17	0	143	3	449	495	3.22e-11	58.5
+LH00144:179:22KM77LT3:7:1185:21526:2474/2	YP_009163828.1	64.6	48	17	0	148	5	450	497	9.20e-12	60.1
+LH00144:179:22KM77LT3:7:2167:30273:28975/2	YP_009163828.1	63.3	49	18	0	149	3	470	518	1.54e-10	56.6
+LH00144:179:22KM77LT3:7:1165:38410:3756/1	YP_009163828.1	66.7	27	9	0	148	68	469	495	1.53e-04	39.7
+LH00144:179:22KM77LT3:7:1165:38410:3756/2	YP_009163828.1	62.5	48	18	0	4	147	448	495	2.46e-11	58.9
+LH00144:179:22KM77LT3:7:1281:20389:7713/1	YP_009163837.1	45.5	44	24	0	142	11	263	306	1.53e-04	39.7
+LH00144:179:22KM77LT3:7:2229:44938:17759/2	YP_009163837.1	51.4	35	17	0	1	105	290	324	1.61e-04	39.7
+
+grep "iridovirus" ../800/ncbi-refseq.faa  | cut -f 1 -d ' ' | perl -pe 's/>//g' | while read line; do grep $line all-unaligned-refseq.tsv ; done;
+(base) maccamp@farm:~/lates-wgs/outputs/801$ grep "iridovirus" ../800/ncbi-refseq.faa  | cut -f 1 -d ' ' | perl -pe 's/>//g' | while read line; do grep $line all-unaligned-refseq.tsv ; done;
+LH00144:179:22KM77LT3:7:2227:10144:4253/1	YP_009552344.1	55.1	49	19	1	2	148	29	74	7.43e-12	57.8
+LH00144:179:22KM77LT3:7:2227:10144:4253/2	YP_009552344.1	85.7	49	7	0	149	3	67	115	1.03e-24	90.5
+this seq looks to be a match to some sort of iridovirus, 
+
+LH00144:179:22KM77LT3:7:1174:31965:26780/1	YP_009552356.1	47.5	40	21	0	130	11	493	532	1.88e-06	45.1
+LH00144:179:22KM77LT3:7:1151:35997:9700/1	YP_009552356.1	47.7	44	23	0	136	5	481	524	4.82e-06	43.9
+LH00144:179:22KM77LT3:7:1238:12604:11719/1	YP_009552356.1	50.0	34	17	0	105	4	491	524	1.17e-04	40.0
+LH00144:179:22KM77LT3:7:1114:51308:23511/1	YP_009552356.1	65.2	23	8	0	3	71	498	520	7.42e-04	37.7
+LH00144:179:22KM77LT3:7:1114:51308:23511/2	YP_009552356.1	65.2	23	8	0	71	3	498	520	3.95e-04	38.5
+LH00144:179:22KM77LT3:7:1149:35701:3644/2	YP_009552356.1	50.0	36	18	0	43	150	493	528	4.55e-05	41.2
+LH00144:179:22KM77LT3:7:2153:8989:26732/1	YP_009552356.1	48.8	41	21	0	25	147	493	533	7.65e-07	46.2
+LH00144:179:22KM77LT3:7:2153:8979:26748/1	YP_009552356.1	48.8	41	21	0	25	147	493	533	7.65e-07	46.2
+LH00144:179:22KM77LT3:7:2208:11587:17295/2	YP_009552356.1	42.6	47	27	0	149	9	498	544	1.88e-06	45.1
+LH00144:179:22KM77LT3:7:2292:12354:24136/1	YP_009552359.1	51.2	43	21	0	1	129	12	54	1.24e-05	40.8
+LH00144:179:22KM77LT3:7:2231:10385:12200/1	YP_009552364.1	51.2	43	18	1	1	120	203	245	5.59e-07	46.6
+LH00144:179:22KM77LT3:7:2263:5225:29728/2	YP_009552364.1	63.3	49	18	0	2	148	1034	1082	1.64e-16	73.6
+LH00144:179:22KM77LT3:7:1154:2609:11735/1	YP_009506723.1	46.0	50	20	3	1	147	538	581	1.77e-05	42.4
+LH00144:179:22KM77LT3:7:2126:16339:25722/2	YP_009506723.1	38.8	49	26	1	147	1	519	563	6.90e-06	43.5
+LH00144:179:22KM77LT3:7:1152:3672:22934/1	YP_009506723.1	50.0	28	14	0	89	6	536	563	2.32e-05	42.0
+LH00144:179:22KM77LT3:7:1257:23736:17935/2	YP_009506723.1	50.0	30	15	0	150	61	538	567	5.04e-06	43.9
+LH00144:179:22KM77LT3:7:2231:10385:12200/1	YP_009506723.1	44.7	38	18	1	1	105	189	226	2.20e-04	39.3
+LH00144:179:22KM77LT3:7:1187:18327:2410/2	YP_009506723.1	50.0	28	14	0	150	67	539	566	8.55e-05	40.4
+LH00144:179:22KM77LT3:7:2227:10144:4253/2	YP_009021122.1	47.9	48	25	0	149	6	77	124	2.29e-12	59.3
+LH00144:179:22KM77LT3:7:2247:29774:13658/1	YP_009021123.1	48.0	50	26	0	1	150	275	324	1.61e-10	56.6
+LH00144:179:22KM77LT3:7:2247:29774:13658/2	YP_009021123.1	51.1	47	18	1	143	3	293	334	3.16e-08	50.1
+LH00144:179:22KM77LT3:7:2245:40583:12776/2	YP_009021123.1	51.0	49	24	0	1	147	363	411	1.05e-09	54.3
+LH00144:179:22KM77LT3:7:2161:24226:3788/2	YP_009021176.1	59.6	47	19	0	5	145	135	181	4.52e-16	71.6
+LH00144:179:22KM77LT3:7:2229:44938:17759/2	YP_009021192.1	51.2	41	20	0	1	123	305	345	2.20e-04	39.3
+LH00144:179:22KM77LT3:7:2153:8989:26732/1	YP_009021205.1	47.5	40	21	0	28	147	504	543	2.42e-05	42.0
+LH00144:179:22KM77LT3:7:2153:8979:26748/1	YP_009021205.1	47.5	40	21	0	28	147	504	543	2.42e-05	42.0
+LH00144:179:22KM77LT3:7:2292:46140:12408/1	YP_009010540.1	61.0	41	15	1	143	21	481	520	2.88e-04	38.9
+LH00144:179:22KM77LT3:7:1224:26649:22566/1	YP_009010577.1	45.8	48	26	0	150	7	469	516	3.32e-08	50.1
+LH00144:179:22KM77LT3:7:2204:16681:15003/1	YP_009010577.1	48.8	43	22	0	11	139	489	531	1.37e-06	45.4
+LH00144:179:22KM77LT3:7:1107:44078:9348/1	YP_009010577.1	53.1	49	23	0	2	148	296	344	9.05e-09	51.6
+LH00144:179:22KM77LT3:7:1122:30162:18592/2	YP_009010577.1	46.7	45	24	0	148	14	460	504	3.53e-09	52.8
+LH00144:179:22KM77LT3:7:1228:24467:18272/1	YP_009010577.1	41.7	48	28	0	148	5	469	516	1.00e-06	45.8
+LH00144:179:22KM77LT3:7:1290:20759:28158/1	YP_009010577.1	43.5	46	26	0	3	140	467	512	1.37e-06	45.4
+LH00144:179:22KM77LT3:7:2147:32696:1673/2	YP_009010577.1	45.8	48	26	0	149	6	462	509	3.53e-09	52.8
+LH00144:179:22KM77LT3:7:2229:44938:17759/2	YP_009010577.1	56.1	41	18	0	1	123	304	344	5.04e-06	43.9
+LH00144:179:22KM77LT3:7:2239:50957:21909/1	YP_009010577.1	52.1	48	23	0	150	7	457	504	1.32e-11	59.7
+LH00144:179:22KM77LT3:7:2251:19844:16606/2	YP_009010577.1	52.6	38	18	0	118	5	287	324	9.04e-06	43.1
+LH00144:179:22KM77LT3:7:2267:42654:7809/1	YP_009010577.1	53.3	45	21	0	147	13	294	338	9.47e-09	51.6
+LH00144:179:22KM77LT3:7:1215:4079:12039/2	YP_009010577.1	53.1	49	23	0	2	148	296	344	9.05e-09	51.6
+LH00144:179:22KM77LT3:7:2205:41498:17118/2	YP_009010577.1	55.3	47	21	0	3	143	292	338	2.58e-09	53.1
+LH00144:179:22KM77LT3:7:2151:31799:17006/1	YP_009010638.1	52.1	48	23	0	1	144	414	461	2.41e-08	50.4
+LH00144:179:22KM77LT3:7:1165:23875:26443/2	YP_009010638.1	62.0	50	19	0	1	150	406	455	2.25e-13	64.7
+LH00144:179:22KM77LT3:7:2135:10884:26876/2	YP_009010638.1	61.4	44	17	0	19	150	405	448	4.59e-11	58.2
+LH00144:179:22KM77LT3:7:2273:44133:27132/1	YP_009010690.1	51.0	49	23	1	6	149	102	150	1.61e-08	50.8
+LH00144:179:22KM77LT3:7:2143:3737:10293/1	YP_009010690.1	53.2	47	19	2	143	3	99	142	1.21e-05	42.7
+LH00144:179:22KM77LT3:7:1232:26177:18096/2	YP_009010708.1	56.3	48	21	0	148	5	1036	1083	1.41e-12	62.4
+LH00144:179:22KM77LT3:7:2120:39917:27741/1	YP_164144.1	51.1	45	22	0	13	147	51	95	1.59e-13	62.8
+LH00144:179:22KM77LT3:7:2213:10560:15548/2	YP_164159.1	54.2	48	22	0	5	148	380	427	6.01e-11	57.8
+LH00144:179:22KM77LT3:7:1154:2609:11735/1	YP_164168.1	42.1	38	22	0	1	114	421	458	1.05e-06	45.8
+LH00144:179:22KM77LT3:7:2126:16339:25722/2	YP_164168.1	36.0	50	28	1	150	1	401	446	3.68e-06	44.3
+LH00144:179:22KM77LT3:7:1152:3672:22934/1	YP_164168.1	50.0	28	14	0	89	6	419	446	9.03e-06	43.1
+LH00144:179:22KM77LT3:7:1257:23736:17935/2	YP_164168.1	39.5	38	23	0	150	37	421	458	1.96e-06	45.1
+LH00144:179:22KM77LT3:7:2231:10385:12200/1	YP_164168.1	48.6	37	17	1	1	105	98	134	1.43e-06	45.4
+LH00144:179:22KM77LT3:7:1187:18327:2410/2	YP_164168.1	42.9	35	20	0	150	46	422	456	6.24e-05	40.8
+LH00144:179:22KM77LT3:7:2263:5225:29728/2	YP_164168.1	65.3	49	17	0	2	148	978	1026	3.07e-16	72.8
+LH00144:179:22KM77LT3:7:1225:25826:4028/1	YP_164171.1	57.4	47	20	0	141	1	183	229	1.37e-10	56.6
+LH00144:179:22KM77LT3:7:2293:26048:10758/2	YP_164171.1	59.1	44	18	0	133	2	186	229	2.49e-10	55.8
+LH00144:179:22KM77LT3:7:2186:44984:26716/1	YP_164171.1	56.3	48	21	0	1	144	194	241	7.20e-11	57.4
+LH00144:179:22KM77LT3:7:2258:45058:17935/2	YP_164171.1	45.9	37	20	0	112	2	4	40	7.27e-04	37.7
+LH00144:179:22KM77LT3:7:1157:22118:23655/2	YP_164247.1	36.2	47	29	1	142	2	269	314	5.35e-04	38.1
+LH00144:179:22KM77LT3:7:2288:29228:15885/2	YP_164250.1	48.6	37	18	1	25	132	427	463	4.53e-05	41.2
+
+grep "iridovirus" ../800/ncbi-refseq.faa  | cut -f 1 -d ' ' | perl -pe 's/>//g' | while read line; do grep $line all-unaligned-refseq.tsv | awk '{ if ( $3>50 && $4 > 40) print}'  ; done;
+
+(base) maccamp@farm:~/lates-wgs/outputs/801$ grep "iridovirus" ../800/ncbi-refseq.faa  | cut -f 1 -d ' ' | perl -pe 's/>//g' | while read line; do grep $line all-unaligned-refseq.tsv | awk '{ if ( $3>50 && $4 > 40) print}'  ; done;
+LH00144:179:22KM77LT3:7:2227:10144:4253/1	YP_009552344.1	55.1	49	19	1	2	148	29	74	7.43e-12	57.8
+LH00144:179:22KM77LT3:7:2227:10144:4253/2	YP_009552344.1	85.7	49	7	0	149	3	67	115	1.03e-24	90.5
+LH00144:179:22KM77LT3:7:2292:12354:24136/1	YP_009552359.1	51.2	43	21	0	1	129	12	54	1.24e-05	40.8
+LH00144:179:22KM77LT3:7:2231:10385:12200/1	YP_009552364.1	51.2	43	18	1	1	120	203	245	5.59e-07	46.6
+LH00144:179:22KM77LT3:7:2263:5225:29728/2	YP_009552364.1	63.3	49	18	0	2	148	1034	1082	1.64e-16	73.6
+LH00144:179:22KM77LT3:7:2247:29774:13658/2	YP_009021123.1	51.1	47	18	1	143	3	293	334	3.16e-08	50.1
+LH00144:179:22KM77LT3:7:2245:40583:12776/2	YP_009021123.1	51.0	49	24	0	1	147	363	411	1.05e-09	54.3
+LH00144:179:22KM77LT3:7:2161:24226:3788/2	YP_009021176.1	59.6	47	19	0	5	145	135	181	4.52e-16	71.6
+LH00144:179:22KM77LT3:7:2229:44938:17759/2	YP_009021192.1	51.2	41	20	0	1	123	305	345	2.20e-04	39.3
+LH00144:179:22KM77LT3:7:2292:46140:12408/1	YP_009010540.1	61.0	41	15	1	143	21	481	520	2.88e-04	38.9
+LH00144:179:22KM77LT3:7:1107:44078:9348/1	YP_009010577.1	53.1	49	23	0	2	148	296	344	9.05e-09	51.6
+LH00144:179:22KM77LT3:7:2229:44938:17759/2	YP_009010577.1	56.1	41	18	0	1	123	304	344	5.04e-06	43.9
+LH00144:179:22KM77LT3:7:2239:50957:21909/1	YP_009010577.1	52.1	48	23	0	150	7	457	504	1.32e-11	59.7
+LH00144:179:22KM77LT3:7:2267:42654:7809/1	YP_009010577.1	53.3	45	21	0	147	13	294	338	9.47e-09	51.6
+LH00144:179:22KM77LT3:7:1215:4079:12039/2	YP_009010577.1	53.1	49	23	0	2	148	296	344	9.05e-09	51.6
+LH00144:179:22KM77LT3:7:2205:41498:17118/2	YP_009010577.1	55.3	47	21	0	3	143	292	338	2.58e-09	53.1
+LH00144:179:22KM77LT3:7:2151:31799:17006/1	YP_009010638.1	52.1	48	23	0	1	144	414	461	2.41e-08	50.4
+LH00144:179:22KM77LT3:7:1165:23875:26443/2	YP_009010638.1	62.0	50	19	0	1	150	406	455	2.25e-13	64.7
+LH00144:179:22KM77LT3:7:2135:10884:26876/2	YP_009010638.1	61.4	44	17	0	19	150	405	448	4.59e-11	58.2
+LH00144:179:22KM77LT3:7:2273:44133:27132/1	YP_009010690.1	51.0	49	23	1	6	149	102	150	1.61e-08	50.8
+LH00144:179:22KM77LT3:7:2143:3737:10293/1	YP_009010690.1	53.2	47	19	2	143	3	99	142	1.21e-05	42.7
+LH00144:179:22KM77LT3:7:1232:26177:18096/2	YP_009010708.1	56.3	48	21	0	148	5	1036	1083	1.41e-12	62.4
+LH00144:179:22KM77LT3:7:2120:39917:27741/1	YP_164144.1	51.1	45	22	0	13	147	51	95	1.59e-13	62.8
+LH00144:179:22KM77LT3:7:2213:10560:15548/2	YP_164159.1	54.2	48	22	0	5	148	380	427	6.01e-11	57.8
+LH00144:179:22KM77LT3:7:2263:5225:29728/2	YP_164168.1	65.3	49	17	0	2	148	978	1026	3.07e-16	72.8
+LH00144:179:22KM77LT3:7:1225:25826:4028/1	YP_164171.1	57.4	47	20	0	141	1	183	229	1.37e-10	56.6
+LH00144:179:22KM77LT3:7:2293:26048:10758/2	YP_164171.1	59.1	44	18	0	133	2	186	229	2.49e-10	55.8
+LH00144:179:22KM77LT3:7:2186:44984:26716/1	YP_164171.1	56.3	48	21	0	1	144	194	241	7.20e-11	57.4
+
+cat all-unaligned-refseq.tsv | awk '{ if ( $3>80 && $4 > 45) print}'  | cut -f 2 | sort | uniq | sort | while read line; do grep $line ../800/ncbi-refseq.faa | grep -v "phage"; done;
+
+(base) maccamp@farm:~/lates-wgs/outputs/801$ cat all-unaligned-refseq.tsv | awk '{ if ( $3>80 && $4 > 45) print}'  | cut -f 2 | sort | uniq | sort | while read line; do grep $line ../800/ncbi-refseq.faa | grep -v "phage"; done;
+>NP_048466.1 |nucleotide-sugar epimerase [Paramecium bursaria Chlorella virus 1]
+>YP_001285862.1 |thymidylate synthase [Geobacillus virus E2]
+>YP_001497359.1 |nucleotide-sugar epimerase [Paramecium bursaria Chlorella virus NY2A]
+>YP_001498237.1 |nucleotide-sugar epimerase [Paramecium bursaria Chlorella virus AR158]
+>YP_001648252.2 |putative transcription initiation factor IIB [Ostreococcus tauri virus OtV5]
+>YP_001700612.1 |DNA packaging protein; large terminase subunit; Lambda gpA homolog [Phage Gifsy-1]
+>YP_003212976.1 |hypothetical protein OTV1_153 [Ostreococcus tauri virus 1]
+>YP_003970036.1 |putative DnaK/Hsp70 [Cafeteria roenbergensis virus BV-PW1]
+>YP_003986752.1 |heat shock protein 70-like protein [Acanthamoeba polyphaga mimivirus]
+>YP_003986897.1 |heat shock 70 kDa protein-like protein [Acanthamoeba polyphaga mimivirus]
+>YP_004061438.1 |hypothetical protein BpV1_008c [Bathycoccus sp. RCC1105 virus BpV1]
+>YP_004061757.1 |hypothetical protein OlV1_124c [Ostreococcus lucimarinus virus 1]
+>YP_004062040.1 |hypothetical protein MpV1_157 [Micromonas sp. RCC1109 virus MpV1]
+>YP_004063575.1 |transcription initiation factor IIB [Ostreococcus tauri virus 2]
+>YP_004894403.1 |heat shock protein 70-like protein [Megavirus chiliensis]
+>YP_004894551.1 |heat shock 70 kDa protein-like protein [Megavirus chiliensis]
+>YP_007354398.1 |HSP70-like protein [Acanthamoeba polyphaga moumouvirus]
+>YP_007674741.1 |transcription initiation factor IIB [Ostreococcus lucimarinus virus OlV5]
+>YP_007676312.1 |heat shock protein 70 [Micromonas pusilla virus 12T]
+>YP_009118461.1 |thymidylate synthase [Equid gammaherpesvirus 5]
+>YP_009172649.1 |hypothetical protein APZ24_gp158 [Ostreococcus lucimarinus virus 2]
+>YP_009172922.1 |hypothetical protein AP053_gp162 [Ostreococcus mediterraneus virus 1]
+>YP_009173128.1 |hypothetical protein AP054_gp116 [Ostreococcus lucimarinus virus 7]
+>YP_009173627.1 |Hsp70 protein [Chrysochromulina ericina virus]
+>YP_009223858.1 |putative DNA cytosine methylase [Geobacillus virus E3]
+>YP_009325563.1 |nucleotide-sugar epimerase [Only Syngen Nebraska virus 5]
+>YP_009325851.1 |CTP synthetase [Only Syngen Nebraska virus 5]
+>YP_009465730.1 |hypothetical protein C5Y57_gp013 [Dishui lake phycodnavirus 1]
+>YP_009552344.1 |063L [Cherax quadricarinatus iridovirus]
+>YP_009639240.1 |restriction alleviation ral [Lederbergvirus BTP1]
+>YP_009639255.1 |NinE family protein [Lederbergvirus BTP1]
+>YP_009639256.1 |protein ninF [Lederbergvirus BTP1]
+>YP_009639257.1 |NinG/ Rap DNA junction specific endonuclease [Lederbergvirus BTP1]
+>YP_009664950.1 |hypothetical protein FK873_gp079 [Micromonas pusilla virus SP1]
+>YP_009665266.1 |nucleotide-sugar epimerase [Paramecium bursaria Chlorella virus NYs1]
+>YP_009874043.1 |ribonucleotide reductase [Roseovarius Plymouth podovirus 1]
+>YP_009877362.1 |tail fiber protein [Peduovirus P24A7b]
+>YP_009877363.1 |tail fiber assembly [Peduovirus P24A7b]
+>YP_009877408.1 |tail fiber protein [Xuanwuvirus P884B11]
+>YP_009997126.1 |ribonucleotide reductase [Synechococcus virus S-ESS1]
+>YP_010052654.1 |DNA methyltransferase [Xanthomonas virus phiXaf18]
+>YP_010053745.1 |single strand DNA binding protein [Salmonella virus VSt472]
+>YP_010084840.1 |transcription elongation factor SII [Shrimp hemocyte iridescent virus]
+>YP_010097731.1 |major head protein [Synechococcus virus S-PRM1]
+>YP_010097763.1 |DNA primase-helicase [Synechococcus virus S-PRM1]
+>YP_010097815.1 |photosystem II D1 [Synechococcus virus S-PRM1]
+>YP_010100726.1 |DNA polymerase [Vibrio virus vB_VspP_SBP1]
+>YP_010106125.1 |autonomous glycyl radical cofactor GrcA [Phage NBEco003]
+>YP_010246491.1 |ribonucleotide reductase class Ia beta subunit [Gordonia Phage Sephiroth]
+>YP_010663786.1 |tail fiber protein [Peduovirus P2]
+>YP_010772396.1 |adenine-specific methyltransferase [Methanoculleus virus L4768]
+>YP_010776221.1 |heat shock protein 70-like protein [Powai lake megavirus]
+>YP_010776364.1 |hypothetical protein QJ849_gp451 [Powai lake megavirus]
+>YP_010777167.1 |heat shock protein 70-like protein [Acanthamoeba polyphaga mimivirus]
+>YP_010777306.1 |HSP70 [Acanthamoeba polyphaga mimivirus]
+>YP_010778094.1 |putative DnaK/HSP70-like protein [Bodo saltans virus]
+>YP_010779557.1 |hypothetical protein QJ854_gp460 [Moumouvirus goulette]
+>YP_010780597.1 |putative heat shock 70 kDa protein [Tupanvirus deep ocean]
+>YP_010780889.1 |heat shock protein 70-like protein [Tupanvirus deep ocean]
+>YP_010781892.1 |putative heat shock 70 kDa protein [Tupanvirus soda lake]
+>YP_010782195.1 |heat shock protein 70-like protein [Tupanvirus soda lake]
+>YP_010788858.1 |heat shock 70 kDa protein-like protein [Megavirus baoshan]
+>YP_010789005.1 |heat shock 70 kDa protein-like protein [Megavirus baoshan]
+>YP_010789745.1 |heat shock 70 kDa protein-like protein [Moumouvirus australiensis]
+>YP_010802992.1 |UDP-N-acetylglucosamine 2-epimerase WecB-like protein [Fadolivirus algeromassiliense]
+>YP_010803277.1 |Hsp70 protein [Fadolivirus algeromassiliense]
+>YP_010803475.1 |Hsp70 protein [Fadolivirus algeromassiliense]
+>YP_010841774.1 |heat shock 70 kda protein-like protein [Cotonvirus japonicus]
+>YP_031679.1 |Vpf402 [Villovirus Vf33]
+>YP_031685.1 |Vpf380 [Villovirus Vf33]
