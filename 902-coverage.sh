@@ -1,58 +1,28 @@
-samtools depth -a data/split/SRR3165618.sort.flt.bam | awk '{print $1, $2, $3, $3/6.27037}'  | grep NC > outputs/902/SRR3165618.coverage
-samtools depth -a data/split/SRR3165619.sort.flt.bam | awk '{print $1, $2, $3, $3/5.53852}'  | grep NC > outputs/902/SRR3165619.coverage
-samtools depth -a data/split/SRR3165620.sort.flt.bam | awk '{print $1, $2, $3, $3/5.02076}'  | grep NC > outputs/902/SRR3165620.coverage
-samtools depth -a data/split/SRR3165621.sort.flt.bam | awk '{print $1, $2, $3, $3/6.26656}'  | grep NC > outputs/902/SRR3165621.coverage
-samtools depth -a data/split/SRR3165622.sort.flt.bam | awk '{print $1, $2, $3, $3/6.23001}'  | grep NC > outputs/902/SRR3165622.coverage
-samtools depth -a data/split/SRR3165623.sort.flt.bam | awk '{print $1, $2, $3, $3/5.45181}'  | grep NC > outputs/902/SRR3165623.coverage
-samtools depth -a data/split/SRR3165629.sort.flt.bam | awk '{print $1, $2, $3, $3/6.22876}'  | grep NC > outputs/902/SRR3165629.coverage
-samtools depth -a data/split/SRR3165630.sort.flt.bam | awk '{print $1, $2, $3, $3/5.24624}'  | grep NC > outputs/902/SRR3165630.coverage
-samtools depth -a data/split/SRR3165631.sort.flt.bam | awk '{print $1, $2, $3, $3/4.76502}'  | grep NC > outputs/902/SRR3165631.coverage
-samtools depth -a data/split/SRR3165632.sort.flt.bam | awk '{print $1, $2, $3, $3/4.9482}'  | grep NC > outputs/902/SRR3165632.coverage
-samtools depth -a data/split/SRR3165633.sort.flt.bam | awk '{print $1, $2, $3, $3/4.974}'  | grep NC > outputs/902/SRR3165633.coverage
-samtools depth -a data/split/SRR3165634.sort.flt.bam | awk '{print $1, $2, $3, $3/5.90283}'  | grep NC > outputs/902/SRR3165634.coverage
-samtools depth -a data/split/SRR3165594.sort.flt.bam | awk '{print $1, $2, $3, $3/5.24485}'  | grep NC > outputs/902/SRR3165594.coverage
-samtools depth -a data/split/SRR3165595.sort.flt.bam | awk '{print $1, $2, $3, $3/7.15998}'  | grep NC > outputs/902/SRR3165595.coverage
-samtools depth -a data/split/SRR3183253.sort.flt.bam | awk '{print $1, $2, $3, $3/11.8196}'  | grep NC > outputs/902/SRR3183253.coverage
-samtools depth -a data/split/SRR3183255.sort.flt.bam | awk '{print $1, $2, $3, $3/6.83614}'  | grep NC > outputs/902/SRR3183255.coverage
-samtools depth -a data/split/SRR3183256.sort.flt.bam | awk '{print $1, $2, $3, $3/7.52759}'  | grep NC > outputs/902/SRR3183256.coverage
-samtools depth -a data/split/SRR3183257.sort.flt.bam | awk '{print $1, $2, $3, $3/8.46042}'  | grep NC > outputs/902/SRR3183257.coverage
-samtools depth -a data/split/SRR3183258.sort.flt.bam | awk '{print $1, $2, $3, $3/34.8059}'  | grep NC > outputs/902/SRR3183258.coverage
-samtools depth -a data/split/SRR3183259.sort.flt.bam | awk '{print $1, $2, $3, $3/25.5825}'  | grep NC > outputs/902/SRR3183259.coverage
-samtools depth -a data/split/SRR3183260.sort.flt.bam | awk '{print $1, $2, $3, $3/10.5794}'  | grep NC > outputs/902/SRR3183260.coverage
-samtools depth -a data/split/SRR3183261.sort.flt.bam | awk '{print $1, $2, $3, $3/9.92069}'  | grep NC > outputs/902/SRR3183261.coverage
-samtools depth -a data/split/SRR3165613.sort.flt.bam | awk '{print $1, $2, $3, $3/4.73449}'  | grep NC > outputs/902/SRR3165613.coverage
-samtools depth -a data/split/SRR3165614.sort.flt.bam | awk '{print $1, $2, $3, $3/5.22582}'  | grep NC > outputs/902/SRR3165614.coverage
-samtools depth -a data/split/SRR3165615.sort.flt.bam | awk '{print $1, $2, $3, $3/5.69962}'  | grep NC > outputs/902/SRR3165615.coverage
-samtools depth -a data/split/SRR3165616.sort.flt.bam | awk '{print $1, $2, $3, $3/6.38517}'  | grep NC > outputs/902/SRR3165616.coverage
-samtools depth -a data/split/SRR3165617.sort.flt.bam | awk '{print $1, $2, $3, $3/6.62419}'  | grep NC > outputs/902/SRR3165617.coverage
-samtools depth -a data/split/SRR3183267.sort.flt.bam | awk '{print $1, $2, $3, $3/14.9079}'  | grep NC > outputs/902/SRR3183267.coverage
-samtools depth -a data/split/SRR3183268.sort.flt.bam | awk '{print $1, $2, $3, $3/14.3466}'  | grep NC > outputs/902/SRR3183268.coverage
-samtools depth -a data/split/SRR3183269.sort.flt.bam | awk '{print $1, $2, $3, $3/15.0254}'  | grep NC > outputs/902/SRR3183269.coverage
-samtools depth -a data/split/SRR3183270.sort.flt.bam | awk '{print $1, $2, $3, $3/33.1352}'  | grep NC > outputs/902/SRR3183270.coverage
-samtools depth -a data/split/SRR3183271.sort.flt.bam | awk '{print $1, $2, $3, $3/11.3764}'  | grep NC > outputs/902/SRR3183271.coverage
-samtools depth -a data/split/SRR3165612.sort.flt.bam | awk '{print $1, $2, $3, $3/6.13043}'  | grep NC > outputs/902/SRR3165612.coverage
-samtools depth -a data/split/SRR3165598.sort.flt.bam | awk '{print $1, $2, $3, $3/6.19854}'  | grep NC > outputs/902/SRR3165598.coverage
-samtools depth -a data/split/SRR3165599.sort.flt.bam | awk '{print $1, $2, $3, $3/5.81331}'  | grep NC > outputs/902/SRR3165599.coverage
-samtools depth -a data/split/SRR3165600.sort.flt.bam | awk '{print $1, $2, $3, $3/6.55264}'  | grep NC > outputs/902/SRR3165600.coverage
-samtools depth -a data/split/SRR3165601.sort.flt.bam | awk '{print $1, $2, $3, $3/5.6257}'  | grep NC > outputs/902/SRR3165601.coverage
-samtools depth -a data/split/SRR3165602.sort.flt.bam | awk '{print $1, $2, $3, $3/5.33382}'  | grep NC > outputs/902/SRR3165602.coverage
-samtools depth -a data/split/SRR3165624.sort.flt.bam | awk '{print $1, $2, $3, $3/6.69989}'  | grep NC > outputs/902/SRR3165624.coverage
-samtools depth -a data/split/SRR3165625.sort.flt.bam | awk '{print $1, $2, $3, $3/5.28765}'  | grep NC > outputs/902/SRR3165625.coverage
-samtools depth -a data/split/SRR3165626.sort.flt.bam | awk '{print $1, $2, $3, $3/5.81982}'  | grep NC > outputs/902/SRR3165626.coverage
-samtools depth -a data/split/SRR3165627.sort.flt.bam | awk '{print $1, $2, $3, $3/5.95206}'  | grep NC > outputs/902/SRR3165627.coverage
-samtools depth -a data/split/SRR3165628.sort.flt.bam | awk '{print $1, $2, $3, $3/5.39644}'  | grep NC > outputs/902/SRR3165628.coverage
-samtools depth -a data/split/SRR3165607.sort.flt.bam | awk '{print $1, $2, $3, $3/5.83248}'  | grep NC > outputs/902/SRR3165607.coverage
-samtools depth -a data/split/SRR3165608.sort.flt.bam | awk '{print $1, $2, $3, $3/5.95467}'  | grep NC > outputs/902/SRR3165608.coverage
-samtools depth -a data/split/SRR3165609.sort.flt.bam | awk '{print $1, $2, $3, $3/7.5679}'  | grep NC > outputs/902/SRR3165609.coverage
-samtools depth -a data/split/SRR3165610.sort.flt.bam | awk '{print $1, $2, $3, $3/5.67282}'  | grep NC > outputs/902/SRR3165610.coverage
-samtools depth -a data/split/SRR3165611.sort.flt.bam | awk '{print $1, $2, $3, $3/6.59629}'  | grep NC > outputs/902/SRR3165611.coverage
-samtools depth -a data/split/SRR3165603.sort.flt.bam | awk '{print $1, $2, $3, $3/6.48057}'  | grep NC > outputs/902/SRR3165603.coverage
-samtools depth -a data/split/SRR3183262.sort.flt.bam | awk '{print $1, $2, $3, $3/14.8006}'  | grep NC > outputs/902/SRR3183262.coverage
-samtools depth -a data/split/SRR3183263.sort.flt.bam | awk '{print $1, $2, $3, $3/19.1199}'  | grep NC > outputs/902/SRR3183263.coverage
-samtools depth -a data/split/SRR3183264.sort.flt.bam | awk '{print $1, $2, $3, $3/25.3705}'  | grep NC > outputs/902/SRR3183264.coverage
-samtools depth -a data/split/SRR3183265.sort.flt.bam | awk '{print $1, $2, $3, $3/21.9547}'  | grep NC > outputs/902/SRR3183265.coverage
-samtools depth -a data/split/SRR3165604.sort.flt.bam | awk '{print $1, $2, $3, $3/6.43056}'  | grep NC > outputs/902/SRR3165604.coverage
-samtools depth -a data/split/SRR3183266.sort.flt.bam | awk '{print $1, $2, $3, $3/15.0087}'  | grep NC > outputs/902/SRR3183266.coverage
-samtools depth -a data/split/SRR3165605.sort.flt.bam | awk '{print $1, $2, $3, $3/5.55945}'  | grep NC > outputs/902/SRR3165605.coverage
-samtools depth -a data/split/SRR3165606.sort.flt.bam | awk '{print $1, $2, $3, $3/6.85862}'  | grep NC > outputs/902/SRR3165606.coverage
-samtools depth -a data/split/SRR3183252.sort.flt.bam | awk '{print $1, $2, $3, $3/12.3517}'  | grep NC > outputs/902/SRR3183252.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3165629.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/6.22876}' > outputs/902/SRR3165629.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3165630.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/5.24624}' > outputs/902/SRR3165630.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3165631.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/4.76502}' > outputs/902/SRR3165631.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3165632.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/4.9482}' > outputs/902/SRR3165632.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3165633.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/4.974}' > outputs/902/SRR3165633.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3165634.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/5.90283}' > outputs/902/SRR3165634.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3165594.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/5.24485}' > outputs/902/SRR3165594.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3165595.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/7.15998}' > outputs/902/SRR3165595.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3183253.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/11.8196}' > outputs/902/SRR3183253.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3183255.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/6.83614}' > outputs/902/SRR3183255.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3183256.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/7.52759}' > outputs/902/SRR3183256.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3183257.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/8.46042}' > outputs/902/SRR3183257.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3183258.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/34.8059}' > outputs/902/SRR3183258.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3183259.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/25.5825}' > outputs/902/SRR3183259.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3183260.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/10.5794}' > outputs/902/SRR3183260.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3183261.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/9.92069}' > outputs/902/SRR3183261.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3165613.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/4.73449}' > outputs/902/SRR3165613.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3165614.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/5.22582}' > outputs/902/SRR3165614.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3165615.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/5.69962}' > outputs/902/SRR3165615.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3165616.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/6.38517}' > outputs/902/SRR3165616.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3165617.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/6.62419}' > outputs/902/SRR3165617.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3183267.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/14.9079}' > outputs/902/SRR3183267.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3183268.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/14.3466}' > outputs/902/SRR3183268.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3183269.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/15.0254}' > outputs/902/SRR3183269.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3183270.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/33.1352}' > outputs/902/SRR3183270.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3183271.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/11.3764}' > outputs/902/SRR3183271.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3165612.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/6.13043}' > outputs/902/SRR3165612.coverage
+samtools view -bh -r NC_066833.1,NC_066834.1 data/split/SRR3183252.sort.flt.bam | samtools depth -a - | awk '{print $1, $2, $3, $3/12.3517}' > outputs/902/SRR3183252.coverage
