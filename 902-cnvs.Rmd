@@ -1,0 +1,35 @@
+---
+title: "902-copy-number-variation"
+output: html_document
+date: "2024-08-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+Should be easily able to calculate depth (samtools depth -a ) and create a depth raster.
+
+Queensland
+India (east coast and west)
+Indonesia (K, SU, SJ)
+
+Need to normalize. Divide by average depth?
+
+1 2 3 = 6, 1/2, 1, 3/2 = 3
+1 1 1 = 1, 1 + 1 +1 = 3
+
+
+```{r}
+m58<-read_csv("~/github/lates-wgs/meta/58-Indo-split.csv")
+```
+
+```{r}
+commands<-m58 %>% mutate(Command=paste0("samtools depth -a ", Path, " | awk '{print $1, $2, $3, $3/",Coverage,"}' ", " | grep NC ", ">", " outputs/902/",Run,".coverage"))
+
+commands %>% select(Command) %>% write_tsv("902-coverage.sh", col_names = FALSE)
+```

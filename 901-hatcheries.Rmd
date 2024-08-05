@@ -145,7 +145,7 @@ srun -p high -t 32:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/901/85-ibs-90-noinv > outputs/901/85-ibs-90-noinv.out 2> outputs/901/85-ibs-90-noinv.err &
 
-#	-> Number of sites retained after filtering: 191224 
+#	
 
 
 #dropping inversion chroms 
@@ -177,7 +177,7 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 ## PCA
  
 ```{r}
-meta<-m85 %>% filter(! Run %in% c("OceanPick11","OceanPick1","OceanPick2"))
+meta<-m85 %>% filter(! Run %in% c("OceanPick8","OceanPick20"))
 meta$Region<-factor(meta$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
                                               "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines",
                                               "Vietnam","Cambodia","Thailand", "Bangladesh",
@@ -204,7 +204,7 @@ head(cumvar)
 
 ```{r}
 covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta) 
-
+ 
 text12<-covs %>% select(Run, Region, Lineage, V1, V2) %>% filter(Lineage %in% c("Mainstream","OceanPick","lakdiva")) %>%
   group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
 
@@ -218,7 +218,7 @@ pc12<-ggplot(covs) +
   scale_fill_viridis_d(option="turbo") +
   ggtitle("A") +
   theme(plot.title = element_text(size=18, face="bold")) +
-  scale_shape_manual(values=c(21,23,25,22,22,24)) +
+  scale_shape_manual(values=c(21,23,25,22,25,24)) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
   theme(legend.position = "none")
 
@@ -240,7 +240,7 @@ pc13<-ggplot(covs) +
   scale_fill_viridis_d(option="turbo") +
   ggtitle("B") +
   theme(plot.title = element_text(size=18, face="bold")) +
-  scale_shape_manual(values=c(21,23,25,22,22,24)) +
+  scale_shape_manual(values=c(21,23,25,22,25,24)) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) 
 
 pc13
