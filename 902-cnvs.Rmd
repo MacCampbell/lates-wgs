@@ -31,12 +31,16 @@ msub<-read_csv("~/github/lates-wgs/meta/58-Indo-split.csv") %>%
 ```
 
 ```{r}
-commands<-msub %>% mutate(Command=paste0("samtools view -bh -r NC_066833.1,NC_066834.1 ", Path, " | samtools depth -a - | awk '{print $1, $2, $3, $3/",Coverage,"}' ", ">", " outputs/902/",Run,".coverage"))
+commands<-msub %>% mutate(Command=paste0("samtools view -bh -r NC_066833.1,NC_066834.1 ", Path, " | samtools depth -a - | awk '{print $1, $2, $3/",Coverage,"\t",Run,"}' ", ">", " outputs/902/",Run,".coverage"))
 
 commands %>% select(Command) %>% write_tsv("902-coverage.sh", col_names = FALSE)
 ```
 
 module load parallel
  
-srun -p high --time 12:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=18 parallel -j 18 < 902-coverage.sh
+srun -p high --time 2:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=18 parallel -j 18 < 902-coverage.sh
 
+Combine into a tidy format.
+
+Chrom Pos Depth Individual
+~ X Z Y
