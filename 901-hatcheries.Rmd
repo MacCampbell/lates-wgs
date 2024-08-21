@@ -332,6 +332,11 @@ PlotAdmix("outputs/901/85-K4.qopt", meta)
 ```{r}
 PlotAdmix("outputs/901/85-K5.qopt", meta)
 ```
+
+```{r}
+PlotAdmix("outputs/901/85-K6.qopt", meta)
+```
+
 # Other Chroms
 
 ```{r}
