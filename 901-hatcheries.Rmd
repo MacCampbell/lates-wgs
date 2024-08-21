@@ -11,6 +11,10 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 
 ```{r}
 library(tidyverse)
+library(snpR)
+library(grid)
+library(viridis)
+library(pcadapt)
 library(dartR)
 library(ggtree)
 library(phangorn)
@@ -113,7 +117,7 @@ m85 %>% select(Run) %>% write_tsv(file="bamlists/85.names", col_names = FALSE)
 
 ```{sh, eval=FALSE}
 srun -p high -t 8:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
--bam bamlists/85-down.bamlist -r NC_066835.1:1-17500000 \
+-bam bamlists/85-down.bamlist -r NC_066835.1:2000000-17500000 \
 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 77 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
@@ -129,7 +133,7 @@ srun -p high -t 8:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=
 -out outputs/901/85-ibs-90-lca05 > outputs/901/85-ibs-90-lca05.out 2> outputs/901/85-ibs-90-lca05.err &
 
 srun -p high -t 8:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -P 12  \
--bam bamlists/85-down.bamlist -r NC_066852.13500000- \
+-bam bamlists/85-down.bamlist -r NC_066852.1:3500000- \
 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 77 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
@@ -143,7 +147,7 @@ srun -p high -t 32:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -minInd 77 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
--out outputs/901/85-ibs-90-noinv > outputs/901/85-ibs-90-noinv.out 2> outputs/901/85-ibs-90-noinv.err &
+-out outputs/901/85-ibs-90-Lca01 > outputs/901/85-ibs-90-Lca01.out 2> outputs/901/85-ibs-90-Lca01.err &
 
 #	
 
@@ -161,8 +165,8 @@ srun -p high -t 32:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 srun -p high -t 05:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 2 -o outputs/901/85-K2 &
 srun -p high -t 07:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 3 -o outputs/901/85-K3 &
 srun -p high -t 07:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 4 -o outputs/901/85-K4 &
-srun -p high -t 08:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 5 -o outputs/901/85-K5 &
-srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 6 -o outputs/901/85-K6 &
+srun -p high -t 10:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 5 -o outputs/901/85-K5 &
+srun -p high -t 12:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/901/85-ibs-90-noinv.beagle.gz -K 6 -o outputs/901/85-K6 &
 
 ## Calls
 srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 24 \
@@ -191,7 +195,7 @@ round(median(meta$Coverage),2)
 ```
 
 ```{r}
-m <- as.matrix(read.table("outputs/901/85-ibs-90-noinv.covMat"))
+m <- as.matrix(read.table("outputs/901/85-ibs-90-Lca01.covMat"))
 eig <- eigen(m)
 var<-eig$values/sum(eig$values)
 cumvar<-cumsum(eig$values)/sum(eig$values)
@@ -210,7 +214,8 @@ text12<-covs %>% select(Run, Region, Lineage, V1, V2) %>% filter(Lineage %in% c(
 
 pc12<-ggplot(covs) +
   geom_point(aes(x=V1, y=V2, fill=Region, shape=Lineage), size=3, alpha=0.75) +
-  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+ # geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  geom_text_repel(data=covs %>% filter(Lineage=="OceanPick"), aes(x=V1, y=V2, label=Run), cex=3) +
   xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
   ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
   theme_bw() +
@@ -327,6 +332,113 @@ PlotAdmix("outputs/901/85-K4.qopt", meta)
 ```{r}
 PlotAdmix("outputs/901/85-K5.qopt", meta)
 ```
+# Other Chroms
+
+```{r}
+m <- as.matrix(read.table("outputs/901/85-ibs-90-lca03.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+```
+
+
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta) 
+
+text12<-covs %>% select(Run, Region, Lineage, V1, V2) %>% filter(Lineage %in% c("Mainstream","OceanPick","lakdiva")) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+pc12<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Region, shape=Lineage), size=3, alpha=0.75) +
+ # geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  geom_text_repel(data=covs %>% filter(Lineage=="OceanPick"), aes(x=V1, y=V2, label=Run), cex=3) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("Lca03") +
+  theme(plot.title = element_text(size=18, face="bold")) +
+  scale_shape_manual(values=c(21,23,25,22,25,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "none") +
+  facet_wrap(.~Lineage)
+pc12
+```
+
+```{r}
+m <- as.matrix(read.table("outputs/901/85-ibs-90-lca05.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+```
+
+
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta) 
+ 
+text12<-covs %>% select(Run, Region, Lineage, V1, V2) %>% filter(Lineage %in% c("Mainstream","OceanPick","lakdiva")) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+pc12<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Region, shape=Lineage), size=3, alpha=0.75) +
+#  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+   geom_text_repel(data=covs %>% filter(Lineage=="OceanPick"), aes(x=V1, y=V2, label=Run), cex=3) +
+   xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("Lca05") +
+  theme(plot.title = element_text(size=18, face="bold")) +
+  scale_shape_manual(values=c(21,23,25,22,25,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "none")
+pc12
+```
+
+```{r}
+m <- as.matrix(read.table("outputs/901/85-ibs-90-lca20.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+```
+
+
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta) 
+ 
+text12<-covs %>% select(Run, Region, Lineage, V1, V2) %>% filter(Lineage %in% c("Mainstream","OceanPick","lakdiva")) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+pc12<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Region, shape=Lineage), size=3, alpha=0.75) +
+ # geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  geom_text_repel(data=covs %>% filter(Lineage=="OceanPick"), aes(x=V1, y=V2, label=Run), cex=3) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("Lca20") +
+  theme(plot.title = element_text(size=18, face="bold")) +
+  scale_shape_manual(values=c(21,23,25,22,25,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "none")
+pc12
+```
 
 # Calls
 
@@ -348,3 +460,245 @@ bcftools view -r NC_066837.1:5247652- outputs/901/snps-wgs-plink.vcf.gz| bcftool
 ```
 
 
+## Just ocean pick and aussie samples
+
+
+```{r}
+m85 %>% filter(Region %in% c("Northern Territory","Queensland","Papua New Guinea","Mainstream")) %>% select("Run") %>% write_tsv("meta/aussie.names", col_names = FALSE)
+moz<- m85 %>% filter(Region %in% c("Northern Territory","Queensland","Papua New Guinea","Mainstream")) 
+```
+
+```{sh}
+bcftools view -r NC_066833.1,NC_066834.1,NC_066836.1,NC_066838.1,NC_066839.1,NC_066840.1,NC_066841.1,NC_066842.1,NC_066843.1,NC_066844.1,NC_066845.1,NC_066846.1,NC_066847.1,NC_066848.1,NC_066849.1,NC_066850.1,NC_066851.1,NC_066853.1,NC_066854.1,NC_066855.1,NC_066856.1 outputs/901/snps-wgs-plink.vcf.gz |  bcftools reheader --samples bamlists/85.names  | bcftools view -S meta/aussie.names | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.20 -w 50000bp --nsites-per-win 1  > outputs/901/aussie.vcf
+```
+
+```{r}
+path_to_file <- "outputs/901/aussie.vcf"
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+
+7498 loci
+```{r}
+cols<-viridis(13, option="H")
+```
+_1_ choose a K   
+
+```{r}
+x <- pcadapt(input = filename, K = 5) 
+```
+
+```{r}
+#plot(x, option = "screeplot")
+panela<-plot(x, option = "screeplot", K = 5) + ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  scale_x_continuous(breaks=seq(1,5,1), labels=seq(1,5,1)) +
+  ylab("Proption of Explained Variance\n") +
+  xlab("\nPrincipal Component") +
+  theme(axis.title=element_text(size=12))
+panela
+```
+
+
+```{r}
+pcadata<-x$scores[,1:2] %>% as_tibble()
+pcadata<-pcadata %>% bind_cols(moz)
+labels<-pcadata %>% group_by(Region) %>% mutate(x=mean(V1), y=mean(V2)) %>% select(Region, x, y) %>% unique()
+```
+
+```{r}
+pcb<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V2, shape=Lineage, fill=Region), alpha=0.95) +
+  geom_text_repel(data=labels, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  scale_shape_manual(values = c(21,25)) +
+  scale_fill_manual(values=cols[1:4]) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  #theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 2") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+
+pcb
+```
+
+
+```{r}
+blank <- grid.rect(gp=gpar(col="white"))
+```
+
+```{r}
+ggarrange(ggarrange(panela,blank, ncol=1), pcb, ncol=2, widths = c(1,2))
+ggsave("outputs/901/pcadapt-ozng.jpeg", width=8.5, height=5.5)
+
+```
+
+```{r}
+vcf <-read.vcfR("outputs/901/aussie.vcf")
+gl<-vcfR2genlight(vcf)
+gl$pop<-as.factor(gsub(" ","",moz$Region))
+```
+```{r}
+snp<-import.snpR.data(gl)
+
+plot<-plot_structure(snp, k=2:3, facet=c("pop"), facet.order = c("NorthernTerritory","PapuaNewGuinea","Queensland","Mainstream"))
+
+plot
+ggsave("outputs/901/basic-k-plot.jpeg")
+
+```
+
+
+
+# Drop Ind
+
+
+```{r}
+m85 %>% filter(! Lineage %in% c("IND","lakdiva")) %>% select("Run") %>% write_tsv("meta/sea-aus.names", col_names = FALSE)
+msa<- m85 %>% filter(! Lineage %in% c("IND","lakdiva")) 
+```
+
+```{sh}
+bcftools view -r NC_066833.1,NC_066834.1,NC_066836.1,NC_066838.1,NC_066839.1,NC_066840.1,NC_066841.1,NC_066842.1,NC_066843.1,NC_066844.1,NC_066845.1,NC_066846.1,NC_066847.1,NC_066848.1,NC_066849.1,NC_066850.1,NC_066851.1,NC_066853.1,NC_066854.1,NC_066855.1,NC_066856.1 outputs/901/snps-wgs-plink.vcf.gz |  bcftools reheader --samples bamlists/85.names  | bcftools view -S meta/sea-aus.names | bcftools +fill-tags | bcftools view -q 0.05:minor | bcftools +prune -m 0.20 -w 50000bp --nsites-per-win 1  > outputs/901/sea-aus.vcf
+```
+
+```{r}
+path_to_file <- "outputs/901/sea-aus.vcf"
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+
+7498 loci
+```{r}
+cols<-viridis(13, option="H")
+```
+_1_ choose a K   
+
+```{r}
+x <- pcadapt(input = filename, K = 5) 
+```
+
+```{r}
+#plot(x, option = "screeplot")
+panela<-plot(x, option = "screeplot", K = 5) + ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  scale_x_continuous(breaks=seq(1,5,1), labels=seq(1,5,1)) +
+  ylab("Proption of Explained Variance\n") +
+  xlab("\nPrincipal Component") +
+  theme(axis.title=element_text(size=12))
+panela
+```
+
+
+```{r}
+pcadata<-x$scores[,1:2] %>% as_tibble()
+pcadata<-pcadata %>% bind_cols(msa)
+labels<-pcadata %>% group_by(Region) %>% mutate(x=mean(V1), y=mean(V2)) %>% select(Region, x, y) %>% unique()
+```
+
+```{r}
+pcb<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V2, shape=Lineage, fill=Region), alpha=0.95) +
+  geom_text_repel(data=labels, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  scale_shape_manual(values = c(21,23,23,25)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  #theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 2") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+
+pcb
+```
+
+
+```{r}
+blank <- grid.rect(gp=gpar(col="white"))
+```
+
+```{r}
+ggarrange(ggarrange(panela,blank, ncol=1), pcb, ncol=2, widths = c(1,2))
+ggsave("outputs/901/pcadapt-sea-aus.jpeg", width=8.5, height=5.5)
+
+```
+
+```{r}
+vcf <-read.vcfR("outputs/901/sea-aus.vcf")
+gl<-vcfR2genlight(vcf)
+gl$pop<-as.factor(gsub(" ","",msa$Region))
+```
+```{r}
+snp<-import.snpR.data(gl)
+
+plot<-plot_structure(snp, k=2:8, facet=c("pop"), facet.order = c("NorthernTerritory","PapuaNewGuinea","Queensland","Mainstream","OceanPick",
+                                                                 "Indonesia-K","Indonesia-SU","Indonesia-SJ","Cambodia","Thailand","Vietnam","Philippines"))
+
+plot
+ggsave("outputs/901/basic-k-plot-sea-aus.jpeg")
+
+```
+
+
+```{r}
+glx<-gl
+glx <- gl.compliance.check(glx) 
+
+gl3<-gl.filter.maf(glx, threshold = 0.25)
+gl3<-gl.filter.allna(gl3)
+gl3
+```
+
+```{r}
+hyb <- gl.nhybrids(gl3,
+p0=c("NorthernTerritory","PapuaNewGuinea","Queensland","Mainstream"),
+p1=c("Indonesia-K","Indonesia-SU", "Indonesia-SJ","Thailand","Cambodia"),
+#threshold=0.01,
+method="AvgPIC",
+nhyb.directory="~/github/newhybrids", # Specify as necessary
+outpath="~/github/lates-wgs/outputs/901",  # Specify as necessary, usually getwd() [= workspace]
+BurnIn=100000,
+sweeps=50000,
+verbose=3,
+plot=FALSE)
+
+```
+
+
+
+```{r}
+out<-read_csv("outputs/901/aa-PofZ.csv", col_names = c("Sequence ID","Region","NoName","P0","P1","F1","F2","0-BX","1-BX"), skip=1)
+
+long<-out %>% pivot_longer(cols = 4:9, names_to = c("Class"), values_to = c("Prob"))
+long$Region<-gsub("-SU","-K",long$Region)
+
+
+long$Region<-factor(long$Region, levels=c("Queensland","NorthernTerritory","PapuaNewGuinea","Mainstream","OceanPick",
+                                          "Indonesia-K","Indonesia-SJ","Indonesia-SU","Philippines",
+                                            "Vietnam","Cambodia","Thailand"))
+long$Class<-factor(long$Class, levels=c("P0","P1","F1","F2","0-BX","1-BX"))
+l2<-long %>% arrange(Region)
+l2$`Sequence ID`<-as.factor(l2$`Sequence ID`)
+
+```
+
+
+```{r}
+ggplot(l2) + 
+  geom_tile(aes(x=`Sequence ID`, y=Class, fill=Prob)) +
+  scale_fill_viridis_c(direction=-1) +
+  facet_grid(.~Region, scales="free_x", space="free" ) +
+  theme_bw()+
+  theme(panel.grid=element_blank()) +
+  theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
+  xlab("Sequence ID") +
+  theme(strip.text=element_text(angle=45, size=8))
+
+
+ggsave("outputs/901/trial-new-hybrids.pdf", width=12, height=6)
+```
