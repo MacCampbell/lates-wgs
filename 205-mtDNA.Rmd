@@ -65,7 +65,11 @@ srun -p high --nodes=1 --mem=32G -t 01:30:00 cut -f 1 -d ',' meta/58.csv | while
 
 #rename and consolidate.
 awk '/^>/{print ">" substr(FILENAME,1,length(FILENAME)-10); next} 1' *-coi.fasta
+
+#mitogenomes
+awk '/^>/{print ">" substr(FILENAME,1,length(FILENAME)-10); next} 1' *mtdna-q20.fasta > mitogenomes.fasta
 ```
+
 
 Now to merge with barcode data set!!
 
@@ -226,4 +230,39 @@ species
 t %<+% species +
   geom_tippoint(aes(fill=`Candidate Species`),shape=21)
 ```
-  
+
+
+## Mitogenomes
+
+including >NC_007439.1 and refseq for sanity, looks ok. Dropping out.  Need to redo with Bangladesh samples
+/Users/mac/github/lates-wgs/data/mitogenomes
+
+
+```{sh, eval=FALSE}
+mafft mitogenomes.fasta > mitogenomes.afas  
+bmge -i mitogenomes.afas -t DNA -of tmsa.fasta
+~/Dropbox/bin/seqConverter.pl -dtmsa.fasta -on
+iqtree2 -s tmsa.fasta -st DNA -m MFP -bb 10000 --redo
+```
+
+```{r}
+m3 <- m2 %>% mutate(label=paste0(Run,"-mtdna")) %>% relocate(label)
+tree<-read.tree("data/mitogenomes/tmsa.fasta.contree")
+tree<-midpoint.root(tree)
+ggtree(tree) %<+% m3 +
+  geom_tiplab(aes(label=Region)) +
+  xlim(0,.2) +
+  geom_treescale()
+
+ggsave("data/mitogenomes/mito-tree.pdf", width=8.5, height=11)
+
+
+```
+
+```{r}
+ggtree(tree, branch.length = 'none') %<+% m3 +
+  geom_tiplab(aes(label=Region)) +
+  xlim(0,20)
+ggsave("data/mitogenomes/mito-cladogram.pdf", width=8.5, height=11)
+
+```
