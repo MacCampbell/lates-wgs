@@ -215,3 +215,17 @@ cols<-viridis(n=length(names), option="H")
 plot(haploNet(x)) 
 ```
 
+## more seqs
+~/Dropbox/bin/shortenNamesMac.pl additional-cr.fas > additional-cr-renamed.fas
+cat additional-cr-renamed.fas combined.fas > new-cr.fas
+mafft new-cr.fas > new-cr.afas
+bmge -i new-cr.afas -t DNA -of new-cr-tmsa.fasta
+iqtree2 -s new-cr-tmsa.fasta  -st DNA -m MFP -bb 10000 --redo
+~/Dropbox/bin/seqConverter.pl -dnew-cr-tmsa.fasta -on
+
+```{r}
+tree<-read.nexus("data/marshall-cytb/ml/tmsa-nj.tre")
+tree<-midpoint.root(tree)
+t1<-ggtree(tree) + geom_tiplab(size=2)
+t1
+```

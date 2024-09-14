@@ -27,11 +27,11 @@ m58$Region<-factor(m58$Region, levels=c("Northern Territory","Queensland","Papua
 
 m47<-m58 %>% filter(!Region %in% c("India Eastern Coast", "India Western Coast"))
 
-m58split<-read_csv("meta/58-Indo-split.csv")
+m60split<-read_csv("meta/60-Indo-split.csv")
 
-m58split$Region<-factor(m58split$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
+m60split$Region<-factor(m60split$Region, levels=c("Northern Territory","Queensland","Papua New Guinea",
                                              "Indonesia-K", "Indonesia-SJ", "Indonesia-SU",
-                                             "Philippines","Cambodia","Thailand", "Vietnam",
+                                             "Philippines","Cambodia","Thailand", "Vietnam","Bangladesh",
                                               "India Eastern Coast","India Western Coast"))
 
 ```
@@ -101,28 +101,28 @@ java -jar ~/BMGE-1.12/BMGE.jar -i comb2.afas -t DNA -o combined.phy
  
  Now to make a network of AUS+NG and SEA inds.   
  
-```{r}
+```{r, eval=FALSE}
 Naso<-read.dna(file="data/mtdna/new-coi.afasta", format="fasta")
 Naso<-updateLabel(Naso, labels(Naso), m58$Region)
 labels(Naso)
 ```
  
-```{r}
-#Naso<-Naso[labels(Naso) %in% m47$Region,]
+```{r, eval=FALSE}
+Naso<-Naso[labels(Naso) %in% m47$Region,]
 ```
 
-```{r}
+```{r, eval=FALSE}
 NasoHaps <- haplotype(Naso)
 NasoHaps
 ```
 
-```{r}
+```{r, eval=FALSE}
 NasoNet <- haploNet(NasoHaps)
 plot(NasoNet, size=attr(NasoNet,"freq"), fast=FALSE)
 ```
 
 
-```{r}
+```{r,eval=FALSE}
 ind.hap<-with(
   utils::stack(setNames(attr(NasoHaps, "index"), rownames(NasoHaps))),
   table(hap=ind, individuals=rownames(Naso)[values])
@@ -134,13 +134,13 @@ ind.hap
 ```{r}
 cols<-viridis(n=length(unique(m58$Region)), option="H")
 ```
-```{r}
+```{r, eval=FALSE}
 plot(NasoNet, size=attr(NasoNet, "freq"), scale.ratio = .3, cex = 1, pie=ind.hap, labels = FALSE, bg=cols)
 
 #legend("topright", sort(rownames(Naso)) %>% unique(), text.col = cols)
 ```
 
-```{r}
+```{r, eval=FALSE}
 args(pegas:::plot.haploNet)
 ```
 
@@ -241,13 +241,22 @@ including >NC_007439.1 and refseq for sanity, looks ok. Dropping out.  Need to r
 ```{sh, eval=FALSE}
 mafft mitogenomes.fasta > mitogenomes.afas  
 bmge -i mitogenomes.afas -t DNA -of tmsa.fasta
+#14897
+bmge -i mitogenomes.afas -t DNA -of tmsa.fasta -h 0.4 -g 0.01
+#14419
+bmge -i mitogenomes.afas -t DNA -of tmsa.fasta -h 0.4 -g 0.05
+#14419
 ~/Dropbox/bin/seqConverter.pl -dtmsa.fasta -on
 iqtree2 -s tmsa.fasta -st DNA -m MFP -bb 10000 --redo
+iqtree2 -s mitogenomes.afas -st DNA -m MFP -bb 10000 --redo
+
 ```
 
 ```{r}
-m3 <- m2 %>% mutate(label=paste0(Run,"-mtdna")) %>% relocate(label)
+m3 <- m60split %>% mutate(label=paste0(Run,"-mtdna")) %>% relocate(label)
 tree<-read.tree("data/mitogenomes/tmsa.fasta.contree")
+tree<-read.tree("data/mitogenomes/mitogenomes.afas.contree")
+
 tree<-midpoint.root(tree)
 ggtree(tree) %<+% m3 +
   geom_tiplab(aes(label=Region)) +
@@ -262,7 +271,45 @@ ggsave("data/mitogenomes/mito-tree.pdf", width=8.5, height=11)
 ```{r}
 ggtree(tree, branch.length = 'none') %<+% m3 +
   geom_tiplab(aes(label=Region)) +
+  geom_nodelab() +
   xlim(0,20)
 ggsave("data/mitogenomes/mito-cladogram.pdf", width=8.5, height=11)
+
+```
+
+Dropping japonicus
+```{sh, eval=FALSE}
+
+mafft no-japonicus.fas > no-japonicus.afas  
+bmge -i no-japonicus.afas -t DNA -of no-japonicus-tmsa.fas
+#14893
+bmge -i no-japonicus.afas -t DNA -of no-japonicus-tmsa.fas -h 0.4
+#14422
+iqtree2 -s no-japonicus-tmsa.fas -st DNA -m MFP -bb 10000 --redo
+iqtree2 -s no-japonicus.afas -st DNA -m MFP -bb 10000 --redo
+
+```
+
+```{r}
+tree<-read.tree("data/mitogenomes/no-japonicus-tmsa.fas.contree")
+tree<-read.tree("data/mitogenomes/no-japonicus.afas.contree")
+
+tree<-midpoint.root(tree)
+ggtree(tree) %<+% m3 +
+  geom_tiplab(aes(label=Region)) +
+  xlim(0,.2) +
+  geom_treescale()
+
+ggsave("data/mitogenomes/no-japonicus-mito-tree.pdf", width=8.5, height=11)
+
+
+```
+
+```{r}
+ggtree(tree, branch.length = 'none') %<+% m3 +
+  geom_tiplab(aes(label=Region)) +
+  geom_nodelab() +
+  xlim(0,20)
+ggsave("data/mitogenomes/no-japonicus-mito-cladogram.pdf", width=8.5, height=11)
 
 ```

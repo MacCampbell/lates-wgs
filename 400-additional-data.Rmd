@@ -214,12 +214,13 @@ Generate a PCA for sanity, then call SNPs.
 mafft to align
 
 iqtree -s new-coi.afasta -bb 10000 -m HKY+G --redo 
+iqtree2 -s new-coi.afasta -bb 10000 -m MFP --redo 
 
 
 ```{r}
 tree<-read.tree("outputs/400/new-coi.afasta.contree")
 t2<-midpoint.root(tree)
-t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 75)
+t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 50)
 
 t<-t3
 
@@ -256,22 +257,70 @@ m2<-m61
 u<-t %<+% m2 + #bind_rows(m58, rm) +
   geom_point(data=e,  fill="gray50", cex=3, alpha=1, pch=22) +
   geom_point(data=d,  fill="black", cex=3, alpha=1, pch=22) +
-  geom_tippoint(aes(x=x+0.005,fill=Region, shape=Lineage), cex=3) +
-  geom_tiplab(aes(label=Region, x=x+0.01), align = FALSE, size=3) +
+  geom_tippoint(aes(x=x+0.0025,fill=Region, shape=Lineage), cex=3) +
+  geom_tiplab(aes(label=Region, x=x+0.005), align = FALSE, size=3) +
   scale_shape_manual(values=c(21,23,24,25)) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
-  xlim(0,.2) +
+  xlim(0,.15) +
   scale_fill_viridis_d(option="H") +
   theme(legend.position = "none") +
   geom_treescale()
 
 u
 
-ggsave("outputs/400/mtdna-phylo.pdf", width=6.5, height=8)
+ggsave("outputs/400/mtdna-phylo.pdf", width=8, height=8)
 
 ```
-+
-  #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
+```{r}
+
+tree<-read.tree("outputs/400/mfp/new-coi.afasta.contree")
+t2<-midpoint.root(tree)
+t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 50)
+
+
+t<-ggtree(t3, branch.length ="none")
+
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[e$label < 90,]
+e <- e[e$label >= 75,]
+```
+
+
+```{r}
+m61<-read_csv("meta/61-Indo-split.csv")
+m61$Region<-factor(m61$Region, levels=c("Queensland","Northern Territory","Papua New Guinea",
+                                              "Indonesia-K","Indonesia-SJ","Indonesia-SU","Philippines",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India Eastern Coast","India Western Coast"))
+
+m61$Lineage<-factor(m61$Lineage, levels=c("AUS+NG","IND","SEA","japonicus"))
+```
+
+
+```{r}
+m2<-m61
+u<-t %<+% m2 + #bind_rows(m58, rm) +
+  geom_point(data=e,  fill="gray50", cex=3, alpha=1, pch=22) +
+  geom_point(data=d,  fill="black", cex=3, alpha=1, pch=22) +
+  geom_tippoint(aes(x=x+0.005,fill=Region, shape=Lineage), cex=3) +
+  geom_tiplab(aes(label=Region, x=x+0.01), align = FALSE, size=3) +
+  scale_shape_manual(values=c(21,23,24,25)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(0,10) +
+  scale_fill_viridis_d(option="H") +
+  theme(legend.position = "none") 
+
+
+u
 
 
 ```
