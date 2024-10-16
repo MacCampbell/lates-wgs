@@ -130,6 +130,8 @@ ggplot() +
   scale_fill_viridis_c(option="magma")
 
 ggsave("outputs/1000/samples-052024-pbr.jpeg")
+ggsave("outputs/1000/samples-052024-pbr.pdf")
+
 ```
 
 

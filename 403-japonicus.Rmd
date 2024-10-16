@@ -269,3 +269,18 @@ qt %<+% tips +
 
 ggsave("outputs/403/species-tree.pdf")
 ```
+
+
+```{r}
+qt %<+% tips + 
+  geom_tippoint(aes(x=x+0.002,fill=Region, shape=Lineage), cex=4) + 
+  geom_tiplab(aes(x=x+.6, label=Region)) +
+  geom_nodelab(aes(label=paste0(round(branch.length,0)), y=y+.4, x=x-.3)) +
+  scale_shape_manual(values=c(21,23,24)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(0,10) +
+  scale_fill_viridis_d(option="H") +
+  theme(legend.position = "none") +
+  xlim(0,15)
+ggsave("outputs/403/species-tree-narrow.pdf", width=4, height=6)
+```

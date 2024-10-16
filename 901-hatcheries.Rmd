@@ -321,6 +321,7 @@ PlotAdmix("outputs/901/85-K2.qopt", meta)
 
 ```{r}
 PlotAdmix("outputs/901/85-K3.qopt", meta)
+ggsave("outputs/901/85-K3.pdf", width=8, height=3)
 ```
 
 
