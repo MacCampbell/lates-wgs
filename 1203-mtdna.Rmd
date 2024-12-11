@@ -51,12 +51,28 @@ module load sratoolkit/3.0.0
 srun -p bigmemm --time 2:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 1203.1-split.sh
 ```
 
+files look like SRR3165613.sralite.1_pass_1.fastq.gz, SRR3165613.sralite.1_pass_2.fastq.gz
 
 # Spades
 module load spades
 
-bin/spades.py -1 left.fastq.gz -2 right.fastq.gz -o output_folder
+example command: bin/spades.py -1 left.fastq.gz -2 right.fastq.gz -o output_folder
+spades examines a few kmers by default (k21, k33, k55 and k77) this should work for the vij et al. data, it is 100bp data
 
-```{r}
+bangladesh is 150 bp, but shrug
 
+```{sh, eval=FALSE}
+#trialing bangladesh sample
+srun -p bigmemm -t 24:00:00 --mem=240GB --nodes=1 --cpus-per-task=6 spades.py --phred-offset 33 -1 data/bangladesh/split/SRR26358744_pass_1.fastq.gz  -2 data/bangladesh/split/SRR26358744_pass_2.fastq.gz -o data/denovo/SRR26358744 
+
+#trialing indonesian sample
+srun -p bigmemm -t 72:00:00 --mem=240GB --nodes=1 --cpus-per-task=6 spades.py --phred-offset 33 -1 data/denovo/SRR3165613.sralite.1_pass_1.fastq.gz -2 data/denovo/SRR3165613.sralite.1_pass_2.fastq.gz -o data/denovo/SRR3165613
 ```
+
+
+Did I get a complete mtDNA sequence?  
+
+Can I annotate? https://mitofish.aori.u-tokyo.ac.jp/annotation/input/
+
+now to run all of them....
+
