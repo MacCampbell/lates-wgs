@@ -48,7 +48,7 @@ module load ncbi-toolkit/26_0_1
 module load sratoolkit/3.0.0       
 
 ```{sh, eval=FALSE}
-srun -p bigmemm --time 2:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 1203.1-split.sh
+srun -p bigmemm --time 6:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=11 parallel -j 11 < 1203.1-split.sh
 ```
 
 files look like SRR3165613.sralite.1_pass_1.fastq.gz, SRR3165613.sralite.1_pass_2.fastq.gz
