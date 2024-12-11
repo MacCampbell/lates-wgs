@@ -1,0 +1,52 @@
+---
+title: "1203-mtdna"
+output: html_document
+date: "2024-12-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+For some genomic analysis, we can use fragmentary de novo assemblies. We can also use the mtDNA to generate control region data because of _1_ unique andaman mtDNA, _2_ Wallacean fish, and _3_  better characterization of diversity in Australia.
+
+let's start with the Wallacean fish and see if we can get a complete mitogenome.Options, use alignment to reference mtdna and pull out aligned/single aligned data and assemble. Otherwise, use all the data and see what shakes out.    
+
+(base) maccamp@farm:~$ module load spades
+Loading spades/3.15.5
+spades.py --test
+
+Seems to work.    
+```{r}
+sra<-read_csv("meta/lates-wgs-SraRunInfo.csv")
+indo<-sra %>% select(Run, Experiment,SampleName,Region) %>% filter(Region=="Indonesia")
+sra %>% select(Run, Experiment,SampleName,Region) %>% group_by(Region) %>% summarize(Count=n())
+indo
+```
+ind data/raw
+```{sh, eval=FALSE}
+cat ../../meta/lates-wgs-SraRunInfo.csv | grep Indonesia | cut -d ',' -f 10 | while read line; do wget $line; done;
+```
+
+Getting SRR3165613.sralite.1
+
+module load ncbi-toolkit/26_0_1 (added to bash_profile)     
+module load sratoolkit/3.0.0       
+
+ `for f in data/raw/*sralite.1; do echo $f; fastq-dump --outdir data/denovo --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip $f; done;  `    
+```{r}
+indo %>% mutate(Command=paste0("fastq-dump --outdir data/denovo --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip ", Run, ".sralite.1")) %>% select(Command) %>% write_tsv(file="1203.1-split.sh", col_names = FALSE)
+
+```
+
+module load parallel
+module load ncbi-toolkit/26_0_1
+module load sratoolkit/3.0.0       
+
+```{sh, eval=FALSE}
+srun -p high –time 4:00:00 –nodes=1 –ntasks-per-node=1 –cpus-per-task=11 parallel -j 11 < 1203.1-split.sh
+```

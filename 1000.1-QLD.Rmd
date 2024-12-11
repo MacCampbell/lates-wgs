@@ -1,0 +1,84 @@
+---
+title: "1000.1-QLD"
+output: html_document
+date: "2024-11-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(sf)
+library(raster)
+library(ozmaps)
+library(ggrepel)
+```
+
+
+## Get Oz
+```{r}
+oz <- ozmap_data("states")
+qld<-oz[3,]
+base<-ggplot(qld) +
+  geom_sf() +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+base
+```
+
+```{r}
+bbox<-st_bbox(qld)
+domain <- c(bbox[1], bbox[3], bbox[2], bbox[4])
+```
+
+
+```{r, eval=FALSE}
+nat.earth<-stack("~/github/fish-lake/data/earth/NE2_HR_LC_SR_W_DR/NE2_HR_LC_SR_W_DR.tif")
+
+nat.crop <- crop(nat.earth, y=extent(domain))
+
+rast.table <- data.frame(xyFromCell(nat.crop, 1:ncell(nat.crop)),
+                         getValues(nat.crop/255))
+
+
+rast.table$rgb <- with(rast.table, rgb(NE2_HR_LC_SR_W_DR_1,
+                                       NE2_HR_LC_SR_W_DR_2,
+                                       NE2_HR_LC_SR_W_DR_3,
+                                       1))
+
+save(rast.table, file="data/earth/qld-rast.rda")
+```
+Plot samples
+
+```{r}
+d<-read_csv("~/Dropbox/Australian-fishes/wa-barra/qld/DryTropicsBarra_subsample-for-WA.csv")
+dd<-d %>% group_by(Basin) %>% summarize(Latitude=mean(Lat), Longitude=mean(Lon), `Sample Size`=n())
+```
+
+
+```{r}
+base +
+  geom_point(data=dd, aes(x=Longitude, y=Latitude, size=`Sample Size`), alpha=0.5) +
+  geom_text_repel(data=dd, aes(x=Longitude, y=Latitude, label=Basin))
+  
+```
+
+
+# Plot better
+```{r}
+load("data/earth/qld-rast.rda")
+ggplot() +
+  geom_raster(data = rast.table, mapping = aes(x = x, y = y), fill = rast.table$rgb, interpolate = TRUE)  +
+  geom_sf(data=qld, fill=NA) +
+  geom_point(data=dd, aes(x=Longitude, y=Latitude, size=`Sample Size`), alpha=0.5, pch=21, fill="black") +
+  geom_text_repel(data=dd, aes(x=Longitude, y=Latitude, label=Basin)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  ylab("Latitude") +
+  xlab("Longitude") 
+
+ggsave("outputs/1000/qld-sampling.jpeg", dpi=400, width=6, height=6)
+```
