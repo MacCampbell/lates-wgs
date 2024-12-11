@@ -39,7 +39,7 @@ module load sratoolkit/3.0.0
 
  `for f in data/raw/*sralite.1; do echo $f; fastq-dump --outdir data/denovo --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip $f; done;  `    
 ```{r}
-indo %>% mutate(Command=paste0("fastq-dump --outdir data/denovo --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip ", Run, ".sralite.1")) %>% select(Command) %>% write_tsv(file="1203.1-split.sh", col_names = FALSE)
+indo %>% mutate(Command=paste0("fastq-dump --outdir data/denovo --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip data/raw/", Run, ".sralite.1")) %>% select(Command) %>% write_tsv(file="1203.1-split.sh", col_names = FALSE)
 
 ```
 
@@ -48,5 +48,15 @@ module load ncbi-toolkit/26_0_1
 module load sratoolkit/3.0.0       
 
 ```{sh, eval=FALSE}
-srun -p high –time 4:00:00 –nodes=1 –ntasks-per-node=1 –cpus-per-task=11 parallel -j 11 < 1203.1-split.sh
+srun -p bigmemm --time 2:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 1203.1-split.sh
+```
+
+
+# Spades
+module load spades
+
+bin/spades.py -1 left.fastq.gz -2 right.fastq.gz -o output_folder
+
+```{r}
+
 ```
