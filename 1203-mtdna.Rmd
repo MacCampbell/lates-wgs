@@ -172,3 +172,13 @@ in data/raw
 ```{sh, eval=FALSE}
 cat ../../meta/lates-wgs-SraRunInfo.csv | grep -v Indonesia | cut -d ',' -f 10 | while read line; do wget $line; done;
 ```
+
+```{r}
+remainder %>% mutate(Command=paste0("fastq-dump --outdir data/denovo --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip data/raw/", Run, ".sralite.1")) %>% select(Command) %>% write_tsv(file="1203.3-split.sh", col_names = FALSE)
+
+```
+
+
+```{sh, eval=FALSE}
+srun -p bigmemm --time 48:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 1203.3-split.sh
+```
