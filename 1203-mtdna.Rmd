@@ -152,7 +152,7 @@ Can I annotate? https://mitofish.aori.u-tokyo.ac.jp/annotation/input/
 now to run all of them....
 ```{r}
 #trialing indonesian sample
-indo %>% mutate(Command=paste0("srun -p bigmemm -t 72:00:00 --mem=240GB --nodes=1 --cpus-per-task=6 spades.py --phred-offset 33 -1 data/denovo/",Run,".sralite.1_pass_1.fastq.gz -2 data/denovo/",Run,".sralite.1_pass_2.fastq.gz -o data/denovo/",Run," > data/denovo/",Run,".out 2> data/denovo/",Run,".err &")) %>% select(Command) %>%
+indo %>% mutate(Command=paste0("srun -p bigmemm -t 72:00:00 --mem=520GB --nodes=1 --cpus-per-task=6 spades.py --phred-offset 33 -1 data/denovo/",Run,".sralite.1_pass_1.fastq.gz -2 data/denovo/",Run,".sralite.1_pass_2.fastq.gz -o data/denovo/",Run," > data/denovo/",Run,".out 2> data/denovo/",Run,".err &")) %>% select(Command) %>%
   write_tsv("1203.2-spades.txt")
 ```
 
@@ -182,3 +182,31 @@ remainder %>% mutate(Command=paste0("fastq-dump --outdir data/denovo --skip-tech
 ```{sh, eval=FALSE}
 srun -p bigmemm --time 48:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 1203.3-split.sh
 ```
+
+
+Check these out!!
+SRR3165614
+blastn -query contigs.fasta  -db ../../../genome/NC_007439.1.fasta -outfmt 6
+NODE_1316_length_16642_cov_57.354736	NC_007439.1	98.642	15837	182	26	760	16569	16535	705	0.0	28024
+NODE_1316_length_16642_cov_57.354736	NC_007439.1	94.220	692	30	8	69	759	683	1	0.0	1048
+SRR3165615
+(base) maccamp@farm:~/lates-wgs/data/denovo/SRR3165615$ blastn -query contigs.fasta  -db ../../../genome/NC_007439.1.fasta -outfmt 6
+NODE_3541_length_16628_cov_58.673565	NC_007439.1	98.661	15837	179	26	74	15883	705	16535	0.0	28040
+NODE_3541_length_16628_cov_58.673565	NC_007439.1	94.067	691	34	7	15884	16573	1	685	0.0	1042
+SRR3165616
+
+NODE_6878_length_16633_cov_82.739534	NC_007439.1	98.655	15837	180	26	749	16558	16535	705	0.0	28035
+NODE_6878_length_16633_cov_82.739534	NC_007439.1	93.581	701	33	9	49	748	690	1	0.0	1035
+SRR3165617
+
+base) maccamp@farm:~/lates-wgs/data/denovo/SRR3165617$ blastn -query contigs.fasta  -db ../../../genome/NC_007439.1.fasta -outfmt 6
+NODE_7945_length_16800_cov_90.730964	NC_007439.1	98.661	15837	179	26	927	16736	16535	705	0.0	28040
+NODE_7945_length_16800_cov_90.730964	NC_007439.1	94.118	697	33	8	231	926	690	1	0.0	1053
+
+SRR3183267 needs more ram
+SRR3183268 needs more ram
+SRR3183269 needs more ram
+SRR3183270 needs more ram 486.992GB
+SRR3183271 needs more ram
+
+SRR3165612 looks fragmentary

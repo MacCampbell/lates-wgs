@@ -1,0 +1,116 @@
+---
+title: "1204-taiwan"
+output: html_document
+date: "2024-12-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+Have some new data from Taiwan!
+
+drwxr-sr-x 2 maccamp  49 Dec 15 15:00 AGRF_CAGRF24090039-2_22VGLNLT3/
+drwxr-sr-x 2 maccamp 272 Dec 15 15:00 AGRF_CAGRF24090039-2_22VGMKLT3/
+
+Checksums done, seem fine.
+
+Creating linked files like so
+(base) maccamp@farm:~/lates-wgs/data/taiwan/separate$ ln -s ../AGRF_CAGRF24090039-2_22VGMKLT3/WJC* ./
+
+This is pretty fast!!
+```{sh, eval=FALSE}
+cat separate/WJC9162_*R1.fastq.gz > WJC9162-R1.fastq.gz
+cat separate/WJC9162_*R2.fastq.gz > WJC9162-R2.fastq.gz
+```
+
+Sample list
+WJC9162
+WJC9163
+WJC9164
+WJC9166
+WJC9187
+WJC9196
+WJC9556
+WJC9557
+WJC9558
+WJC9559
+WJC9560
+WJC9188
+Mainstream6
+Mainstream7
+Mainstream8
+Mainstream9
+Mainstream10
+Mainstream11
+Mainstream12
+
+```{sh, eval=FALSE}
+cat separate/WJC9163_*R1.fastq.gz > WJC9163-R1.fastq.gz
+cat separate/WJC9164_*R1.fastq.gz > WJC9164-R1.fastq.gz
+cat separate/WJC9166_*R1.fastq.gz > WJC9166-R1.fastq.gz
+cat separate/WJC9187_*R1.fastq.gz > WJC9187-R1.fastq.gz
+cat separate/WJC9196_*R1.fastq.gz > WJC9196-R1.fastq.gz
+cat separate/WJC9556_*R1.fastq.gz > WJC9556-R1.fastq.gz
+cat separate/WJC9557_*R1.fastq.gz > WJC9557-R1.fastq.gz
+cat separate/WJC9558_*R1.fastq.gz > WJC9558-R1.fastq.gz
+cat separate/WJC9559_*R1.fastq.gz > WJC9559-R1.fastq.gz
+cat separate/WJC9560_*R1.fastq.gz > WJC9560-R1.fastq.gz
+cat separate/WJC9188_*R1.fastq.gz > WJC9188-R1.fastq.gz
+cat separate/Mainstream6_*R1.fastq.gz > Mainstream6-R1.fastq.gz
+cat separate/Mainstream7_*R1.fastq.gz > Mainstream7-R1.fastq.gz
+cat separate/Mainstream8_*R1.fastq.gz > Mainstream8-R1.fastq.gz
+cat separate/Mainstream9_*R1.fastq.gz > Mainstream9-R1.fastq.gz
+cat separate/Mainstream10_*R1.fastq.gz > Mainstream10-R1.fastq.gz
+cat separate/Mainstream11_*R1.fastq.gz > Mainstream11-R1.fastq.gz
+cat separate/Mainstream12_*R1.fastq.gz > Mainstream12-R1.fastq.gz
+
+
+cat separate/WJC9163_*R2.fastq.gz > WJC9163-R2.fastq.gz
+cat separate/WJC9164_*R2.fastq.gz > WJC9164-R2.fastq.gz
+cat separate/WJC9166_*R2.fastq.gz > WJC9166-R2.fastq.gz
+cat separate/WJC9187_*R2.fastq.gz > WJC9187-R2.fastq.gz
+cat separate/WJC9196_*R2.fastq.gz > WJC9196-R2.fastq.gz
+cat separate/WJC9556_*R2.fastq.gz > WJC9556-R2.fastq.gz
+cat separate/WJC9557_*R2.fastq.gz > WJC9557-R2.fastq.gz
+cat separate/WJC9558_*R2.fastq.gz > WJC9558-R2.fastq.gz
+cat separate/WJC9559_*R2.fastq.gz > WJC9559-R2.fastq.gz
+cat separate/WJC9560_*R2.fastq.gz > WJC9560-R2.fastq.gz
+cat separate/WJC9188_*R2.fastq.gz > WJC9188-R2.fastq.gz
+cat separate/Mainstream6_*R2.fastq.gz > Mainstream6-R2.fastq.gz
+cat separate/Mainstream7_*R2.fastq.gz > Mainstream7-R2.fastq.gz
+cat separate/Mainstream8_*R2.fastq.gz > Mainstream8-R2.fastq.gz
+cat separate/Mainstream9_*R2.fastq.gz > Mainstream9-R2.fastq.gz
+cat separate/Mainstream10_*R2.fastq.gz > Mainstream10-R2.fastq.gz
+cat separate/Mainstream11_*R2.fastq.gz > Mainstream11-R2.fastq.gz
+cat separate/Mainstream12_*R2.fastq.gz > Mainstream12-R2.fastq.gz
+
+```
+
+Two other data sets where we have WGS data
+10 lakdiva
+5 Mainstream Fish
+10 Mainstream Fish
+
+Previously I trimmed the dat then aligned, then downsampled to ~7x Hmmm, why not just downsample existing bams?
+
+Need to align all our fish in hatcheries
+Need to align all our fish in taiwan
+
+bash ../../doAlign-zipped.sh samples.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
+
+Then, something like this to try
+
+```{r}
+m105<-read_csv("meta/105-Indo-split.csv")
+down<-m105 %>%  filter(DataDir %in% c("data/hatcheries","data/lakdiva")) %>% mutate(Frac=7/Coverage) %>%
+  mutate(Command = paste0("samtools view -bs ", Frac, " ", DataDir, "/",Run,".sort.flt.bam", " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;"," samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;")) 
+down %>% select(Command)
+ down %>% select(Command) %>% write_tsv(file="1204.1-downsample.sh", col_names = FALSE)
+
+```
+
