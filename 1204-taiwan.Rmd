@@ -103,6 +103,9 @@ Need to align all our fish in taiwan
 
 bash ../../doAlign-zipped.sh samples.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
 
+Running aligns, then need to compute coverage and edit the meta file
+
+
 Then, something like this to try
 
 ```{r}
