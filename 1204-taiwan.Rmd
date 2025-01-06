@@ -110,7 +110,7 @@ Then, something like this to try
 
 ```{r}
 m105<-read_csv("meta/105-Indo-split.csv")
-down<-m105 %>%  filter(DataDir %in% c("data/hatcheries","data/lakdiva")) %>% mutate(Frac=7/Coverage) %>%
+down<-m105 %>%  filter(DataDir %in% c("data/hatcheries","data/lakdiva", "data/taiwan")) %>% mutate(Frac=7/Coverage) %>%
   mutate(Command = paste0("samtools view -bs ", Frac, " ", DataDir, "/",Run,".sort.flt.bam", " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;"," samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;")) 
 down %>% select(Command)
  down %>% select(Command) %>% write_tsv(file="1204.1-downsample.sh", col_names = FALSE)
