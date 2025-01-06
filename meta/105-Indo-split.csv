@@ -70,37 +70,37 @@ Trinco2,13_2A,13_2A,Sri Lanka,"Trinco Fish Market - ""Pullmodai""",224532124,204
 Trinco3,13_3A,13_3A,Sri Lanka,"Trinco Fish Market - ""Pullmodai""",202042003,184403195,38.9953,,lakdiva,data/lakdiva
 Jaffna1,14_1A,14_1A,Sri Lanka,Jaffna Fish Market,197344375,182324259,38.8621,,lakdiva,data/lakdiva
 Jaffna2,14_2A,14_2A,Sri Lanka,Jaffna Fish Market,239460438,218331434,46.296,,lakdiva,data/lakdiva
-Mainstream1,Mainstream-1,Mainstream1,Mainstream,Mainstream,,,,,Mainstream,data/hatcheries
-Mainstream2,Mainstream-2,Mainstream2,Mainstream,Mainstream,,,,,Mainstream,data/hatcheries
-Mainstream3,Mainstream-3,Mainstream3,Mainstream,Mainstream,,,,,Mainstream,data/hatcheries
-Mainstream4,Mainstream-4,Mainstream4,Mainstream,Mainstream,,,,,Mainstream,data/hatcheries
-Mainstream5,Mainstream-5,Mainstream5,Mainstream,Mainstream,,,,,Mainstream,data/hatcheries
-OceanPick11,OceanPick-11,OceanPick11,OceanPick,OceanPick,,,,,OceanPick,data/hatcheries
-OceanPick15,OceanPick-15,OceanPick15,OceanPick,OceanPick,,,,,OceanPick,data/hatcheries
-OceanPick16,OceanPick-16,OceanPick16,OceanPick,OceanPick,,,,,OceanPick,data/hatcheries
-OceanPick17,OceanPick-17,OceanPick17,OceanPick,OceanPick,,,,,OceanPick,data/hatcheries
-OceanPick1,OceanPick-1,OceanPick1,OceanPick,OceanPick,,,,,OceanPick,data/hatcheries
+Mainstream1,Mainstream-1,Mainstream1,Mainstream,Mainstream,168404232,149570272,30.9807,,Mainstream,data/hatcheries
+Mainstream2,Mainstream-2,Mainstream2,Mainstream,Mainstream,182623700,164101320,33.9049,,Mainstream,data/hatcheries
+Mainstream3,Mainstream-3,Mainstream3,Mainstream,Mainstream,203215006,183458792,37.8441,,Mainstream,data/hatcheries
+Mainstream4,Mainstream-4,Mainstream4,Mainstream,Mainstream,158111751,142219025,29.4372,,Mainstream,data/hatcheries
+Mainstream5,Mainstream-5,Mainstream5,Mainstream,Mainstream,205561290,186913334,38.5661,,Mainstream,data/hatcheries
+OceanPick11,OceanPick-11,OceanPick11,OceanPick,OceanPick,219131763,197941889,39.5505,,OceanPick,data/hatcheries
+OceanPick15,OceanPick-15,OceanPick15,OceanPick,OceanPick,188158129,170706185,35.4193,,OceanPick,data/hatcheries
+OceanPick16,OceanPick-16,OceanPick16,OceanPick,OceanPick,196110273,181111429,37.1622,,OceanPick,data/hatcheries
+OceanPick17,OceanPick-17,OceanPick17,OceanPick,OceanPick,199866113,166303991,33.8201,,OceanPick,data/hatcheries
+OceanPick1,OceanPick-1,OceanPick1,OceanPick,OceanPick,188316323,170206826,32.8365,,OceanPick,data/hatcheries
 OceanPick20,OceanPick-20,OceanPick20,OceanPick,OceanPick,,,,,OceanPick,data/hatcheries
-OceanPick2,OceanPick-2,OceanPick2,OceanPick,OceanPick,,,,,OceanPick,data/hatcheries
-OceanPick3,OceanPick-3,OceanPick3,OceanPick,OceanPick,,,,,OceanPick,data/hatcheries
-OceanPick5,OceanPick-5,OceanPick5,OceanPick,OceanPick,,,,,OceanPick,data/hatcheries
+OceanPick2,OceanPick-2,OceanPick2,OceanPick,OceanPick,245082767,225339177,44.2617,,OceanPick,data/hatcheries
+OceanPick3,OceanPick-3,OceanPick3,OceanPick,OceanPick,247805625,227493701,46.8712,,OceanPick,data/hatcheries
+OceanPick5,OceanPick-5,OceanPick5,OceanPick,OceanPick,188234929,171410968,35.3293,,OceanPick,data/hatcheries
 OceanPick8,OceanPick-8,OceanPick8,OceanPick,OceanPick,,,,,OceanPick,data/hatcheries
-WJC9162,WJC9162,WJC9162,Taiwan,Tamsui River,,,,,SEA,data/taiwan
-WJC9163,WJC9163,WJC9163,Taiwan,Tamsui River,,,,,SEA,data/taiwan
-WJC9164,WJC9164,WJC9164,Taiwan,Tamsui River,,,,,SEA,data/taiwan
-WJC9166,WJC9166,WJC9166,Taiwan,Tamsui River,,,,,SEA,data/taiwan
-WJC9187,WJC9187,WJC9187,Taiwan,Tamsui River,,,,,SEA,data/taiwan
-WJC9196,WJC9196,WJC9196,Taiwan,Tamsui River,,,,,SEA,data/taiwan
-WJC9556,WJC9556,WJC9556,Taiwan,Tamsui River,,,,,SEA,data/taiwan
-WJC9557,WJC9557,WJC9557,Taiwan,Tamsui River,,,,,SEA,data/taiwan
-WJC9558,WJC9558,WJC9558,Taiwan,Tamsui River,,,,,SEA,data/taiwan
-WJC9559,WJC9559,WJC9559,Taiwan,Tamsui River,,,,,SEA,data/taiwan
-WJC9560,WJC9560,WJC9560,Taiwan,Tamsui River,,,,,SEA,data/taiwan
-WJC9188,WJC9188,WJC9188,Taiwan,Tamsui River,,,,,SEA,data/taiwan
-Mainstream6,Mainstream6,Mainstream6,Mainstream,Mainstream,,,,,SEA,data/taiwan
-Mainstream7,Mainstream7,Mainstream7,Mainstream,Mainstream,,,,,Mainstream,data/taiwan
-Mainstream8,Mainstream8,Mainstream8,Mainstream,Mainstream,,,,,Mainstream,data/taiwan
-Mainstream9,Mainstream9,Mainstream9,Mainstream,Mainstream,,,,,Mainstream,data/taiwan
-Mainstream10,Mainstream10,Mainstream10,Mainstream,Mainstream,,,,,Mainstream,data/taiwan
-Mainstream11,Mainstream11,Mainstream11,Mainstream,Mainstream,,,,,Mainstream,data/taiwan
-Mainstream12,Mainstream12,Mainstream12,Mainstream,Mainstream,,,,,Mainstream,data/taiwan
+WJC9162,WJC9162,WJC9162,Taiwan,Tamsui River,213111602,186681215,32.3199,,SEA,data/taiwan
+WJC9163,WJC9163,WJC9163,Taiwan,Tamsui River,257583247,206746033,33.895,,SEA,data/taiwan
+WJC9164,WJC9164,WJC9164,Taiwan,Tamsui River,273269251,225916495,35.5161,,SEA,data/taiwan
+WJC9166,WJC9166,WJC9166,Taiwan,Tamsui River,230103711,197931232,31.6638,,SEA,data/taiwan
+WJC9187,WJC9187,WJC9187,Taiwan,Tamsui River,258073205,221004084,36.3827,,SEA,data/taiwan
+WJC9196,WJC9196,WJC9196,Taiwan,Tamsui River,210898335,179593199,28.9462,,SEA,data/taiwan
+WJC9556,WJC9556,WJC9556,Taiwan,Tamsui River,212286744,179789424,30.58,,SEA,data/taiwan
+WJC9557,WJC9557,WJC9557,Taiwan,Tamsui River,38745016,3139501,0.136521,,SEA,data/taiwan
+WJC9558,WJC9558,WJC9558,Taiwan,Tamsui River,182258858,160381793,27.9758,,SEA,data/taiwan
+WJC9559,WJC9559,WJC9559,Taiwan,Tamsui River,213454180,176211095,29.0693,,SEA,data/taiwan
+WJC9560,WJC9560,WJC9560,Taiwan,Tamsui River,341617052,275059504,42.7225,,SEA,data/taiwan
+WJC9188,WJC9188,WJC9188,Taiwan,Tamsui River,207927816,175269565,27.8819,,SEA,data/taiwan
+Mainstream6,Mainstream6,Mainstream6,Mainstream,Mainstream,273907451,232447693,49.0963,,SEA,data/taiwan
+Mainstream7,Mainstream7,Mainstream7,Mainstream,Mainstream,264202398,223927482,47.3556,,Mainstream,data/taiwan
+Mainstream8,Mainstream8,Mainstream8,Mainstream,Mainstream,270758821,232873303,49.3992,,Mainstream,data/taiwan
+Mainstream9,Mainstream9,Mainstream9,Mainstream,Mainstream,258503506,219343679,46.5654,,Mainstream,data/taiwan
+Mainstream10,Mainstream10,Mainstream10,Mainstream,Mainstream,278102584,233517641,48.587,,Mainstream,data/taiwan
+Mainstream11,Mainstream11,Mainstream11,Mainstream,Mainstream,263265248,222556527,46.4981,,Mainstream,data/taiwan
+Mainstream12,Mainstream12,Mainstream12,Mainstream,Mainstream,267868828,227555399,47.1854,,Mainstream,data/taiwan
