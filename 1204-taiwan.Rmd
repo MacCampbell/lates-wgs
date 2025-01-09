@@ -109,7 +109,8 @@ Running aligns, then need to compute coverage and edit the meta file
 Then, something like this to try
 
 ```{r}
-m105<-read_csv("meta/105-Indo-split.csv")
+m105<-read_csv("meta/105-Indo-split.csv") %>% mutate(NewPath=ifelse(DataDir %in% c("data/hatcheries","data/lakdiva", "data/taiwan"), paste0("data/downsample/", Run, ".reduced.bam"), Path))
+
 down<-m105 %>%  filter(DataDir %in% c("data/hatcheries","data/lakdiva", "data/taiwan")) %>% mutate(Frac=7/Coverage) %>%
   mutate(Command = paste0("samtools view -bs ", Frac, " ", DataDir, "/",Run,".sort.flt.bam", " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;"," samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;")) 
 down %>% select(Command)
@@ -119,3 +120,46 @@ down %>% select(Command)
 
 Don't have oceanpick20 and oceanpick8
 
+WJC9557 didn't seem to have worked
+
+module load parallel
+srun -p high --time 24:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 parallel -j 10 < 1204.1-downsample.sh
+
+Checking for complete oceanpick 20 and oceanpick 8. Done!
+
+We have downsampled numerous fish!!
+
+# Compile meta for downsampled fish
+
+```{r}
+m104 <- m105 %>% filter(Run != "WJC9557")
+write_csv(m104, file="meta/meta-104.csv")
+m103<-filter(m104, Lineage !="japonicus")
+```
+
+Conduct basic PCA of one chrom.
+
+```{r}
+m103$Region<-factor(m103$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
+                                           "Indonesia-K","Indonesia-SJ","Indonesia-SU","Philippines","Taiwan",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India Eastern Coast","Sri Lanka","India Western Coast"))
+
+m103 %>% select(NewPath) %>% write_tsv("bamlists/103.bamlist", col_names = FALSE)
+
+```
+
+-rf meta/no-inv-lgs.txt \
+
+using first crhom
+
+```{sh, eval=FALSE}
+srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+-bam bamlists/103.bamlist -r NC_066833.1
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 93 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1203/103-ibs-90 > outputs/1204/103-ibs-90.out 2> outputs/1204/103-ibs-90.err &
+
+```
