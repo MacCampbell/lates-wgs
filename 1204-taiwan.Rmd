@@ -10,6 +10,13 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 
 ```{r}
 library(tidyverse)
+library(tidyverse)
+library(ggpubr)
+library(phytools)
+library(tanggle)
+library(phangorn)
+library(viridis)
+library(ggrepel)
 ```
 
 Have some new data from Taiwan!
@@ -146,20 +153,235 @@ m103$Region<-factor(m103$Region, levels=c("Queensland","Northern Territory","Pap
                                               "India Eastern Coast","Sri Lanka","India Western Coast"))
 
 m103 %>% select(NewPath) %>% write_tsv("bamlists/103.bamlist", col_names = FALSE)
+meta<-m103
 
 ```
 
--rf meta/no-inv-lgs.txt \
 
-using first crhom
+
+using first chrom
 
 ```{sh, eval=FALSE}
 srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
--bam bamlists/103.bamlist -r NC_066833.1
+-bam bamlists/103.bamlist -r NC_066833.1 \
 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 93 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
--out outputs/1203/103-ibs-90 > outputs/1204/103-ibs-90.out 2> outputs/1204/103-ibs-90.err &
+-out outputs/1204/103-ibs-90 > outputs/1204/103-ibs-90.out 2> outputs/1204/103-ibs-90.err &
 
+srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1204/103-ibs-90.beagle.gz -K 2 -o outputs/1204/103-K2 &
+srun -p high -t 07:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1204/103-ibs-90.beagle.gz -K 3 -o outputs/1204/103-K3 &
+srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1204/103-ibs-90.beagle.gz -K 4 -o outputs/1204/103-K4 &
+srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1204/103-ibs-90.beagle.gz -K 5 -o outputs/1204/103-K5 &
+srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1204/103-ibs-90.beagle.gz -K 6 -o outputs/1204/103-K6 &
+
+# no inv
+srun -p high -t 24:00:00 --cpus-per-task=6 --mem=32G --nodes=1 $HOME/angsd/angsd -P 6  \
+-bam bamlists/103.bamlist -rf meta/no-inv-lgs.txt \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 93 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1204/103-noinv-ibs-90 > outputs/1204/103-noinv-ibs-90.out 2> outputs/1204/103-noinv-ibs-90.err &
+
+```
+
+	-> Number of sites retained after filtering: 173003 
+
+
+```{r}
+m <- as.matrix(read.table("outputs/1204/103-ibs-90.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+```
+
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta)
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Region), pch=21, alpha=0.75) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("Genome-Wide PCA of L. calcarifer WGS Data") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+ggsave("outputs/1204/lates-c-genome-wide-pca-12.jpeg")
+```
+For figure  
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta) 
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+pc12<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Region, shape=Lineage), size=3, alpha=0.75) +
+  geom_text_repel(data=covs %>% filter(Region %in% c("Taiwan","Thailand","Phillipines")), aes(x=V1, y=V2, label=Region), max.overlaps = Inf) +
+#  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  scale_shape_manual(values=c(21,23,23,21,21,24)) + 
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "none")
+
+pc12
+```
+
+```{r}
+text13<-covs  %>% select(Run, Region, V1, V3) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
+
+pc13<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V3, fill=Region, shape=Lineage), size=3, alpha=0.75) +
+ # geom_text_repel(data=text13, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC3", " ", round((100*var[3]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="turbo") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  scale_shape_manual(values=c(21,23,23,21,21,24)) + 
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+
+pc13
+```
+
+```{r}
+ggarrange(pc12,pc13,ncol=2,widths=c(1,1.4))
+ggsave("outputs/1204/combined-wgspcs.pdf", width=11, height=5)
+ggsave("outputs/1204/combined-wgspcs.jpeg", width=11, height=5)
+```
+
+
+## Admixture Plots.  
+
+Plot as one figure. 
+
+Get set of cols.    
+```{r}
+cs<-viridis(6, option = "A", alpha = 0.75)
+csdf<-cs %>% as_tibble() %>% rename(Color=value) %>% mutate(x=1:n())
+
+ggplot(csdf) +
+  geom_point(aes(x=x), fill=csdf$Color, y=1, pch=21, cex=5)+
+ylim(0,2)
+```
+
+First labels     
+
+```{r, echo=FALSE}
+PlotAdmix<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Last col empty
+q<-q[1:length(colnames(q))-1]
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  ylab("Q\n") +
+  theme(legend.position = "") +
+  theme(axis.text = element_text(size=10, face="bold")) +
+  theme(axis.title.y=element_text(size=14, face="bold")) +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  #theme(axis.text.x=element_blank()) +
+  scale_fill_viridis_d(option="viridis") +
+  theme(axis.ticks.x = element_blank())
+
+}
+```
+
+```{r}
+PlotAdmix("outputs/1204/103-K2.qopt", meta)
+``` 
+
+```{r}
+PlotAdmix("outputs/1204/103-K3.qopt", meta)
+```
+
+```{r}
+PlotAdmix("outputs/1204/103-K4.qopt", meta)
+```
+
+```{r}
+PlotAdmix("outputs/1204/103-K5.qopt", meta)
+```
+
+
+```{r}
+PlotAdmix("outputs/1204/103-K6.qopt", meta)
+```
+
+# Dropping hatcheries/Australia
+
+```{r}
+m65<-m103 %>% filter(!Lineage %in% c("AUS+NG","Mainstream","OceanPick") )
+m65 %>% select(NewPath) %>% write_tsv("bamlists/65.bamlist", col_names = FALSE)
+```
+
+```{sh, eval=FALSE}
+srun -p high -t 4:00:00 --cpus-per-task=6 --mem=32G --nodes=1 $HOME/angsd/angsd -P 6  \
+-bam bamlists/65.bamlist -r NC_066833.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 59 -minMapQ 10 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1204/65-ibs-90 > outputs/1204/65-ibs-90.out 2> outputs/1204/65-ibs-90.err &
+
+srun -p high -t 04:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1204/65-ibs-90.beagle.gz -K 2 -o outputs/1204/65-K2 &
+srun -p high -t 07:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1204/65-ibs-90.beagle.gz -K 3 -o outputs/1204/65-K3 &
+srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1204/65-ibs-90.beagle.gz -K 4 -o outputs/1204/65-K4 &
+srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1204/65-ibs-90.beagle.gz -K 5 -o outputs/1204/65-K5 &
+srun -p high -t 09:00:00 --mem=32G --nodes=1 $HOME/angsd/misc/NGSadmix -P 12 -likes outputs/1204/65-ibs-90.beagle.gz -K 6 -o outputs/1204/65-K6 &
 ```
