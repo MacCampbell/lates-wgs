@@ -560,7 +560,12 @@ Creating a reduced sample list and a vcf
 ```{r}
 m64<-m103 %>% filter(! Region %in% c("OceanPick","Mainstream","Northern Territory","Papua New Guinea","Queensland"))
 
-m64 %>% select(Run) %>% write_tsv("bamlists/64-sample-names.txt")
+m64 %>% select(Run) %>% write_tsv("bamlists/64-sample-names.txt", col_names = FALSE)
+
+m41<-m103 %>% filter(! Region %in% c("OceanPick","Mainstream","Northern Territory","Papua New Guinea","Queensland","Bangladesh","Sri Lanka","India Eastern Coast","India Western Coast"))
+
+m41 %>% select(Run) %>% write_tsv("bamlists/41-sample-names.txt", col_names = FALSE)
+
 ```
 
 ```{sh, eval=FALSE}
@@ -575,11 +580,12 @@ module load bcftools
 
 bcftools reheader --samples bamlists/103-sample-names.txt -o outputs/1204/renamed.vcf.gz outputs/1204/plink.vcf.gz
 
-bcftools view -s bamlists/64-sample-names.txt > outputs/1204/64.vcf
+bcftools view -S bamlists/64-sample-names.txt outputs/1204/renamed.vcf.gz > outputs/1204/64.vcf
 
 #--nsites-per-win  removing SNPs with more than 5% missing data first -e'F_MISSING>=0.05'
 bcftools +fill-tags outputs/1204/renamed.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1204/pruned.vcf
 
+bcftools +fill-tags outputs/1204/64.vcf  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1204/pruned-64.vcf
 
 ```
 
@@ -591,9 +597,16 @@ conda activate py2;
 ~/github/mccloud-rrt/vcf2phylip.py -i pruned.vcf;
 conda deactivate;
 
+conda activate py2;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-64.vcf;
+conda deactivate;
+
 ```{r}
 dat<-read.dna(file="outputs/1204/pruned.min4.phy")
 write.nexus.data(dat, file="outputs/1204/pruned.nex")
+
+dat<-read.dna(file="outputs/1204/pruned-64.min4.phy")
+write.nexus.data(dat, file="outputs/1204/pruned-64.nex")
 
 ```
 
@@ -708,10 +721,63 @@ iqtree2 -s pruned.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
 iqtree2 -nt AUTO -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo
 
 
+iqtree2 -s pruned-64.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
+iqtree2 -nt AUTO -s pruned-64.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo
 
 
 ```{r}
 tree<-read.tree("outputs/1204/pruned.min4.phy.varsites.phy.contree")
+t1<-ggtree(tree) + geom_nodelab(aes(label=node))
+t1
+```
+
+```{r}
+#ind<-m %>% filter(Lineage=="IND")
+#t2<-root.phylo(tree,outgroup = ind$Run)
+t2<-midpoint.root(tree)
+t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 25)
+
+t<-t3
+
+t<-ggtree(t)
+
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[e$label < 90,]
+e <- e[e$label >= 75,]
+```
+
+```{r}
+u<-t %<+% m + #bind_rows(m58, rm) +
+  geom_point(data=e,  fill="gray50", cex=3, alpha=1, pch=22) +
+  geom_point(data=d,  fill="black", cex=3, alpha=1, pch=22) +
+  geom_tippoint(aes(x=x+0.002,fill=Region, shape=Lineage), cex=3) + 
+  geom_tiplab(aes(label=paste0(Region, " ", label), x=x+0.01), align = FALSE, size=3) +
+  #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
+  scale_shape_manual(values=c(21,23,23,21,21,24)) + 
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(0,.15) +
+  scale_fill_viridis_d(option="H") +
+  theme(legend.position = "none") +
+  geom_treescale(x = 0)
+
+u
+
+ggsave("outputs/1204/ml-phylogeny.pdf", height=12, width=8)
+```
+
+
+
+```{r}
+tree<-read.tree("outputs/1204/pruned-64.min4.phy.varsites.phy.contree")
 t1<-ggtree(tree) + geom_nodelab(aes(label=node))
 t1
 ```
