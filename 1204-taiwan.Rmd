@@ -10,12 +10,15 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 
 ```{r}
 library(tidyverse)
-library(tidyverse)
+library(dartR)
+library(snpR)
 library(ggpubr)
 library(phytools)
 library(tanggle)
 library(phangorn)
 library(viridis)
+library(pcadapt)
+library(ape)
 library(ggrepel)
 ```
 
@@ -566,8 +569,233 @@ module load bcftools
 
 bcftools reheader --samples bamlists/103-sample-names.txt -o outputs/1204/renamed.vcf.gz outputs/1204/plink.vcf.gz
 
-#--nsites-per-win  removing SNPs with more than 5% missing data first
-bcftools +prune -m 0.30 -w 50kb --nsites-per-win 1 -e'F_MISSING>=0.05' outputs/1204/renamed.vcf.gz > outputs/1204/pruned.vcf
+#--nsites-per-win  removing SNPs with more than 5% missing data first -e'F_MISSING>=0.05'
+bcftools +fill-tags outputs/1204/renamed.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1204/pruned.vcf
 
 
+```
+
+	-> Number of sites retained after filtering: 1850831 
+
+Converting to phylip
+
+conda activate py2;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned.vcf;
+conda deactivate;
+
+```{r}
+dat<-read.dna(file="outputs/1204/pruned.min4.phy")
+write.nexus.data(dat, file="outputs/1204/pruned.nex")
+
+```
+
+
+```{r}
+path_to_file <- "outputs/1204/pruned.vcf"
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+
+
+_1_ choose a K   
+
+```{r}
+x <- pcadapt(input = filename, K = 20) 
+```
+
+```{r}
+#plot(x, option = "screeplot")
+panela<-plot(x, option = "screeplot", K = 10) + ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  scale_x_continuous(breaks=seq(1,10,1), labels=seq(1,10,1)) +
+  ylab("Proption of Explained Variance\n") +
+  xlab("\nPrincipal Component") +
+  theme(axis.title=element_text(size=12))
+panela
+```
+```{r}
+m<-m103
+```
+
+```{r}
+plot(x, option = "scores", pop = factor(m$Region, levels=c("Northern Territory","Queensland",
+                                                           "Papua New Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU",
+                                                           "Indonesia-SJ",
+                                                           
+                                      "Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","Sri Lanka",
+                                              "India Eastern Coast","India Western Coast"))) 
+ 
+```
+
+
+Get scree plot and PCA    
+```{r}
+pcadata<-x$scores[,1:5] %>% as_tibble()
+pcadata<-pcadata %>% bind_cols(m)
+
+```
+
+```{r}
+pcb<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V2, shape=Lineage, fill=Region), alpha=0.95) +
+  scale_shape_manual(values=c(21,23,23,21,21,24)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 2") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+
+#labels13<-pcadata %>% filter(Region %in% c("Indonesia-K","Indonesia-SU")) %>% 
+ # select(Region,V1, V3) %>% group_by(Region) %>% summarize(x=mean(V1), y=mean(V3)) 
+
+pcc<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V3, shape=Lineage, fill=Region), alpha=0.9) +
+#  geom_text_repel(data=labels13, aes(x=x, y=y, label=Region))+
+  scale_shape_manual(values=c(21,23,23,21,21,24)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  theme(legend.position = "none") +
+
+  xlab("PC 1") +
+  ylab("PC 3") +
+  ggtitle("C") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+
+pcd<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V4, shape=Lineage, fill=Region), alpha=0.9) +
+#  geom_text_repel(data=labels13, aes(x=x, y=y, label=Region))+
+  scale_shape_manual(values=c(21,23,23,21,21,24)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 4") +
+  ggtitle("D") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+```
+
+```{r}
+blank <- grid.rect(gp=gpar(col="white"))
+```
+
+
+
+```{r}
+a<-ggplotGrob(ggarrange(panela, pcb, blank, ncol=3, widths=c(1,1.4,.5)))
+bc<-ggplotGrob(ggarrange(pcc, pcd, ncol=2, widths=c(1,1.4)))
+ggarrange(a,bc, ncol=1, heights=c(1,1))
+
+ggsave("outputs/1204/called-snp-pcas.pdf", width=12, height=10)
+```
+
+iqtree2 -s pruned.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
+iqtree2 -nt AUTO -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo
+
+
+
+
+```{r}
+tree<-read.tree("outputs/1204/pruned.min4.phy.varsites.phy.contree")
+t1<-ggtree(tree) + geom_nodelab(aes(label=node))
+t1
+```
+
+```{r}
+#ind<-m %>% filter(Lineage=="IND")
+#t2<-root.phylo(tree,outgroup = ind$Run)
+t2<-midpoint.root(tree)
+t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 25)
+
+t<-t3
+
+t<-ggtree(t)
+
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[e$label < 90,]
+e <- e[e$label >= 75,]
+```
+
+```{r}
+u<-t %<+% m + #bind_rows(m58, rm) +
+  geom_point(data=e,  fill="gray50", cex=3, alpha=1, pch=22) +
+  geom_point(data=d,  fill="black", cex=3, alpha=1, pch=22) +
+  geom_tippoint(aes(x=x+0.002,fill=Region, shape=Lineage), cex=3) + 
+  geom_tiplab(aes(label=paste0(Region, " ", label), x=x+0.01), align = FALSE, size=3) +
+  #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
+  scale_shape_manual(values=c(21,23,23,21,21,24)) + 
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(0,.15) +
+  scale_fill_viridis_d(option="H") +
+  theme(legend.position = "none") +
+  geom_treescale(x = 0)
+
+u
+
+ggsave("outputs/1204/ml-phylogeny.pdf", height=12, width=8)
+```
+Can I run an admixture analysis with SnpR
+
+```{r}
+ms<-m103
+ms$Region<-gsub(" ","-", ms$Region)
+
+ms$Region<-factor(ms$Region, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick",
+                                           "Indonesia-K","Indonesia-SJ","Indonesia-SU","Philippines","Taiwan",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh","Sri-Lanka",
+                                              "India-Eastern-Coast","India-Western-Coast"))
+```
+
+
+
+```{r}
+m<-ms
+vcf <-read.vcfR("outputs/1204/pruned.vcf") # from recalled and pruned snps in 1200
+gl<-vcfR2genlight(vcf)
+gl$pop<-as.factor(m$Region)
+```
+
+
+```{r}
+glx<-gl
+glx <- gl.compliance.check(glx) 
+
+gl3<-gl.filter.maf(glx, threshold = 0.05)
+gl3<-gl.filter.allna(gl3)
+gl3
+```
+
+
+
+```{r}
+snp<-import.snpR.data(gl3)
+```
+
+```{r}
+structure<-plot_structure(snp, facet=c("pop"), facet.order = c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick",
+                                           "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh","Sri-Lanka",
+                                              "India-Eastern-Coast","India-Western-Coast"),
+               k=c(2,3,4,5,6,7))
+```
+
+
+```{r}
+structure$plot
 ```
