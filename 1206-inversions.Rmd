@@ -1,0 +1,284 @@
+---
+title: "1206-taiwanese-inversions"
+output: html_document
+date: "2025-01-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+meta<-read_csv("meta/m103.csv")
+meta$Pop<-gsub(" ","-",meta$Region)
+```
+
+Let's examine the inversion regions. Have genotypes called from 1204, but need -doGeno 4 
+
+```{sh, eval=FALSE}
+srun -t 8:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 93 -bam bamlists/103.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-r NC_066835.1:1-17500000 -out outputs/1206/lg03  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 4 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1206/lg03.out 2> outputs/1206/lg03.err &
+
+srun -t 8:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 93 -bam bamlists/103.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-r NC_066837.1:5247652- -out outputs/1206/lg05  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 4 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1206/lg05.out 2> outputs/1206/lg05.err &
+
+srun -t 8:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 93 -bam bamlists/103.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-r NC_066852.1:3500000- -out outputs/1206/lg20  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 4 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1206/lg20.out 2> outputs/1206/lg20.err &
+
+#in 1204
+plink --tped lg03.tped --tfam lg03.tfam  --out lg03-binary --recode --allow-extra-chr --noweb
+plink --ped lg03-binary.ped --map lg03-binary.map --recode vcf --allow-extra-chr -out lg03
+bgzip lg03.vcf 
+tabix lg03.vcf.gz
+
+plink --tped lg05.tped --tfam lg05.tfam  --out lg05-binary --recode --allow-extra-chr --noweb
+plink --ped lg05-binary.ped --map lg05-binary.map --recode vcf --allow-extra-chr -out lg05
+bgzip lg05.vcf 
+tabix lg05.vcf.gz
+
+plink --tped lg20.tped --tfam lg20.tfam  --out lg20-binary --recode --allow-extra-chr --noweb
+plink --ped lg20-binary.ped --map lg20-binary.map --recode vcf --allow-extra-chr -out lg20
+bgzip lg20.vcf 
+tabix lg20.vcf.gz
+
+```
+
+We can use the diagnostic loci from the g3 paper.
+
+
+```{sh, eval=FALSE}
+cp ~/github/g3-lates-inversions/outputs/607/*diagnostic.tsv .
+cp ~/github/g3-lates-inversions/omy05-haplotyper.pl 
+
+scp farm:~/lates-wgs/outputs/1206/lg*.geno.gz .
+
+gunzip -c lg20.geno.gz | cut -f 2-105 > lc20.geno    
+gunzip -c lg05.geno.gz | cut -f 2-105 > lc05.geno   
+gunzip -c lg03.geno.gz | cut -f 2-105 > lc03.geno   
+
+
+#./105-omy05-haplotyper.pl genotypes.txt  genosToTest.txt bamlist
+#This script is hard coded for some reason for the number of samples 
+
+ ./omy05-haplotyper.pl lc20-diagnostic.tsv lc20.geno ../../bamlists/103-sample-names.txt > lc20-haplos.txt 
+./omy05-haplotyper.pl lc05-diagnostic.tsv lc05.geno ../../bamlists/103-sample-names.txt > lc05-haplos.txt 
+./omy05-haplotyper.pl lc03-diagnostic.tsv lc03.geno ../../bamlists/103-sample-names.txt > lc03-haplos.txt 
+
+```
+
+
+
+# PCAs
+
+```{sh, eval=FALSE}
+scp farm:~/lates-wgs/outputs/1204/lg*.vcf.gz .
+
+bcftools +fill-tags lg03.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' > lg03-filtered.vcf
+
+bcftools +fill-tags lg05.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' > lg05-filtered.vcf
+
+bcftools +fill-tags lg20.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' > lg20-filtered.vcf
+```
+from 55,952 variants to 18372 for lg03
+
+## Lca03
+
+```{r}
+vcf<-read.vcfR(file="outputs/1206/lg03-filtered.vcf")
+genind<-vcfR2genind(vcf)
+genind@pop<-as.factor(meta$Pop)
+```
+
+```{r}
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(meta)
+df$Lineage<-factor(df$Lineage, levels=c("AUS+NG","Mainstream","OceanPick","SEA","IND","lakdiva"))
+df$Region<-factor(df$Pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","India-Eastern-Coast","Sri-Lanka","India-Western-Coast"))
+
+eig<-pca1$eig/sum(pca1$eig)*100
+```
+
+```{r}
+lc03pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Region, shape=Lineage), alpha=0.75, cex=2) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,21,21,24,23,23)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "top")
+lc03pc12
+
+ggsave("outputs/1206/lg03.jpeg", width=10, height=10)
+```
+
+## Lca05
+
+```{r}
+vcf<-read.vcfR(file="outputs/1206/lg05-filtered.vcf")
+genind<-vcfR2genind(vcf)
+genind@pop<-as.factor(meta$Pop)
+```
+
+```{r}
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(meta)
+df$Lineage<-factor(df$Lineage, levels=c("AUS+NG","Mainstream","OceanPick","SEA","IND","lakdiva"))
+df$Region<-factor(df$Pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","India-Eastern-Coast","Sri-Lanka","India-Western-Coast"))
+
+eig<-pca1$eig/sum(pca1$eig)*100
+```
+
+```{r}
+lc05pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Region, shape=Lineage), alpha=0.75, cex=2) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,21,21,24,23,23)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "top")
+lc05pc12
+
+ggsave("outputs/1206/lg05.jpeg", width=10, height=10)
+```
+
+## Lca20
+
+```{r}
+vcf<-read.vcfR(file="outputs/1206/lg20-filtered.vcf")
+genind<-vcfR2genind(vcf)
+genind@pop<-as.factor(meta$Pop)
+```
+
+```{r}
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(meta)
+df$Lineage<-factor(df$Lineage, levels=c("AUS+NG","Mainstream","OceanPick","SEA","IND","lakdiva"))
+df$Region<-factor(df$Pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","India-Eastern-Coast","Sri-Lanka","India-Western-Coast"))
+
+eig<-pca1$eig/sum(pca1$eig)*100
+```
+
+```{r}
+lc20pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Region, shape=Lineage), alpha=0.75, cex=2) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,21,21,24,23,23)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "top")
+lc20pc12
+
+ggsave("outputs/1206/lg20.jpeg", width=10, height=10)
+```
+
+
+#Figure Frequencies
+
+```{r}
+data<-read_tsv("outputs/1206/lc03-haplos.txt")
+
+df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
+  mutate(Genotype=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, "RHom",
+                       ifelse(NumberAA > NumberRR & NumberAA > NumberAR, "AHom",
+                       ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other"))))
+ddf<-df %>% group_by(Lineage, Region, Genotype) %>% summarise(Count=n()) %>% ungroup() %>%
+  group_by(Lineage, Region) %>% mutate(Proportion=Count/sum(Count)) %>% mutate(SampleSize=sum(Count))
+
+counts<-df %>% group_by(Genotype) %>% summarize(Count=n())
+ggplot(ddf) +
+  geom_col(aes(x=Region, y=Count, fill=Genotype), color="black") +
+  facet_grid(.~Lineage, scales = "free_x", space="free_x") +
+  scale_fill_viridis_d(option="inferno") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
+  theme(panel.grid = element_blank()) +
+  ggtitle("lc03 Variant Frequencies\n") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0.5)) +
+  scale_y_continuous(breaks=c(0,5,10,15))
+```
+
+```{r}
+
+data<-read_tsv("outputs/1206/lc05-haplos.txt")
+
+df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
+  mutate(Genotype=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, "RHom",
+                       ifelse(NumberAA > NumberRR & NumberAA > NumberAR, "AHom",
+                       ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other"))))
+ddf<-df %>% group_by(Lineage, Region, Genotype) %>% summarise(Count=n()) %>% ungroup() %>%
+  group_by(Lineage, Region) %>% mutate(Proportion=Count/sum(Count)) %>% mutate(SampleSize=sum(Count))
+
+counts<-df %>% group_by(Genotype) %>% summarize(Count=n())
+ggplot(ddf) +
+  geom_col(aes(x=Region, y=Count, fill=Genotype), color="black") +
+  facet_grid(.~Lineage, scales = "free_x", space="free_x") +
+  scale_fill_viridis_d(option="inferno") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
+  theme(panel.grid = element_blank()) +
+  ggtitle("lc05 Variant Frequencies\n") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0.5)) +
+  scale_y_continuous(breaks=c(0,5,10,15))
+```
+
+```{r}
+
+data<-read_tsv("outputs/1206/lc20-haplos.txt")
+
+df<-meta %>% left_join(data, by=c("Run"="samples")) %>%
+  mutate(Genotype=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, "RHom",
+                       ifelse(NumberAA > NumberRR & NumberAA > NumberAR, "AHom",
+                       ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other"))))
+ddf<-df %>% group_by(Lineage, Region, Genotype) %>% summarise(Count=n()) %>% ungroup() %>%
+  group_by(Lineage, Region) %>% mutate(Proportion=Count/sum(Count)) %>% mutate(SampleSize=sum(Count))
+
+counts<-df %>% group_by(Genotype) %>% summarize(Count=n())
+ggplot(ddf) +
+  geom_col(aes(x=Region, y=Count, fill=Genotype), color="black") +
+  facet_grid(.~Lineage, scales = "free_x", space="free_x") +
+  scale_fill_viridis_d(option="inferno") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
+  theme(panel.grid = element_blank()) +
+  ggtitle("lc20 Variant Frequencies\n") +
+  theme(plot.title=element_text(size=14, face="bold", hjust=0.5)) +
+  scale_y_continuous(breaks=c(0,5,10,15))
+
+```

@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 library(tidyverse)
 library(dartR)
 library(snpR)
+library(grid)
 library(ggpubr)
 library(phytools)
 library(tanggle)
@@ -145,6 +146,7 @@ We have downsampled numerous fish!!
 m104 <- m105 %>% filter(Run != "WJC9557")
 write_csv(m104, file="meta/meta-104.csv")
 m103<-filter(m104, Lineage !="japonicus")
+write_csv(m103, "meta/m103.csv")
 ```
 
 Conduct basic PCA of one chrom.
@@ -562,7 +564,7 @@ m64<-m103 %>% filter(! Region %in% c("OceanPick","Mainstream","Northern Territor
 
 m64 %>% select(Run) %>% write_tsv("bamlists/64-sample-names.txt", col_names = FALSE)
 
-m41<-m103 %>% filter(! Region %in% c("OceanPick","Mainstream","Northern Territory","Papua New Guinea","Queensland","Bangladesh","Sri Lanka","India Eastern Coast","India Western Coast"))
+m41<-m103 %>% filter(! Region %in% c("OceanPick","Mainstream","Northern Territory","Papua New Guinea","Queensland","Bangladesh","Sri Lanka","India Eastern Coast","India Western Coast")) 
 
 m41 %>% select(Run) %>% write_tsv("bamlists/41-sample-names.txt", col_names = FALSE)
 
@@ -581,12 +583,14 @@ module load bcftools
 bcftools reheader --samples bamlists/103-sample-names.txt -o outputs/1204/renamed.vcf.gz outputs/1204/plink.vcf.gz
 
 bcftools view -S bamlists/64-sample-names.txt outputs/1204/renamed.vcf.gz > outputs/1204/64.vcf
+bcftools view -S bamlists/41-sample-names.txt outputs/1204/renamed.vcf.gz > outputs/1204/41.vcf
 
 #--nsites-per-win  removing SNPs with more than 5% missing data first -e'F_MISSING>=0.05'
 bcftools +fill-tags outputs/1204/renamed.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1204/pruned.vcf
 
 bcftools +fill-tags outputs/1204/64.vcf  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1204/pruned-64.vcf
 
+bcftools +fill-tags outputs/1204/41.vcf  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1204/pruned-41.vcf
 ```
 
 	-> Number of sites retained after filtering: 1850831 
@@ -601,12 +605,19 @@ conda activate py2;
 ~/github/mccloud-rrt/vcf2phylip.py -i pruned-64.vcf;
 conda deactivate;
 
+conda activate py2;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-41.vcf;
+conda deactivate;
+
 ```{r}
 dat<-read.dna(file="outputs/1204/pruned.min4.phy")
 write.nexus.data(dat, file="outputs/1204/pruned.nex")
 
 dat<-read.dna(file="outputs/1204/pruned-64.min4.phy")
 write.nexus.data(dat, file="outputs/1204/pruned-64.nex")
+
+dat<-read.dna(file="outputs/1204/pruned-41.min4.phy")
+write.nexus.data(dat, file="outputs/1204/pruned-41.nex")
 
 ```
 
@@ -872,4 +883,159 @@ structure<-plot_structure(snp, facet=c("pop"), facet.order = c("Queensland","Nor
 
 ```{r}
 structure$plot
+```
+
+## 41 or 64 Samples
+
+```{r}
+path_to_file <- "outputs/1204/pruned-64.vcf"
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+
+
+_1_ choose a K   
+
+```{r}
+x <- pcadapt(input = filename, K = 20) 
+```
+
+```{r}
+#plot(x, option = "screeplot")
+panela<-plot(x, option = "screeplot", K = 10) + ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  scale_x_continuous(breaks=seq(1,10,1), labels=seq(1,10,1)) +
+  ylab("Proption of Explained Variance\n") +
+  xlab("\nPrincipal Component") +
+  theme(axis.title=element_text(size=12))
+panela
+```
+```{r}
+m<-m64
+```
+
+```{r}
+plot(x, option = "scores", pop = factor(m$Region, levels=c("Northern Territory","Queensland",
+                                                           "Papua New Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU",
+                                                           "Indonesia-SJ",
+                                                           
+                                      "Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","Sri Lanka",
+                                              "India Eastern Coast","India Western Coast"))) 
+ 
+```
+
+
+Get scree plot and PCA    
+```{r}
+pcadata<-x$scores[,1:5] %>% as_tibble()
+pcadata<-pcadata %>% bind_cols(m)
+
+```
+
+```{r}
+pcb<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V2, shape=Lineage, fill=Region), alpha=0.95) +
+  scale_shape_manual(values=c(21,23,23,21,21,24)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 2") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+
+#labels13<-pcadata %>% filter(Region %in% c("Indonesia-K","Indonesia-SU")) %>% 
+ # select(Region,V1, V3) %>% group_by(Region) %>% summarize(x=mean(V1), y=mean(V3)) 
+
+pcc<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V3, shape=Lineage, fill=Region), alpha=0.9) +
+#  geom_text_repel(data=labels13, aes(x=x, y=y, label=Region))+
+  scale_shape_manual(values=c(21,23,23,21,21,24)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  theme(legend.position = "none") +
+
+  xlab("PC 1") +
+  ylab("PC 3") +
+  ggtitle("C") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+
+pcb
+pcc
+```
+
+```{r}
+blank <- grid.rect(gp=gpar(col="white"))
+```
+
+
+
+```{r}
+m<-m64
+vcf <-read.vcfR("outputs/1204/pruned-64.vcf") # from recalled and pruned snps in 1200
+gl<-vcfR2genlight(vcf)
+gl$pop<-as.factor(gsub(" ","-",m$Region))
+```
+
+
+```{r}
+glx<-gl
+glx <- gl.compliance.check(glx) 
+
+gl3<-gl.filter.maf(glx, threshold = 0.05)
+gl3<-gl.filter.allna(gl3)
+gl3
+```
+
+
+
+```{r}
+snp<-import.snpR.data(gl3)
+```
+
+```{r}
+structure<-plot_structure(snp, facet=c("pop"), facet.order = c(                            "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan",
+                                              "Vietnam","Cambodia","Thailand","Bangladesh",
+                                              "India-Eastern-Coast","Sri-Lanka","India-Western-Coast"),
+               k=c(2,3,4,5,6))
+```
+
+
+```{r}
+structure$plot
+
+ggsave("outputs/1204/taiwan-admixture-plot.pdf")
+```
+
+Filter out WJC fish
+
+```{r}
+t<-structure$plot$data %>% tibble() %>% filter(K=="K = 3") %>% filter(pop=="Taiwan") %>% filter(Cluster=="1" & Percentage > 0.8)
+
+t
+```
+
+
+```{r}
+structure$plot$data %>% tibble() %>% filter(K=="K = 3") %>% filter(pop=="Taiwan") %>% filter(Cluster=="3" & Percentage > 0.2)
+```
+
+```{r}
+p<-structure$plot$data %>% tibble() %>% filter(K=="K = 3") %>% filter(pop=="Taiwan")
+
+ggplot(p, aes(x=sampID, y=Percentage)) +
+  geom_col(aes(fill=Cluster)) +
+  scale_fill_viridis_d(option="H", alpha=0.9) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  ylab("Ancestry Component\n") +
+  xlab("\nSample ID") +
+  theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1))
+
+ggsave("outputs/1204/taiwanese-samples-structure-plot.pdf")
 ```

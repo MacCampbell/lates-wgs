@@ -1,0 +1,118 @@
+---
+title: "1205-taiwan-hybrids"
+output: html_document
+date: "2025-01-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(dartR)
+library(snpR)
+```
+
+```{r}
+m103<-read_csv("meta/m103.csv")
+
+m103$Region<-factor(m103$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
+                                           "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India Eastern Coast","Sri Lanka","India Western Coast"))
+
+m41<-m103 %>% filter(! Region %in% c("OceanPick","Mainstream","Northern Territory","Papua New Guinea","Queensland","Bangladesh","Sri Lanka","India Eastern Coast","India Western Coast")) 
+```
+
+```{r}
+medit <- m41 %>% mutate(pop=ifelse(Run %in% c("WJC9164", "WJC9188", "WJC9196", "WJC9560"), "Taiwan2", as.character(Region)))
+
+medit$pop
+                    
+```
+
+## Admix
+
+```{r}
+m<-m41
+vcf <-read.vcfR("outputs/1204/pruned-41.vcf") # from recalled and pruned snps in 1200
+gl<-vcfR2genlight(vcf)
+gl$pop<-as.factor(gsub(" ","-",m$Region))
+```
+```{r}
+glt<-gl[gl$pop %in% c("Cambodia","Thailand","Taiwan","Vietnam","Philippines"),]
+```
+
+```{r}
+glx<-glt
+glx <- gl.compliance.check(glx) 
+
+gl3<-gl.filter.maf(glx, threshold = 0.25)
+gl3<-gl.filter.allna(gl3)
+gl3
+```
+
+
+```{r}
+snp<-import.snpR.data(gl3)
+```
+
+```{r}
+structure<-plot_structure(snp, facet=c("pop"),
+               k=c(2,3,4))
+```
+
+
+```{r}
+structure$plot
+
+ggsave("outputs/1205/taiwan-admixture-plot.pdf")
+```
+## Test hybridization levels!!!!!!!!!
+
+
+```{r}
+hyb <- gl.nhybrids(gl3,
+#p0=c("Taiwan"),
+#p1=c("Indonesia-K","Indonesia-SU"),
+method="AvgPIC",
+nhyb.directory="~/github/newhybrids", # Specify as necessary
+outpath="~/github/lates-wgs/outputs/1204",  # Specify as necessary, usually getwd() [= workspace]
+BurnIn=50000,
+sweeps=50000,
+verbose=3,
+plot=FALSE)
+
+```
+
+```{r}
+out<-read_csv("outputs/1204/aa-PofZ.csv", col_names = c("Sequence ID","Region","NoName","P0","P1","F1","F2","0-BX","1-BX"), skip=1)
+
+long<-out %>% pivot_longer(cols = 4:9, names_to = c("Class"), values_to = c("Prob"))
+
+
+long$Region<-factor(long$Region, levels=c("Taiwan","Philippines",
+                                              "Vietnam","Cambodia","Thailand"))
+
+long$Class<-factor(long$Class, levels=c("P0","P1","F1","F2","0-BX","1-BX"))
+l2<-long %>% arrange(Region)
+l2$`Sequence ID`<-as.factor(l2$`Sequence ID`)
+
+l2
+```
+
+  
+```{r}
+ggplot(l2) + 
+  geom_tile(aes(x=`Sequence ID`, y=Class, fill=Prob)) +
+  scale_fill_viridis_c(direction=-1) +
+  facet_grid(.~Region, scales="free_x", space="free" ) +
+  theme_bw()+
+  theme(panel.grid=element_blank()) +
+  theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
+  xlab("Sequence ID")
+
+
+ggsave("outputs/1204/other-gene-pools.pdf", width=12, height=6)
+```
