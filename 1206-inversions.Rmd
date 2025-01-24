@@ -80,6 +80,19 @@ gunzip -c lg03.geno.gz | cut -f 2-105 > lc03.geno
 ```
 
 
+IO data
+
+```{r}
+io<-m103 %>% filter(Lineage %in% c("IND","lakdiva"))
+io %>% select(Run) %>% write_tsv("meta/io-samples.txt", col_names = FALSE)
+
+sea<-m103 %>% filter(Lineage %in% c("SEA"))
+sea %>% select(Run) %>% write_tsv("meta/sea-samples.txt", col_names = FALSE)
+
+aus<-m103 %>% filter(Lineage %in% c("AUS+NG"))
+aus %>% select(Run) %>% write_tsv("meta/aus-samples.txt", col_names = FALSE)
+
+```
 
 # PCAs
 
@@ -87,6 +100,12 @@ gunzip -c lg03.geno.gz | cut -f 2-105 > lc03.geno
 scp farm:~/lates-wgs/outputs/1204/lg*.vcf.gz .
 
 bcftools +fill-tags lg03.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' > lg03-filtered.vcf
+
+#pull out lg03 IO fish 
+
+bcftools reheader --samples bamlists/103-sample-names.txt -o outputs/1206/lg03-renamed.vcf.gz outputs/1206/lg03.vcf.gz
+bcftools view -S meta/io-samples.txt outputs/1206/lg03-renamed.vcf.gz | bcftools +fill-tags  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' > outputs/1206/lg03-io.vcf
+
 
 bcftools +fill-tags lg05.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' > lg05-filtered.vcf
 
@@ -129,7 +148,342 @@ lc03pc12<-ggplot(df) +
   theme(legend.position = "top")
 lc03pc12
 
-ggsave("outputs/1206/lg03.jpeg", width=10, height=10)
+ggsave("outputs/1206/lg03.jpeg", width=14, height=10)
+```
+
+
+
+```{r}
+vcf<-read.vcfR(file="outputs/1206/lg03-io.vcf")
+genind<-vcfR2genind(vcf)
+genind@pop<-as.factor(io$Pop)
+```
+
+```{r}
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(io)
+
+eig<-pca1$eig/sum(pca1$eig)*100
+```
+
+```{r}
+lc03pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Region,), alpha=0.75, cex=2, pch=23) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="magma") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "top")
+lc03pc12
+
+ggsave("outputs/1206/lg03-io.jpeg", width=10, height=10)
+```
+Well, crap. Should look at LD across the whole chrom.
+
+```{sh, eval=FALSE}
+srun -t 8:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 93 -bam bamlists/103.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-r NC_066835.1 -out outputs/1206/lg03-whole-chrom  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 4 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1206/lg03-whole-chrom.out 2> outputs/1206/lg03-whole-chrom.err &
+
+plink --tped lg03-whole-chrom.tped --tfam lg03-whole-chrom.tfam  --out lg03-whole-chrom-binary --recode --allow-extra-chr --noweb
+plink --ped lg03-whole-chrom-binary.ped --map lg03-whole-chrom-binary.map --recode vcf --allow-extra-chr -out lg03-whole-chrom
+bgzip lg03-whole-chrom.vcf 
+tabix lg03-whole-chrom.vcf.gz
+
+bcftools reheader --samples bamlists/103-sample-names.txt -o outputs/1206/lg03-whole-chrom-renamed.vcf.gz outputs/1206/lg03-whole-chrom.vcf.gz
+bcftools view -S meta/io-samples.txt outputs/1206/lg03-whole-chrom-renamed.vcf.gz | bcftools +fill-tags  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' > outputs/1206/lg03-io-whole-chrom.vcf
+
+#SEA samples
+bcftools view -S meta/sea-samples.txt outputs/1206/lg03-whole-chrom-renamed.vcf.gz | bcftools +fill-tags  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' > outputs/1206/lg03-sea-whole-chrom.vcf
+
+#AUS+NG
+bcftools view -S meta/aus-samples.txt outputs/1206/lg03-whole-chrom-renamed.vcf.gz | bcftools +fill-tags  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' > outputs/1206/lg03-aus-whole-chrom.vcf
+
+```
+
+```{r}
+vcf<-read.vcfR(file="outputs/1206/lg03-io-whole-chrom.vcf")
+genind<-vcfR2genind(vcf)
+genind@pop<-as.factor(io$Pop)
+```
+
+```{r}
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(io)
+
+eig<-pca1$eig/sum(pca1$eig)*100
+```
+
+```{r}
+lc03pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Region,), alpha=0.75, cex=2, pch=23) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="magma") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "top")
+lc03pc12
+
+ggsave("outputs/1206/lg03-io-whole-chrom.jpeg", width=10, height=10)
+```
+
+Looking at LD
+
+```{sh}
+#Let's thin 
+cat lg03-io-whole-chrom.vcf | grep "#" > header.txt
+cat lg03-io-whole-chrom.vcf | grep -v "#" | awk 'BEGIN{i=0}{i++;if (i%50==0) print}' > lg03-thinned.vcf
+cat header.txt lg03-thinned.vcf > lg03-thinned.wheader.vcf
+
+plink --vcf lg03-thinned.wheader.vcf --r2 inter-chr --ld-window-r2 0.2 --out lg03-io.ldf --allow-extra-chr --double-id
+
+```
+
+```{r}
+lc03<-read.delim("outputs/1206/lg03-io.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
+  filter(R2 >0.5)
+
+ggplot(lc03) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw()
+ggsave("outputs/1206/lg03-io-ld.jpeg")
+```
+
+Let's look at SEA LD
+
+```{r}
+vcf<-read.vcfR(file="outputs/1206/lg03-sea-whole-chrom.vcf")
+genind<-vcfR2genind(vcf)
+genind@pop<-as.factor(io$Pop)
+```
+
+```{r}
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(sea)
+
+eig<-pca1$eig/sum(pca1$eig)*100
+```
+
+```{r}
+lc03pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Region,), alpha=0.75, cex=2, pch=23) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="magma") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "top")
+lc03pc12
+
+ggsave("outputs/1206/lg03-sea-whole-chrom.jpeg", width=10, height=10)
+```
+
+```{sh, eval=FALSE}
+#Let's thin 
+cat lg03-sea-whole-chrom.vcf | grep "#" > sea-header.txt
+cat lg03-sea-whole-chrom.vcf | grep -v "#" | awk 'BEGIN{i=0}{i++;if (i%50==0) print}' > lg03-sea-thinned.vcf
+cat sea-header.txt lg03-sea-thinned.vcf > lg03-sea-thinned.wheader.vcf
+
+plink --vcf lg03-sea-thinned.wheader.vcf --r2 inter-chr --ld-window-r2 0.2 --out lg03-sea.ldf --allow-extra-chr --double-id
+
+```
+
+```{r}
+lc03<-read.delim("outputs/1206/lg03-sea.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
+  filter(R2 >0.5)
+
+ggplot(lc03) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw() 
+ggsave("outputs/1206/lg03-sea-ld.jpeg")
+```
+
+Australasian fish
+
+```{r}
+vcf<-read.vcfR(file="outputs/1206/lg03-aus-whole-chrom.vcf")
+genind<-vcfR2genind(vcf)
+genind@pop<-as.factor(aus$Pop)
+```
+
+```{r}
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(aus)
+
+eig<-pca1$eig/sum(pca1$eig)*100
+```
+
+```{r}
+lc03pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Region,), alpha=0.75, cex=2, pch=23) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="magma") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "top")
+lc03pc12
+
+ggsave("outputs/1206/lg03-aus-whole-chrom.jpeg", width=10, height=10)
+```
+
+Pop structure
+
+```{sh}
+#Let's thin 
+cat lg03-aus-whole-chrom.vcf | grep "#" > aus-header.txt
+cat lg03-aus-whole-chrom.vcf | grep -v "#" | awk 'BEGIN{i=0}{i++;if (i%10==0) print}' > lg03-aus-thinned.vcf
+cat aus-header.txt lg03-aus-thinned.vcf > lg03-aus-thinned.wheader.vcf
+
+plink --vcf lg03-aus-thinned.wheader.vcf --r2 inter-chr --ld-window-r2 0.2 --out lg03-aus.ldf --allow-extra-chr --double-id
+
+```
+
+
+
+```{r}
+lc03<-read.delim("outputs/1206/lg03-aus.ldf.ld",sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>% 
+  filter(R2 >0.5)
+
+ggplot(lc03) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  theme_bw()
+ggsave("outputs/1206/lg03-aus-ld.jpeg")
+```
+### Whole chrom
+
+First bit, subset 1:2.5e5
+
+```{sh, eval=FALSE}
+bcftools view -r NC_066835.1:1-2.5e5 outputs/1206/lg03-whole-chrom-renamed.vcf.gz | bcftools +fill-tags  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' > outputs/1206/front.vcf
+bcftools view -r NC_066835.1:2.5e5-2.0e7 outputs/1206/lg03-whole-chrom-renamed.vcf.gz | bcftools +fill-tags  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05'  > outputs/1206/back.vcf
+```
+
+```{r}
+vcf<-read.vcfR(file="outputs/1206/front.vcf")
+genind<-vcfR2genind(vcf)
+genind@pop<-as.factor(meta$Pop)
+```
+
+```{r}
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(meta)
+df$Lineage<-factor(df$Lineage, levels=c("AUS+NG","Mainstream","OceanPick","SEA","IND","lakdiva"))
+df$Region<-factor(df$Pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","India-Eastern-Coast","Sri-Lanka","India-Western-Coast"))
+
+eig<-pca1$eig/sum(pca1$eig)*100
+```
+
+```{r}
+front<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Region, shape=Lineage), alpha=0.75, cex=2) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,21,21,24,23,23)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "top") +
+  ggtitle("Lca03 1-2.5e5 bp") 
+front
+
+ggsave("outputs/1206/front.jpeg", width=10, height=10)
+```
+
+```{r}
+vcf<-read.vcfR(file="outputs/1206/back.vcf")
+genind<-vcfR2genind(vcf)
+genind@pop<-as.factor(meta$Pop)
+```
+
+```{r}
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(meta)
+df$Lineage<-factor(df$Lineage, levels=c("AUS+NG","Mainstream","OceanPick","SEA","IND","lakdiva"))
+df$Region<-factor(df$Pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","India-Eastern-Coast","Sri-Lanka","India-Western-Coast"))
+
+eig<-pca1$eig/sum(pca1$eig)*100
+```
+
+```{r}
+back<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Region, shape=Lineage), alpha=0.75, cex=2) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,21,21,24,23,23)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "top") +
+  ggtitle("Lca03 2.5e5 - 2.0e7 bp")
+back
+
+ggsave("outputs/1206/back.jpeg", width=10, height=10)
+```
+
+
+Check cambodia/thai labels
+
+```{r}
+ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Region, shape=Lineage), alpha=0.75, cex=2) +
+  theme_bw() +
+  geom_text_repel(data=df %>% filter(Region %in% c("Thailand","Cambodia")), aes(x=Axis1, y=Axis2, label=Run), max.overlaps = Inf) +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,21,21,24,23,23)) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "top") +
+  ggtitle("Lca03 2.5e5 - 2.0e7 bp") +
+  facet_wrap(.~Lineage)
+
+
+ggsave("outputs/1206/back-with-cambodia-labels.jpeg", width=10, height=10)
 ```
 
 ## Lca05
@@ -169,6 +523,9 @@ lc05pc12
 
 ggsave("outputs/1206/lg05.jpeg", width=10, height=10)
 ```
+
+
+
 
 ## Lca20
 
@@ -256,6 +613,8 @@ ggplot(ddf) +
   ggtitle("lc05 Variant Frequencies\n") +
   theme(plot.title=element_text(size=14, face="bold", hjust=0.5)) +
   scale_y_continuous(breaks=c(0,5,10,15))
+
+ggsave("outputs/1206/lc05-inversions.pdf")
 ```
 
 ```{r}
@@ -280,5 +639,7 @@ ggplot(ddf) +
   ggtitle("lc20 Variant Frequencies\n") +
   theme(plot.title=element_text(size=14, face="bold", hjust=0.5)) +
   scale_y_continuous(breaks=c(0,5,10,15))
+
+ggsave("outputs/1206/lc20-inversions.pdf")
 
 ```

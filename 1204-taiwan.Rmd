@@ -591,6 +591,19 @@ bcftools +fill-tags outputs/1204/renamed.vcf.gz  -- -t MAF,F_MISSING | bcftools 
 bcftools +fill-tags outputs/1204/64.vcf  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1204/pruned-64.vcf
 
 bcftools +fill-tags outputs/1204/41.vcf  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1204/pruned-41.vcf
+
+#this command is no longer functional
+#bcftools +prune -l 0.20 -w 10000 outputs/1204/renamed.vcf.gz > outputs/1204/pruned-02.vcf
+bcftools +prune -m 0.20 -w 10000 outputs/1204/renamed.vcf.gz > outputs/1204/pruned-02.vcf
+
+bcftools +fill-tags outputs/1204/renamed.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.4' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1204/pruned-maf05-04.vcf
+
+
+bcftools +fill-tags outputs/1204/renamed.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.4' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1204/pruned-maf10-04.vcf
+
+bcftools +fill-tags outputs/1204/renamed.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.01' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1204/pruned-maf01-45.vcf
+
+bcftools +fill-tags outputs/1204/renamed.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.01' | bcftools view -i 'INFO/MAF < 0.40' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1204/pruned-maf01-04.vcf
 ```
 
 	-> Number of sites retained after filtering: 1850831 
@@ -609,6 +622,17 @@ conda activate py2;
 ~/github/mccloud-rrt/vcf2phylip.py -i pruned-41.vcf;
 conda deactivate;
 
+conda activate py2;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-maf05-04.vcf;
+conda deactivate;
+
+conda activate py2;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-maf10-04.vcf;
+conda deactivate;
+
+conda activate py2;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-maf01-45.vcf;
+conda deactivate;
 ```{r}
 dat<-read.dna(file="outputs/1204/pruned.min4.phy")
 write.nexus.data(dat, file="outputs/1204/pruned.nex")
@@ -619,11 +643,21 @@ write.nexus.data(dat, file="outputs/1204/pruned-64.nex")
 dat<-read.dna(file="outputs/1204/pruned-41.min4.phy")
 write.nexus.data(dat, file="outputs/1204/pruned-41.nex")
 
+
+dat<-read.dna(file="outputs/1204/pruned-maf05-04.min4.phy")
+write.nexus.data(dat, file="outputs/1204/pruned-maf05-04.nex")
+
+dat<-read.dna(file="outputs/1204/pruned-maf10-04.min4.phy")
+write.nexus.data(dat, file="outputs/1204/pruned-maf10-04.nex")
+
+dat<-read.dna(file="outputs/1204/pruned-maf01-45.min4.phy")
+write.nexus.data(dat, file="outputs/1204/pruned-maf01-45.nex")
+
 ```
 
 
 ```{r}
-path_to_file <- "outputs/1204/pruned.vcf"
+path_to_file <- "outputs/1204/pruned-maf01-45.vcf"
 filename <- read.pcadapt(path_to_file, type = "vcf")
 ```
 
@@ -735,9 +769,16 @@ iqtree2 -nt AUTO -s pruned.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 
 iqtree2 -s pruned-64.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
 iqtree2 -nt AUTO -s pruned-64.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo
 
+iqtree2 -s pruned-maf05-04.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
+iqtree2 -nt AUTO -s pruned-maf05-04.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo
 
+
+iqtree2 -s pruned-maf01-45.min4.phy -st DNA -m GTR+ASC -bb 1000 --redo
+iqtree2 -nt AUTO -s pruned-maf01-45.min4.phy.varsites.phy -T AUTO -st DNA -m MFP+ASC -bb 10000 --redo
+
+Phylogeny has better resolution by letting low variants (MAF 0.01) be present
 ```{r}
-tree<-read.tree("outputs/1204/pruned.min4.phy.varsites.phy.contree")
+tree<-read.tree("outputs/1204/pruned-maf01-45.min4.phy.varsites.phy.contree")
 t1<-ggtree(tree) + geom_nodelab(aes(label=node))
 t1
 ```
@@ -785,6 +826,28 @@ u
 ggsave("outputs/1204/ml-phylogeny.pdf", height=12, width=8)
 ```
 
+
+Network
+
+```{r}
+net<-read.nexus.networx("outputs/1204/pruned-maf01-45-network.nex")
+```
+
+```{r}
+g<-ggsplitnet(net)  
+g$data<-left_join(g$data, m, by=c("label"="Run")) 
+
+n<-g + 
+  geom_tippoint(aes(shape=Lineage, fill=Region), cex=5, alpha=1.00) +
+  scale_shape_manual(values=c(21,23,23,21,21,24)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22)))
+
+n
+ggsave("outputs/1204/wgs-network.jpeg", width=12, height=8)
+ggsave("outputs/1204/wgs-network.pdf", width=12, height=8)
+
+```
 
 
 ```{r}
@@ -851,7 +914,7 @@ ms$Region<-factor(ms$Region, levels=c("Queensland","Northern-Territory","Papua-N
 
 ```{r}
 m<-ms
-vcf <-read.vcfR("outputs/1204/pruned.vcf") # from recalled and pruned snps in 1200
+vcf <-read.vcfR("outputs/1204/pruned-maf10-04.vcf") # from recalled and pruned snps in 1200
 gl<-vcfR2genlight(vcf)
 gl$pop<-as.factor(m$Region)
 ```
@@ -861,7 +924,7 @@ gl$pop<-as.factor(m$Region)
 glx<-gl
 glx <- gl.compliance.check(glx) 
 
-gl3<-gl.filter.maf(glx, threshold = 0.10)
+gl3<-gl.filter.maf(glx, threshold = 0.1)
 gl3<-gl.filter.allna(gl3)
 gl3
 ```
@@ -877,12 +940,15 @@ structure<-plot_structure(snp, facet=c("pop"), facet.order = c("Queensland","Nor
                                            "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan",
                                               "Vietnam","Cambodia","Thailand", "Bangladesh","Sri-Lanka",
                                               "India-Eastern-Coast","India-Western-Coast"),
-               k=c(2,3,4,5,6,7))
+               k=c(1,2,3,4,5,6))
 ```
 
+This plot is influenced by MAF 0.01 vs 0.05 vs 0.1
 
 ```{r}
 structure$plot
+
+ggsave("outputs/1204/all-samples-genome-wide-admix-plot.pdf", height=10, width=16)
 ```
 
 ## 41 or 64 Samples
