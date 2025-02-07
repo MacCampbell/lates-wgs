@@ -130,7 +130,7 @@ pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
 df<-pca1$li
 df<-df %>% bind_cols(meta)
 df$Lineage<-factor(df$Lineage, levels=c("AUS+NG","Mainstream","OceanPick","SEA","IND","lakdiva"))
-df$Region<-factor(df$Pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","India-Eastern-Coast","Sri-Lanka","India-Western-Coast"))
+df$Region<-factor(df$Pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","India-East-Coast","Sri-Lanka","India-West-Coast"))
 
 eig<-pca1$eig/sum(pca1$eig)*100
 ```
@@ -199,6 +199,10 @@ plink --ped lg03-whole-chrom-binary.ped --map lg03-whole-chrom-binary.map --reco
 bgzip lg03-whole-chrom.vcf 
 tabix lg03-whole-chrom.vcf.gz
 
+
+bcftools reheader --samples bamlists/103-sample-names.txt outputs/1206/lg03-whole-chrom.vcf.gz | bcftools +fill-tags  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' > outputs/1206/lg03-all-samples-whole-chrom.vcf
+
+
 bcftools reheader --samples bamlists/103-sample-names.txt -o outputs/1206/lg03-whole-chrom-renamed.vcf.gz outputs/1206/lg03-whole-chrom.vcf.gz
 bcftools view -S meta/io-samples.txt outputs/1206/lg03-whole-chrom-renamed.vcf.gz | bcftools +fill-tags  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' > outputs/1206/lg03-io-whole-chrom.vcf
 
@@ -208,6 +212,40 @@ bcftools view -S meta/sea-samples.txt outputs/1206/lg03-whole-chrom-renamed.vcf.
 #AUS+NG
 bcftools view -S meta/aus-samples.txt outputs/1206/lg03-whole-chrom-renamed.vcf.gz | bcftools +fill-tags  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' > outputs/1206/lg03-aus-whole-chrom.vcf
 
+```
+
+```{r}
+vcf<-read.vcfR(file="outputs/1206/lg03-all-samples-whole-chrom.vcf.gz")
+genind<-vcfR2genind(vcf)
+genind@pop<-as.factor(io$Pop)
+```
+
+
+```{r}
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(m103)
+
+eig<-pca1$eig/sum(pca1$eig)*100
+```
+
+```{r}
+lc03pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Region,), alpha=0.75, cex=2, pch=23) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="magma") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "top")
+lc03pc12
+
+ggsave("outputs/1206/lg03-all-samples-whole-chrom.jpeg", width=10, height=10)
 ```
 
 ```{r}
@@ -245,7 +283,7 @@ ggsave("outputs/1206/lg03-io-whole-chrom.jpeg", width=10, height=10)
 
 Looking at LD
 
-```{sh}
+```{sh, eval=FALSE}
 #Let's thin 
 cat lg03-io-whole-chrom.vcf | grep "#" > header.txt
 cat lg03-io-whole-chrom.vcf | grep -v "#" | awk 'BEGIN{i=0}{i++;if (i%50==0) print}' > lg03-thinned.vcf
@@ -322,6 +360,11 @@ ggplot(lc03) +
 ggsave("outputs/1206/lg03-sea-ld.jpeg")
 ```
 
+Where's this peak?
+
+```{R}
+lc03 %>% filter(BP_A < 2.5e5) %>% filter(BP_B < 2.5e5)
+```
 Australasian fish
 
 ```{r}
@@ -359,7 +402,7 @@ ggsave("outputs/1206/lg03-aus-whole-chrom.jpeg", width=10, height=10)
 
 Pop structure
 
-```{sh}
+```{sh, eval=FALSE}
 #Let's thin 
 cat lg03-aus-whole-chrom.vcf | grep "#" > aus-header.txt
 cat lg03-aus-whole-chrom.vcf | grep -v "#" | awk 'BEGIN{i=0}{i++;if (i%10==0) print}' > lg03-aus-thinned.vcf
@@ -405,7 +448,7 @@ pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
 df<-pca1$li
 df<-df %>% bind_cols(meta)
 df$Lineage<-factor(df$Lineage, levels=c("AUS+NG","Mainstream","OceanPick","SEA","IND","lakdiva"))
-df$Region<-factor(df$Pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","India-Eastern-Coast","Sri-Lanka","India-Western-Coast"))
+df$Region<-factor(df$Pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","India-East-Coast","Sri-Lanka","India-West-Coast"))
 
 eig<-pca1$eig/sum(pca1$eig)*100
 ```
@@ -442,7 +485,7 @@ pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
 df<-pca1$li
 df<-df %>% bind_cols(meta)
 df$Lineage<-factor(df$Lineage, levels=c("AUS+NG","Mainstream","OceanPick","SEA","IND","lakdiva"))
-df$Region<-factor(df$Pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","India-Eastern-Coast","Sri-Lanka","India-Western-Coast"))
+df$Region<-factor(df$Pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","India-East-Coast","Sri-Lanka","India-West-Coast"))
 
 eig<-pca1$eig/sum(pca1$eig)*100
 ```
@@ -503,7 +546,7 @@ pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
 df<-pca1$li
 df<-df %>% bind_cols(meta)
 df$Lineage<-factor(df$Lineage, levels=c("AUS+NG","Mainstream","OceanPick","SEA","IND","lakdiva"))
-df$Region<-factor(df$Pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","India-Eastern-Coast","Sri-Lanka","India-Western-Coast"))
+df$Region<-factor(df$Pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","India-East-Coast","Sri-Lanka","India-West-Coast"))
 
 eig<-pca1$eig/sum(pca1$eig)*100
 ```
@@ -544,7 +587,7 @@ pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
 df<-pca1$li
 df<-df %>% bind_cols(meta)
 df$Lineage<-factor(df$Lineage, levels=c("AUS+NG","Mainstream","OceanPick","SEA","IND","lakdiva"))
-df$Region<-factor(df$Pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","India-Eastern-Coast","Sri-Lanka","India-Western-Coast"))
+df$Region<-factor(df$Pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","India-East-Coast","Sri-Lanka","India-West-Coast"))
 
 eig<-pca1$eig/sum(pca1$eig)*100
 ```

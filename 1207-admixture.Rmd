@@ -1,0 +1,247 @@
+---
+title: "1207-admixture"
+output: html_document
+date: "2025-02-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message=FALSE)
+```
+
+Got admixture running
+https://dalexander.github.io/admixture/download.html
+
+```{r}
+library(tidyverse)
+library(viridis)
+```
+
+```{r}
+m103<-read_csv("meta/m103.csv")
+m103$Region<-factor(m103$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
+                                           "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India East Coast","Sri Lanka","India West Coast"))
+```
+
+### Admixture
+
+"outputs/1204/pruned-01-maf01-45.vcf"
+
+bcftools view pruned-01-maf01-45.vcf.gz NC_066833.1  > lg01.vcf
+convert to plink, and convert some more
+plink --vcf lg01.vcf --make-bed --out myplink --allow-extra-chr --noweb
+plink -bfile myplink --recode12 -out myplink2 --allow-extra-chr --noweb
+
+plink --vcf pruned-01-maf01-45.vcf.gz --make-bed --out myplink --allow-extra-chr --noweb
+plink -bfile myplink --recode12 -out myplink2 --allow-extra-chr --noweb
+(base) ➜  1204 git:(main) ✗ ~/github/admixture/admixture myplink2.ped 2                                             
+
+now in subdir outputs/1204/admixture
+
+```{sh, eval=FALSE}
+for K in 1 2 3 4 5; \
+do ~/github/admixture/admixture --cv myplink2.ped $K | tee log${K}.out; done
+
+for K in 6 7 8 9 10; \
+do ~/github/admixture/admixture --cv myplink2.ped $K | tee log${K}.out; done
+```
+
+### Scores
+```{sh, eval=FALSE}
+grep -h CV log*.out | cut -f 3,4 -d ' '  | perl -pe 's/://g' | perl -pe s'/\(|\)//g' > scores.txt 
+```
+
+
+```{r}
+scores<-read_delim("outputs/1204/admixture/scores.txt", col_names = c("K","Cross-Validation Error")) %>% mutate(x=1:n())
+
+ggplot(scores) +
+  geom_line(aes(x=x, y=`Cross-Validation Error`)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_x_continuous(breaks=(1:nrow(scores)))
+```
+### Plot
+
+
+```{r, echo=FALSE}
+PlotAdmixture<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  ylab("Q\n") +
+  theme(legend.position = "") +
+  theme(axis.text = element_text(size=10, face="bold")) +
+  theme(axis.title.y=element_text(size=14, face="bold")) +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  #theme(axis.text.x=element_blank()) +
+  scale_fill_viridis_d(option="viridis") +
+  theme(axis.ticks.x = element_blank())
+
+}
+```
+
+```{r}
+PlotAdmixture("outputs/1204/admixture/myplink2.2.Q", m103)
+```
+
+```{r}
+PlotAdmixture("outputs/1204/admixture/myplink2.3.Q", m103)
+```
+
+
+```{r}
+PlotAdmixture("outputs/1204/admixture/myplink2.4.Q", m103)
+```
+
+```{r}
+PlotAdmixture("outputs/1204/admixture/myplink2.5.Q", m103)
+```
+```{r}
+PlotAdmixture("outputs/1204/admixture/myplink2.6.Q", m103)
+```
+
+```{r}
+PlotAdmixture("outputs/1204/admixture/myplink2.7.Q", m103)
+```
+## Subset data...
+
+What about Taiwan? 
+
+
+```{r}
+m41<-m103 %>% filter(! Region %in% c("OceanPick","Mainstream","Northern Territory","Papua New Guinea","Queensland","Bangladesh","Sri Lanka","India East Coast","India West Coast")) 
+```
+
+```{sh, eval=FALSE}
+bcftools view -S meta/sea-samples.txt outputs/1204/pruned-01-maf01-45.vcf.gz | bcftools +fill-tags  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.01' > outputs/1207/sea.vcf
+```
+
+in outputs/1207
+```{sh, eval=FALSE}
+plink --vcf sea.vcf --make-bed --out myplink --allow-extra-chr --noweb
+plink -bfile myplink --recode12 -out myplink2 --allow-extra-chr --noweb
+
+for K in 1 2 3 4 5 6 7 8; \
+do ~/github/admixture/admixture --cv myplink2.ped $K | tee log${K}.out;
+done;
+
+grep -h CV log*.out | cut -f 3,4 -d ' '  | perl -pe 's/://g' | perl -pe s'/\(|\)//g' > scores.txt 
+```
+
+
+```{r}
+scores<-read_delim("outputs/1207/scores.txt", col_names = c("K","Cross-Validation Error")) %>% mutate(x=1:n())
+
+ggplot(scores) +
+  geom_line(aes(x=x, y=`Cross-Validation Error`)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_x_continuous(breaks=(1:nrow(scores)))
+```
+
+```{r}
+PlotAdmixture("outputs/1207/myplink2.2.Q", m41)
+```
+
+```{r}
+PlotAdmixture("outputs/1207/myplink2.3.Q", m41)
+```
+
+
+```{r}
+PlotAdmixture("outputs/1207/myplink2.4.Q", m41)
+```
+
+
+## Subset data...
+
+Dropping Indian fish? 
+
+
+```{r}
+m80<-m103 %>% filter(! Region %in% c("Bangladesh","Sri Lanka","India East Coast","India West Coast")) 
+m80 %>% select(Run) %>% write_tsv(col_names = FALSE, "meta/po-samples.txt")
+```
+
+```{sh, eval=FALSE}
+bcftools view -S meta/po-samples.txt outputs/1204/pruned-01-maf01-45.vcf.gz | bcftools +fill-tags  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.01' > outputs/1207/po/po.vcf
+```
+
+in outputs/1207
+```{sh, eval=FALSE}
+plink --vcf po.vcf --make-bed --out myplink --allow-extra-chr --noweb
+plink -bfile myplink --recode12 -out myplink2 --allow-extra-chr --noweb
+
+for K in 1 2 3 4 5 6 7 8; \
+do ~/github/admixture/admixture --cv myplink2.ped $K | tee log${K}.out;
+done;
+
+grep -h CV log*.out | cut -f 3,4 -d ' '  | perl -pe 's/://g' | perl -pe s'/\(|\)//g' > scores.txt 
+```
+
+
+```{r}
+scores<-read_delim("outputs/1207/po/scores.txt", col_names = c("K","Cross-Validation Error")) %>% mutate(x=1:n())
+
+ggplot(scores) +
+  geom_line(aes(x=x, y=`Cross-Validation Error`)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_x_continuous(breaks=(1:nrow(scores)))
+```
+
+```{r}
+PlotAdmixture("outputs/1207/po/myplink2.2.Q", m80)
+```
+
+```{r}
+PlotAdmixture("outputs/1207/po/myplink2.3.Q", m80)
+ggsave("outputs/1207/po-admix.jpeg")
+```
+```{r}
+tbl=read.table("outputs/1207/po/myplink2.3.Q")
+
+admix<-m80 %>% bind_cols(tbl)
+
+admix %>% filter(Region%in%c("Taiwan","OceanPick")) %>% select(Run, V1, V2, V3)
+```
+
+
+```{r}
+PlotAdmixture("outputs/1207/po/myplink2.4.Q", m80)
+```

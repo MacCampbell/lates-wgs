@@ -20,9 +20,9 @@ m103<-read_csv("meta/m103.csv")
 m103$Region<-factor(m103$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
                                            "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan",
                                               "Vietnam","Cambodia","Thailand", "Bangladesh",
-                                              "India Eastern Coast","Sri Lanka","India Western Coast"))
+                                              "India East Coast","Sri Lanka","India West Coast"))
 
-m41<-m103 %>% filter(! Region %in% c("OceanPick","Mainstream","Northern Territory","Papua New Guinea","Queensland","Bangladesh","Sri Lanka","India Eastern Coast","India Western Coast")) 
+m41<-m103 %>% filter(! Region %in% c("OceanPick","Mainstream","Northern Territory","Papua New Guinea","Queensland","Bangladesh","Sri Lanka","India East Coast","India West Coast")) 
 ```
 
 ```{r}
@@ -35,20 +35,19 @@ medit$pop
 ## Admix
 
 ```{r}
-m<-m41
-vcf <-read.vcfR("outputs/1204/pruned-41.vcf") # from recalled and pruned snps in 1200
+m<-m103
+vcf <-read.vcfR("outputs/1204/pruned.vcf") # from recalled and pruned snps in 1200
 gl<-vcfR2genlight(vcf)
 gl$pop<-as.factor(gsub(" ","-",m$Region))
 ```
 ```{r}
-glt<-gl[gl$pop %in% c("Cambodia","Thailand","Taiwan","Vietnam","Philippines"),]
-```
+glt<-gl[gl$pop %in% c("Taiwan","OceanPick","Mainstream","Sri-Lanka","India-East-Coast","Cambodia","Indonesia-SJ","Philippines","Thailand"),]
+#glt<-gl[gl$pop %in% c("Northern-Territory","Queensland","Papua-New-Guinea","OceanPick","Mainstream","Indonesia-SJ","Cambodia","Vietnam","Philippines"),]
 
-```{r}
 glx<-glt
 glx <- gl.compliance.check(glx) 
 
-gl3<-gl.filter.maf(glx, threshold = 0.25)
+gl3<-gl.filter.maf(glx, threshold = 0.10)
 gl3<-gl.filter.allna(gl3)
 gl3
 ```
@@ -56,26 +55,48 @@ gl3
 
 ```{r}
 snp<-import.snpR.data(gl3)
-```
 
-```{r}
 structure<-plot_structure(snp, facet=c("pop"),
-               k=c(2,3,4))
-```
+               k=c(2,3,4,5,6))
 
-
-```{r}
 structure$plot
 
 ggsave("outputs/1205/taiwan-admixture-plot.pdf")
 ```
+
+```{r}
+np<-as_tibble(structure$plot_data)
+np$pop<-factor(np$pop, levels=c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick",
+                                           "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh","Sri-Lanka",
+                                              "India-East-Coast","India-West-Coast"))
+
+labs<-np %>% select(ID,sampID) %>% unique()
+
+ggplot(np%>% filter(K == "K = 4")) +
+  geom_bar(aes(x=sampID, y=Percentage, fill=Cluster), stat = 'identity') +
+ # scale_x_discrete(labels = labs$sampID) +
+  #facet_grid(cols = vars(pop), scales = "free_x", space = "free_x") 
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  theme(axis.text.x=element_text(angle=45, hjust=1, vjust=1)) +
+  facet_grid(cols=vars(pop), scales = "free_x", space="free_x")
+  
+
+
+
+ggsave("outputs/1205/k4.pdf", width=18, height=8)
+
+```
+
 ## Test hybridization levels!!!!!!!!!
 
 
 ```{r}
 hyb <- gl.nhybrids(gl3,
-#p0=c("Taiwan"),
-#p1=c("Indonesia-K","Indonesia-SU"),
+p0=c("Mainstream","Northern-Territory","Queensland","Papua-New-Guinea"),
+p1=c("Indonesia-SJ"),
 method="AvgPIC",
 nhyb.directory="~/github/newhybrids", # Specify as necessary
 outpath="~/github/lates-wgs/outputs/1204",  # Specify as necessary, usually getwd() [= workspace]
@@ -92,8 +113,10 @@ out<-read_csv("outputs/1204/aa-PofZ.csv", col_names = c("Sequence ID","Region","
 long<-out %>% pivot_longer(cols = 4:9, names_to = c("Class"), values_to = c("Prob"))
 
 
-long$Region<-factor(long$Region, levels=c("Taiwan","Philippines",
-                                              "Vietnam","Cambodia","Thailand"))
+#long$Region<-factor(long$Region, levels=c("Taiwan","Philippines",
+ #                                             "Vietnam","Cambodia","Thailand"))
+
+long$Region<-factor(long$Region, levels= c("Northern-Territory","Queensland","Papua-New-Guinea","OceanPick","Mainstream","Indonesia-SJ","Cambodia","Vietnam","Philippines"))
 
 long$Class<-factor(long$Class, levels=c("P0","P1","F1","F2","0-BX","1-BX"))
 l2<-long %>% arrange(Region)
@@ -114,5 +137,5 @@ ggplot(l2) +
   xlab("Sequence ID")
 
 
-ggsave("outputs/1204/other-gene-pools.pdf", width=12, height=6)
+ggsave("outputs/1205/ocean-pick-hybridization.pdf", width=12, height=6)
 ```

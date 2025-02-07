@@ -66,4 +66,206 @@ u<-t %<+% m2 + #bind_rows(m58, rm) +
 u
 ggsave("outputs/1204/mtdna-coi-phylo.pdf", width=6.5, height=8)
 ```
-  
+
+
+## From alignments
+
+_1_ create bam for each
+_2_ convert to consensus fasta
+_3_ getbarcode region
+
+Here is a loop:
+srun -p high --nodes=1 --mem=32G -t 01:30:00 cut -f 1 -d ',' meta/58.csv | while read run; do samtools view -b data/split/$run.sort.flt.bam NC_007439.1 > data/mtdna/$run-mtdna.bam; samtools index data/mtdna/$run-mtdna.bam; /home/maccamp/proovread/bin/bam2cns --bam data/mtdna/$run-mtdna.bam --ref genome/NC_007439.1.fasta --prefix data/mtdna/$run-mtdna;  ~/seqtk/seqtk seq -a -q20 -n N data/mtdna/$run-mtdna.fq > data/mtdna/$run-mtdna-q20.fasta; samtools faidx data/mtdna/$run-mtdna-q20.fasta NC_007439.1:6329-7879 > data/mtdna/$run-coi.fasta; done;
+
+
+```{sh, eval=FALSE}
+srun -p high --nodes=1 --mem=32G -t 01:30:00 cat bamlists/103.bamlist | while read path; do samtools view -b $path NC_007439.1 > data/new-mtdna/`basename $path .sort.flt.bam`.bam; samtools index data/new-mtdna/`basename $path .sort.flt.bam`.bam; /home/maccamp/proovread/bin/bam2cns --bam data/new-mtdna/`basename $path .sort.flt.bam`.bam --ref genome/NC_007439.1.fasta --prefix data/new-mtdna/`basename $path .sort.flt.bam`-mtdna;  ~/seqtk/seqtk seq -a -q20 -n N data/new-mtdna/`basename $path .sort.flt.bam`-mtdna.fq > data/new-mtdna/`basename $path .sort.flt.bam`-mtdna-q20.fasta; samtools faidx data/new-mtdna/`basename $path .sort.flt.bam`-mtdna-q20.fasta NC_007439.1:6329-7879 > data/new-mtdna/`basename $path .sort.flt.bam`-coi.fasta; samtools faidx data/new-mtdna/`basename $path .sort.flt.bam`-mtdna-q20.fasta NC_007439.1:769- > data/new-mtdna/`basename $path .sort.flt.bam`-ex-control.fasta; done;
+
+
+#redoing a bit
+cat bamlists/103.bamlist | while read path; do samtools faidx data/new-mtdna/`basename $path .sort.flt.bam`-mtdna-q20.fasta NC_007439.1:6329-7879 > data/new-mtdna/`basename $path .sort.flt.bam`-coi.fasta; samtools faidx data/new-mtdna/`basename $path .sort.flt.bam`-mtdna-q20.fasta NC_007439.1:769- > data/new-mtdna/`basename $path .sort.flt.bam`-ex-control.fasta; done;
+
+#rename and consolidate.
+awk '/^>/{print ">" substr(FILENAME,1,length(FILENAME)-10); next} 1' *-coi.fasta | perl -pe 's/.reduced.bam//g' > coi-taiwan.fasta
+
+#mitogenomes without control region
+awk '/^>/{print ">" substr(FILENAME,1,length(FILENAME)-10); next} 1' *-ex-control.fasta | perl -pe 's/.reduced.bam//g' | perl -pe 's/-ex-con//g' > mitogenomes.fasta
+
+```
+
+/Users/mac/github/lates-wgs/data/taiwan-coi
+
+aligned with mafft
+
+```{sh, eval=FALSE}
+iqtree2 -nt AUTO -s coi-taiwan.afas -T AUTO -st DNA -m MFP -bb 10000 --redo 
+iqtree2 -nt AUTO -s mitogenomes.afas -T AUTO -st DNA -m MFP -bb 10000 --redo 
+```
+
+```{r}
+m103<-read_csv("meta/m103.csv")
+m103$Region<-factor(m103$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
+                                           "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India East Coast","Sri Lanka","India West Coast"))
+
+```
+
+```{r}
+tree<-read.tree("data/taiwan-coi/coi-taiwan.afas.contree")
+t2<-midpoint.root(tree)
+t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 50)
+
+t<-t3
+
+t<-ggtree(t)
+
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[e$label < 90,]
+e <- e[e$label >= 75,]
+```
+
+
+
+```{r}
+u<-t %<+% m103 + #bind_rows(m58, rm) +
+  geom_point(data=e,  fill="gray50", cex=2, alpha=1, pch=21) +
+  geom_point(data=d,  fill="black", cex=2, alpha=1, pch=21) +
+  geom_tiplab(aes(label=paste0(label," ",Region), x=x+0.003), align = FALSE, size=2) +
+  geom_tippoint(aes(fill=Region, shape=Lineage, x=x+0.001), cex=2)+
+  #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(0,.07) +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,23,23,21,21,24)) + 
+  theme(legend.position = "none") +
+  geom_treescale()
+
+u
+ggsave("outputs/1204/mapping-mtdna-coi-phylo.pdf", width=6.5, height=12)
+```
+
+
+## Mitogenomes
+
+
+```{r}
+tree<-read.tree("data/taiwan-coi/mitogenomes.afas.contree")
+t2<-midpoint.root(tree)
+t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 50)
+
+t<-t3
+
+t<-ggtree(t)
+
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[e$label < 90,]
+e <- e[e$label >= 75,]
+```
+
+
+
+```{r}
+u<-t %<+% m103 + #bind_rows(m58, rm) +
+  geom_point(data=e,  fill="gray50", cex=2, alpha=1, pch=22) +
+  geom_point(data=d,  fill="black", cex=2, alpha=1, pch=22) +
+  geom_tiplab(aes(label=paste0(label," ",Region), x=x+0.003), align = FALSE, size=2) +
+  geom_tippoint(aes(fill=Region, shape=Lineage, x=x+0.001), cex=2)+
+  #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  xlim(0,.09) +
+  scale_fill_viridis_d(option="H") +
+  scale_shape_manual(values=c(21,23,23,21,21,24)) + 
+  theme(legend.position = "none") +
+  geom_treescale()
+
+u
+ggsave("outputs/1204/mapping-mtdna-mitogenome-phylo.pdf", width=12, height=12)
+```
+
+
+
+## Attach a barplot of admixture proportions
+
+```{r}
+admix<-read_csv("outputs/1204/k4.csv")
+admix$Cluster<-factor(admix$Cluster, levels=c("1","2","3","4"))
+```
+
+```{r}
+data<-read_tsv("outputs/1206/lc05-haplos.txt")
+fills<-viridis(3)
+
+df05<-meta %>% left_join(data, by=c("Run"="samples")) %>%
+  mutate(Genotype=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, "RHom",
+                       ifelse(NumberAA > NumberRR & NumberAA > NumberAR, "AHom",
+                       ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other")))) %>%
+ mutate(Color=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, fills[1],
+                       ifelse(NumberAA > NumberRR & NumberAA > NumberAR, fills[2],
+                       ifelse(NumberAR > NumberAA & NumberAR > NumberRR, fills[3],"Other"))))
+
+data<-read_tsv("outputs/1206/lc20-haplos.txt")
+
+df20<-meta %>% left_join(data, by=c("Run"="samples")) %>%
+  mutate(Genotype=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, "RHom",
+                       ifelse(NumberAA > NumberRR & NumberAA > NumberAR, "AHom",
+                       ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other")))) %>%
+ mutate(Color=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, fills[1],
+                       ifelse(NumberAA > NumberRR & NumberAA > NumberAR, fills[2],
+                       ifelse(NumberAR > NumberAA & NumberAR > NumberRR, fills[3],"Other"))))
+
+```
+
+
+```{r}
+v<-t %<+% m103 + #bind_rows(m58, rm) +
+ # geom_point(data=e,  fill="gray50", cex=2, alpha=1, pch=22) +
+  #geom_point(data=d,  fill="black", cex=2, alpha=1, pch=22) +
+  geom_tiplab(aes(label=paste0(label," ",Region), x=x+0.003), align = FALSE, size=2) +
+  geom_tippoint(aes(shape=Lineage, x=x+0.001),fill="grey50", cex=2)+
+  #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  scale_shape_manual(values=c(21,23,23,21,21,24)) + 
+  #theme(legend.position = "none") +
+  geom_treescale()
+v
+```
+````{r}
+w<-v + 
+  geom_facet(panel = 'Admixture Proportions', data = admix, geom = geom_bar, 
+                 mapping = aes(x=Percentage, fill=Cluster), 
+                orientation = 'y', width = 1, stat="identity") +
+       geom_facet(panel="Lca05", data=df05, geom=geom_tile,
+                  mapping = aes(x=1, fill=Genotype))  +
+  geom_facet(panel="Lca20", data=df20, geom=geom_tile,
+                  mapping = aes(x=1, fill=Genotype)) +
+       xlim_tree(.09) + #scale_fill_viridis_d(option="magma", direction=-1) 
+       scale_fill_manual(values=c(viridis(4),viridis(3, option="magma")))
+facet_widths(w, c(Tree = 5, `Admixture Proportions`=1, `Lca05`=0.5,`Lca20`=0.5))
+ggsave("outputs/1204/mapping-mtdna-mitogenome-admixture-phylo.pdf", width=12, height=12)
+
+```
+
+```{r}
+
+admix %>% filter(pop=="Taiwan") %>% filter(Cluster=="4") %>% arrange(-Percentage)
+
+```

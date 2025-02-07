@@ -1,0 +1,53 @@
+---
+title: "1208-network"
+output: html_document
+date: "2025-02-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(ggtree)
+library(phytools)
+```
+
+```{sh, eval=FALSE}
+iqtree2 -nt AUTO -s cytb.afasta -T AUTO -st DNA -m MFP -bb 10000 --redo
+
+```
+
+```{r}
+tree<-read.tree("outputs/1208/cytb.afasta.contree")
+t<-midpoint(tree)
+
+t<-as.polytomy(t, feature='node.label', fun=function(x) as.numeric(x) < 75)
+
+t<-ggtree(t)
+
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[e$label < 90,]
+e <- e[e$label >= 75,]
+```
+
+```{r}
+t +
+  geom_tiplab(aes(x=x+.001)) +
+  geom_point(data=e,  fill="gray50", cex=3, alpha=1, pch=22) +
+  geom_point(data=d,  fill="black", cex=3, alpha=1, pch=22) +
+   geom_treescale() +
+  xlim(0,.1)
+
+ggsave("outputs/1208/cytb-phylo.pdf")
+````
