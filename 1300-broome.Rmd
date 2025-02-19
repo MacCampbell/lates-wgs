@@ -51,12 +51,21 @@ _4_ Look at basic popgen in Australasia
 ```{r}
 m40<-m114 %>% filter(Lineage %in% c("AUS","Mainstream"))
 m40 %>% select(NewPath) %>% write_tsv("bamlists/40.bamlist", col_names=FALSE)
+meta<-m40
 ```
 
-Chrom01
+Chrom01 then all chroms
 ```{sh, eval=FALSE}
-srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
+srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angsd -P 6  \
 -bam bamlists/40.bamlist -r NC_066833.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 36 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1300/40-ibs-90 > outputs/1300/40-ibs-90.out 2> outputs/1300/40-ibs-90.err &
+
+srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angsd -P 6  \
+-bam bamlists/40.bamlist -rf meta/lates-lgs.txt \
 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 36 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
@@ -64,6 +73,7 @@ srun -p high -t 16:00:00 --mem=32G --nodes=1 $HOME/angsd/angsd -P 12  \
 -out outputs/1300/40-ibs-90 > outputs/1300/40-ibs-90.out 2> outputs/1300/40-ibs-90.err &
 ```
 
+	-> Number of sites retained after filtering: 75260 (chrom01)
 
 ```{r}
 m <- as.matrix(read.table("outputs/1300/40-ibs-90.covMat"))
@@ -83,14 +93,14 @@ text12<-covs %>% select(Run, Region, V1, V2) %>%
   group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
 
 ggplot(covs) +
-  geom_point(aes(x=V1, y=V2, fill=Region), pch=21, alpha=0.75) +
+  geom_point(aes(x=V1, y=V2, fill=Locality), pch=21, alpha=0.75) +
   geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
   xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
   ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
   theme_bw() +
   theme(panel.grid=element_blank()) +
   scale_fill_viridis_d(option="magma") +
-  ggtitle("Genome-Wide PCA of L. calcarifer WGS Data") +
+  ggtitle("Genome-Wide PCA of Australasian L. calcarifer WGS Data") +
   theme(plot.title = element_text(hjust=0.5, face="bold"))
 
 ggsave("outputs/1300/australasian-lates-pc12.jpeg")
