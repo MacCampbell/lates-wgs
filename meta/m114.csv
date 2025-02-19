@@ -1,16 +1,16 @@
 Run,BioSample,Sample,Region,Locality,Aligned,Filtered,Coverage,Path,Lineage,DataDir,NewPath
-SRR3165618,SAMN04482561,SRS1284061,Northern Territory,Darwin Harbour,43311444,42229480,6.27037,data/split/SRR3165618.sort.flt.bam,AUS+NG,NA,data/split/SRR3165618.sort.flt.bam
-SRR3165619,SAMN04482562,SRS1284062,Northern Territory,Darwin Harbour,38046019,37284074,5.53852,data/split/SRR3165619.sort.flt.bam,AUS+NG,NA,data/split/SRR3165619.sort.flt.bam
-SRR3165620,SAMN04482563,SRS1284063,Northern Territory,Darwin Harbour,34569503,33794982,5.02076,data/split/SRR3165620.sort.flt.bam,AUS+NG,NA,data/split/SRR3165620.sort.flt.bam
-SRR3165621,SAMN04482564,SRS1284064,Northern Territory,Darwin Harbour,43100095,42194909,6.26656,data/split/SRR3165621.sort.flt.bam,AUS+NG,NA,data/split/SRR3165621.sort.flt.bam
-SRR3165622,SAMN04482565,SRS1284065,Northern Territory,Darwin Harbour,42833880,41944785,6.23001,data/split/SRR3165622.sort.flt.bam,AUS+NG,NA,data/split/SRR3165622.sort.flt.bam
-SRR3165623,SAMN04482566,SRS1284066,Northern Territory,Darwin Harbour,37564845,36718029,5.45181,data/split/SRR3165623.sort.flt.bam,AUS+NG,NA,data/split/SRR3165623.sort.flt.bam
-SRR3165629,SAMN04482572,SRS1284073,Queensland,NA,42727945,41919976,6.22876,data/split/SRR3165629.sort.flt.bam,AUS+NG,NA,data/split/SRR3165629.sort.flt.bam
-SRR3165630,SAMN04482573,SRS1284074,Queensland,NA,36057176,35316921,5.24624,data/split/SRR3165630.sort.flt.bam,AUS+NG,NA,data/split/SRR3165630.sort.flt.bam
-SRR3165631,SAMN04482574,SRS1284075,Queensland,NA,32689855,32071955,4.76502,data/split/SRR3165631.sort.flt.bam,AUS+NG,NA,data/split/SRR3165631.sort.flt.bam
-SRR3165632,SAMN04482575,SRS1284076,Queensland,NA,33950939,33297017,4.9482,data/split/SRR3165632.sort.flt.bam,AUS+NG,NA,data/split/SRR3165632.sort.flt.bam
-SRR3165633,SAMN04482576,SRS1284077,Queensland,NA,34206590,33484747,4.974,data/split/SRR3165633.sort.flt.bam,AUS+NG,NA,data/split/SRR3165633.sort.flt.bam
-SRR3165634,SAMN04482577,SRS1284078,Queensland,NA,40549352,39725840,5.90283,data/split/SRR3165634.sort.flt.bam,AUS+NG,NA,data/split/SRR3165634.sort.flt.bam
+SRR3165618,SAMN04482561,SRS1284061,Northern Territory,Darwin Harbour,43311444,42229480,6.27037,data/split/SRR3165618.sort.flt.bam,AUS,NA,data/split/SRR3165618.sort.flt.bam
+SRR3165619,SAMN04482562,SRS1284062,Northern Territory,Darwin Harbour,38046019,37284074,5.53852,data/split/SRR3165619.sort.flt.bam,AUS,NA,data/split/SRR3165619.sort.flt.bam
+SRR3165620,SAMN04482563,SRS1284063,Northern Territory,Darwin Harbour,34569503,33794982,5.02076,data/split/SRR3165620.sort.flt.bam,AUS,NA,data/split/SRR3165620.sort.flt.bam
+SRR3165621,SAMN04482564,SRS1284064,Northern Territory,Darwin Harbour,43100095,42194909,6.26656,data/split/SRR3165621.sort.flt.bam,AUS,NA,data/split/SRR3165621.sort.flt.bam
+SRR3165622,SAMN04482565,SRS1284065,Northern Territory,Darwin Harbour,42833880,41944785,6.23001,data/split/SRR3165622.sort.flt.bam,AUS,NA,data/split/SRR3165622.sort.flt.bam
+SRR3165623,SAMN04482566,SRS1284066,Northern Territory,Darwin Harbour,37564845,36718029,5.45181,data/split/SRR3165623.sort.flt.bam,AUS,NA,data/split/SRR3165623.sort.flt.bam
+SRR3165629,SAMN04482572,SRS1284073,Queensland,NA,42727945,41919976,6.22876,data/split/SRR3165629.sort.flt.bam,AUS,NA,data/split/SRR3165629.sort.flt.bam
+SRR3165630,SAMN04482573,SRS1284074,Queensland,NA,36057176,35316921,5.24624,data/split/SRR3165630.sort.flt.bam,AUS,NA,data/split/SRR3165630.sort.flt.bam
+SRR3165631,SAMN04482574,SRS1284075,Queensland,NA,32689855,32071955,4.76502,data/split/SRR3165631.sort.flt.bam,AUS,NA,data/split/SRR3165631.sort.flt.bam
+SRR3165632,SAMN04482575,SRS1284076,Queensland,NA,33950939,33297017,4.9482,data/split/SRR3165632.sort.flt.bam,AUS,NA,data/split/SRR3165632.sort.flt.bam
+SRR3165633,SAMN04482576,SRS1284077,Queensland,NA,34206590,33484747,4.974,data/split/SRR3165633.sort.flt.bam,AUS,NA,data/split/SRR3165633.sort.flt.bam
+SRR3165634,SAMN04482577,SRS1284078,Queensland,NA,40549352,39725840,5.90283,data/split/SRR3165634.sort.flt.bam,AUS,NA,data/split/SRR3165634.sort.flt.bam
 SRR3165594,SAMN04482519,SRS1283157,India East Coast,NA,58581162,35621885,5.24485,data/split/SRR3165594.sort.flt.bam,IND,NA,data/split/SRR3165594.sort.flt.bam
 SRR3165595,SAMN04482520,SRS1283158,India East Coast,NA,50287963,48223515,7.15998,data/split/SRR3165595.sort.flt.bam,IND,NA,data/split/SRR3165595.sort.flt.bam
 SRR3183253,SAMN04482522,SRS1284022,India East Coast,NA,63984970,57917391,11.8196,data/split/SRR3183253.sort.flt.bam,IND,NA,data/split/SRR3183253.sort.flt.bam
@@ -37,11 +37,11 @@ SRR3165599,SAMN04482532,SRS1284033,Cambodia,NA,40102373,39134937,5.81331,data/sp
 SRR3165600,SAMN04482533,SRS1284032,Cambodia,NA,45128142,44091504,6.55264,data/split/SRR3165600.sort.flt.bam,SEA,NA,data/split/SRR3165600.sort.flt.bam
 SRR3165601,SAMN04482534,SRS1284034,Cambodia,NA,38824008,37866620,5.6257,data/split/SRR3165601.sort.flt.bam,SEA,NA,data/split/SRR3165601.sort.flt.bam
 SRR3165602,SAMN04482535,SRS1284035,Cambodia,NA,37378404,35906777,5.33382,data/split/SRR3165602.sort.flt.bam,SEA,NA,data/split/SRR3165602.sort.flt.bam
-SRR3165624,SAMN04482567,SRS1284067,Papua New Guinea,NA,46009810,45091295,6.69989,data/split/SRR3165624.sort.flt.bam,AUS+NG,NA,data/split/SRR3165624.sort.flt.bam
-SRR3165625,SAMN04482568,SRS1284068,Papua New Guinea,NA,36385434,35592008,5.28765,data/split/SRR3165625.sort.flt.bam,AUS+NG,NA,data/split/SRR3165625.sort.flt.bam
-SRR3165626,SAMN04482569,SRS1284070,Papua New Guinea,NA,40019282,39174817,5.81982,data/split/SRR3165626.sort.flt.bam,AUS+NG,NA,data/split/SRR3165626.sort.flt.bam
-SRR3165627,SAMN04482570,SRS1284071,Papua New Guinea,NA,40858088,40059128,5.95206,data/split/SRR3165627.sort.flt.bam,AUS+NG,NA,data/split/SRR3165627.sort.flt.bam
-SRR3165628,SAMN04482571,SRS1284072,Papua New Guinea,NA,37198470,36318355,5.39644,data/split/SRR3165628.sort.flt.bam,AUS+NG,NA,data/split/SRR3165628.sort.flt.bam
+SRR3165624,SAMN04482567,SRS1284067,Papua New Guinea,NA,46009810,45091295,6.69989,data/split/SRR3165624.sort.flt.bam,AUS,NA,data/split/SRR3165624.sort.flt.bam
+SRR3165625,SAMN04482568,SRS1284068,Papua New Guinea,NA,36385434,35592008,5.28765,data/split/SRR3165625.sort.flt.bam,AUS,NA,data/split/SRR3165625.sort.flt.bam
+SRR3165626,SAMN04482569,SRS1284070,Papua New Guinea,NA,40019282,39174817,5.81982,data/split/SRR3165626.sort.flt.bam,AUS,NA,data/split/SRR3165626.sort.flt.bam
+SRR3165627,SAMN04482570,SRS1284071,Papua New Guinea,NA,40858088,40059128,5.95206,data/split/SRR3165627.sort.flt.bam,AUS,NA,data/split/SRR3165627.sort.flt.bam
+SRR3165628,SAMN04482571,SRS1284072,Papua New Guinea,NA,37198470,36318355,5.39644,data/split/SRR3165628.sort.flt.bam,AUS,NA,data/split/SRR3165628.sort.flt.bam
 SRR3165607,SAMN04482545,SRS1284045,Philippines,NA,39963794,39248534,5.83248,data/split/SRR3165607.sort.flt.bam,SEA,NA,data/split/SRR3165607.sort.flt.bam
 SRR3165608,SAMN04482546,SRS1284046,Philippines,NA,40784829,40079564,5.95467,data/split/SRR3165608.sort.flt.bam,SEA,NA,data/split/SRR3165608.sort.flt.bam
 SRR3165609,SAMN04482547,SRS1284047,Philippines,NA,51882107,50933622,7.5679,data/split/SRR3165609.sort.flt.bam,SEA,NA,data/split/SRR3165609.sort.flt.bam
@@ -102,14 +102,14 @@ Mainstream9,Mainstream9,Mainstream9,Mainstream,Mainstream,258503506,219343679,46
 Mainstream10,Mainstream10,Mainstream10,Mainstream,Mainstream,278102584,233517641,48.587,NA,Mainstream,data/taiwan,data/downsample/Mainstream10.reduced.bam
 Mainstream11,Mainstream11,Mainstream11,Mainstream,Mainstream,263265248,222556527,46.4981,NA,Mainstream,data/taiwan,data/downsample/Mainstream11.reduced.bam
 Mainstream12,Mainstream12,Mainstream12,Mainstream,Mainstream,267868828,227555399,47.1854,NA,Mainstream,data/taiwan,data/downsample/Mainstream12.reduced.bam
-Broome01,Broome01,Broome01,Western Australia,Broome,197819590,173992432,36.4952,,,,
-Broome02,Broome02,Broome02,Western Australia,Broome,202764846,177077927,37.4788,,,,
-Broome03,Broome03,Broome03,Western Australia,Broome,175481648,154232642,32.6315,,,,
-Broome04,Broome04,Broome04,Western Australia,Broome,187213611,163507998,34.4726,,,,
-Broome05,Broome05,Broome05,Western Australia,Broome,187226133,164698052,34.4075,,,,
-Broome06,Broome06,Broome06,Western Australia,Broome,188787410,165800171,34.8697,,,,
-Broome07,Broome07,Broome07,Western Australia,Broome,182668764,159339778,33.8805,,,,
-Broome08,Broome08,Broome08,Western Australia,Broome,222645191,193763704,41.3708,,,,
-Broome09,Broome09,Broome09,Western Australia,Broome,202762440,177491562,37.5655,,,,
-Broome10,Broome10,Broome10,Western Australia,Broome,171600751,151953142,32.2395,,,,
-Fitzroy01,Fitzroy01,Fitzroy01,Western Australia,Fitzroy,212711523,184316324,39.0858,,,,
+Broome01,Broome01,Broome01,Western Australia,Broome,197819590,173992432,36.4952,,AUS,data/broome,data/downsample/Broome01.reduced.bam
+Broome02,Broome02,Broome02,Western Australia,Broome,202764846,177077927,37.4788,,AUS,data/broome,data/downsample/Broome02.reduced.bam
+Broome03,Broome03,Broome03,Western Australia,Broome,175481648,154232642,32.6315,,AUS,data/broome,data/downsample/Broome03.reduced.bam
+Broome04,Broome04,Broome04,Western Australia,Broome,187213611,163507998,34.4726,,AUS,data/broome,data/downsample/Broome04.reduced.bam
+Broome05,Broome05,Broome05,Western Australia,Broome,187226133,164698052,34.4075,,AUS,data/broome,data/downsample/Broome05.reduced.bam
+Broome06,Broome06,Broome06,Western Australia,Broome,188787410,165800171,34.8697,,AUS,data/broome,data/downsample/Broome06.reduced.bam
+Broome07,Broome07,Broome07,Western Australia,Broome,182668764,159339778,33.8805,,AUS,data/broome,data/downsample/Broome07.reduced.bam
+Broome08,Broome08,Broome08,Western Australia,Broome,222645191,193763704,41.3708,,AUS,data/broome,data/downsample/Broome08.reduced.bam
+Broome09,Broome09,Broome09,Western Australia,Broome,202762440,177491562,37.5655,,AUS,data/broome,data/downsample/Broome09.reduced.bam
+Broome10,Broome10,Broome10,Western Australia,Broome,171600751,151953142,32.2395,,AUS,data/broome,data/downsample/Broome10.reduced.bam
+Fitzroy01,Fitzroy01,Fitzroy01,Western Australia,Fitzroy,212711523,184316324,39.0858,,AUS,data/broome,data/downsample/Fitzroy01.reduced.bam
