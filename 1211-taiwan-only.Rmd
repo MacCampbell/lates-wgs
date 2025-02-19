@@ -1,0 +1,193 @@
+---
+title: "1211-taiwan-only"
+output: html_document
+date: "2025-02-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message=FALSE)
+```
+
+What if we only look at Taiwan and filter for MAF and such, do we still see separate gene pools???
+
+
+```{r}
+library(tidyverse)
+library(ggrepel)
+library(dartR)
+library(pcadapt)
+library(snpR)
+```
+
+```{r}
+m103<-read_csv("meta/m103.csv")
+
+m103$Region<-factor(m103$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
+                                           "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India East Coast","Sri Lanka","India West Coast"))
+
+m18<-m103 %>% filter(Region %in% c("Taiwan","Thailand")) 
+
+m18 %>% select(Run) %>% write_tsv("meta/taiwan-thai-samples.txt", col_names = FALSE)
+
+#What about other SSEA fish
+
+m35<-m103 %>% filter(Region %in% c("Taiwan","Thailand","Indonesia-SJ","Philippines","Cambodia","Vietnam")) 
+
+m35 %>% select(Run) %>% write_tsv("meta/m35-samples.txt", col_names = FALSE)
+
+m23<-m103 %>% filter(Region %in% c("Taiwan","Thailand","Indonesia-SJ")) 
+m23 %>% select(Run) %>% write_tsv("meta/m23-samples.txt", col_names = FALSE)
+
+```
+
+Filter snps/samples with BCFtools
+
+```{sh, eval=FALSE}
+#Using random seed: 1739854409
+
+bcftools view -S meta/taiwan-thai-samples.txt outputs/renamed-01.vcf.gz | bcftools +fill-tags -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |   bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand > outputs/1211/taiwan-thai.vcf
+
+#Using random seed: 1739854679
+bcftools view -S meta/taiwan-thai-samples.txt outputs/renamed-01.vcf.gz | bcftools +fill-tags -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |   bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand > outputs/1211/taiwan-thai-05.vcf
+
+#Using random seed: 1739856151
+bcftools view -S meta/taiwan-thai-samples.txt outputs/renamed-01.vcf.gz | bcftools +fill-tags -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.20' | bcftools view -i 'INFO/MAF < 0.45' |   bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand > outputs/1211/taiwan-thai-20.vcf
+
+#Using random seed: 1739855581
+bcftools view -S meta/m35-samples.txt outputs/renamed-01.vcf.gz | bcftools +fill-tags -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |   bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand > outputs/1211/m35.vcf
+
+#Using random seed: 1739855881
+bcftools view -S meta/m23-samples.txt outputs/renamed-01.vcf.gz | bcftools +fill-tags -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |   bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand > outputs/1211/m23.vcf
+
+```
+
+```{r}
+path_to_file <- "outputs/1211/taiwan-thai.vcf"
+#path_to_file <- "outputs/1211/taiwan-thai-20.vcf"
+
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+
+
+_1_ choose a K   
+
+```{r}
+x <- pcadapt(input = filename, K = 10) 
+var<-round(x$singular.values^2*100,2)
+```
+
+```{r}
+#plot(x, option = "screeplot")
+panela<-plot(x, option = "screeplot", K = 10) + ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  scale_x_continuous(breaks=seq(1,10,1), labels=seq(1,10,1)) +
+  ylab("Proption of Explained Variance\n") +
+  xlab("\nPrincipal Component") +
+  theme(axis.title=element_text(size=12))
+panela
+```
+```{r}
+m<-m18
+```
+
+```{r}
+plot(x, option = "scores", pop = factor(m$Region))
+ 
+```
+
+
+Get scree plot and PCA    
+```{r}
+pcadata<-x$scores[,1:5] %>% as_tibble()
+pcadata<-pcadata %>% bind_cols(m)
+
+```
+
+```{r}
+ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V2, shape=Lineage, fill=Region), alpha=0.95) +
+  geom_text_repel(data=pcadata %>% filter(Region %in% c("Taiwan")), aes(x=V1, y=V2,label=Run)) +
+  scale_shape_manual(values=c(21,23,23,22,22,24)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab(paste0("PC1 ",var[1],"%")) +
+  ylab(paste0("PC 2",var[2],"%"))
+
+
+```
+
+## Admix
+
+```{r}
+m<-m18
+vcf <-read.vcfR("outputs/1211/taiwan-thai.vcf") 
+gl<-vcfR2genlight(vcf)
+gl$pop<-as.factor(gsub(" ","-",m$Region))
+```
+```{r}
+#glt<-gl[gl$pop %in% c("Taiwan","Thailand"),]
+
+glx<-gl
+glx <- gl.compliance.check(glx) 
+
+gl3<-gl.filter.maf(glx, threshold = 0.1)
+#gl3<-gl.filter.allna(gl3)
+gl3<-glx
+```
+
+
+```{r}
+snp<-import.snpR.data(gl3)
+
+structure<-plot_structure(snp, facet=c("pop"),
+               k=c(2,3,4,5))
+
+structure$plot
+
+ggsave("outputs/1211/taiwan-admixture-plot.pdf")
+```
+
+```{r}
+structure$K_plot
+
+q1<-structure$plot_data %>% filter(K=="K = 2") %>% filter(Cluster=="1")
+```
+
+```{r}
+p<-plot_clusters(snp)
+p$data
+```
+
+```{r}
+#ggplot(p$data$pca %>% left_join(q1)) +
+
+#with pcadapt pca
+ggplot(pcadata %>% left_join(q1, by=c("Run"="sampID"))) +
+  geom_point(aes(x=V1, y=V2, fill=Percentage), pch=24, cex=4) +
+  geom_text_repel(aes(x=V1, y=V2, label=Run)) +
+  theme_bw() +
+  xlab(paste0("PC1 ", p$pca_loadings[1],"%")) +
+  ylab(paste0("PC2 ", p$pca_loadings[2],"%")) +
+  scale_fill_viridis_c(begin = 0, end=1, option = "cividis") +
+  theme(panel.grid=element_blank())
+  
+ggsave("outputs/1211/Taiwan-thaliand-PCA.pdf", width = 8, height=6)
+```
+
+
+```{r}
+q1 %>% filter(pop=="Taiwan") %>% arrange(-Percentage)
+```
+
+hatchery broodstocks:
+
+Philippines, Vietnam, OceanPick, Mainstream
+
+

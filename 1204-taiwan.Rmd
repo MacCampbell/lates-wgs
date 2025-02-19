@@ -624,6 +624,12 @@ bcftools +fill-tags outputs/1204/renamed.vcf.gz  -- -t MAF,F_MISSING | bcftools 
 #Using random seed: 1738276351
 bcftools +fill-tags outputs/1204/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.01' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1204/pruned-01-maf01-45.vcf
 
+#Using random seed: 1739334052
+bcftools +fill-tags outputs/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1204/pruned-01-maf10-45.vcf
+
+
+#Using random seed: 1739335174
+bcftools +fill-tags outputs/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1204/pruned-01-maf05-45.vcf
 
 ```
 
@@ -685,7 +691,9 @@ write.nexus.data(dat, file="outputs/1204/pruned-01-maf01-45.nex")
 
 
 ```{r}
-path_to_file <- "outputs/1204/pruned-01-maf01-45.vcf"
+path_to_file <- "outputs/1204/pruned-01-maf01-45.vcf.gz"
+#path_to_file <- "outputs/1204/pruned-01-maf10-45.vcf"
+
 filename <- read.pcadapt(path_to_file, type = "vcf")
 ```
 
@@ -989,14 +997,17 @@ ms$Region<-factor(ms$Region, levels=c("Queensland","Northern-Territory","Papua-N
 
 ```{r}
 m<-ms
-vcf <-read.vcfR("outputs/1204/pruned-01-maf01-45.vcf") # from recalled and pruned snps in 1200
+vcf <-read.vcfR("outputs/1204/pruned-01-maf01-45.vcf.gz") # from recalled and pruned snps in 1200
+#vcf <-read.vcfR("outputs/1204/pruned-01-maf10-45.vcf") # getting a higher maf
 gl<-vcfR2genlight(vcf)
 gl$pop<-as.factor(m$Region)
 
 glx<-gl
 glx <- gl.compliance.check(glx) 
 
-gl3<-gl.filter.maf(glx, threshold = 0.05)
+#gl2<-gl.filter.callrate(glx,threshold=0.95, mono.rm = TRUE)
+gl2<-glx
+gl3<-gl.filter.maf(gl2, threshold = 0.05)
 gl3<-gl.filter.allna(gl3)
 gl3
 ```
@@ -1005,20 +1016,17 @@ gl3
 
 ```{r} 
 snp<-import.snpR.data(gl3)
-```
 
-
-```{r}
 structure<-plot_structure(snp, facet=c("pop"), facet.order = c("Queensland","Northern-Territory","Papua-New-Guinea","Mainstream","OceanPick",
                                            "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan",
                                               "Vietnam","Cambodia","Thailand", "Bangladesh","Sri-Lanka",
                                               "India-East-Coast","India-West-Coast"),
-               k=c(1,2,3,4,5,6), )
+               k=c(1,2,3,4,5,6), alpha = 15)
 ```
 
 This plot is influenced by MAF 0.01 vs 0.05 vs 0.1
 
-```{r}
+```{r} 
 structure$plot
 
 ggsave("outputs/1204/all-samples-genome-wide-admix-plot.pdf", height=10, width=16)
@@ -1053,18 +1061,17 @@ np$pop<-factor(np$pop, levels=c("Queensland","Northern-Territory","Papua-New-Gui
 write_csv(np %>% filter(K == "K = 4"), file="outputs/1204/k4.csv")
 write_csv(np %>% filter(K == "K = 5"), file="outputs/1204/k5.csv")
 
-np2<-np %>% filter(pop %in% c("OceanPick","Taiwan","Cambodia")) 
+np2<-np %>% filter(pop %in% c("OceanPick","Taiwan","Cambodia","Thailand","Philippines")) 
 
 labs<-np2 %>% select(ID,sampID) %>% unique()
 
 ggplot(np2 %>% filter(K == "K = 4")) +
   geom_bar(aes(x=ID, y=Percentage, fill=Cluster), stat = 'identity') +
-  scale_x_discrete(labels = labs$sampID) +
-
- # facet_grid(cols = vars(pop), scales = "free_x", space = "free_x") +
+ # scale_x_discrete(labels = labs$sampID) +
+ facet_grid(cols = vars(pop), scales = "free_x", space = "free_x") +
   theme_bw() +
   theme(panel.grid = element_blank()) +
-  scale_fill_viridis_d(option="H") +
+  scale_fill_viridis_d(option="viridis") +
   theme(axis.text.x=element_text(angle=45, hjust=1, vjust=1)) 
 
 

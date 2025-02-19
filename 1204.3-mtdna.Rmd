@@ -12,6 +12,9 @@ Have some mtDNA from WJC. Checking it out.
 
 ```{r}
 library(tidyverse)
+library(ggtree)
+library(phytools)
+library(viridis)
 ```
 
 aligned with mafft
@@ -211,10 +214,40 @@ admix$Cluster<-factor(admix$Cluster, levels=c("1","2","3","4"))
 ```
 
 ```{r}
+q<-read_delim("outputs/1204/admixture/myplink2.3.Q", delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0(nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+q2<-bind_cols(q, m103 %>% select(Run)) %>% pivot_longer(cols = mynames, names_to = "Cluster", values_to = "Percentage")
+```
+
+```{r}
+m18<-m103 %>% filter(Region %in% c("Taiwan","Thailand"))
+
+q<-read_delim("outputs/1211/myplink2.2.Q", delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-4:(length(colnames(q))+3)
+mynames<-paste0(nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+q3<-bind_cols(q, m18 %>% select(Run)) %>% pivot_longer(cols = mynames, names_to = "Cluster", values_to = "Percentage")
+```
+
+```{r}
 data<-read_tsv("outputs/1206/lc05-haplos.txt")
 fills<-viridis(3)
 
-df05<-meta %>% left_join(data, by=c("Run"="samples")) %>%
+df05<-m103 %>% left_join(data, by=c("Run"="samples")) %>%
   mutate(Genotype=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, "RHom",
                        ifelse(NumberAA > NumberRR & NumberAA > NumberAR, "AHom",
                        ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other")))) %>%
@@ -224,7 +257,7 @@ df05<-meta %>% left_join(data, by=c("Run"="samples")) %>%
 
 data<-read_tsv("outputs/1206/lc20-haplos.txt")
 
-df20<-meta %>% left_join(data, by=c("Run"="samples")) %>%
+df20<-m103 %>% left_join(data, by=c("Run"="samples")) %>%
   mutate(Genotype=ifelse(NumberRR > NumberAA & NumberRR > NumberAR, "RHom",
                        ifelse(NumberAA > NumberRR & NumberAA > NumberAR, "AHom",
                        ifelse(NumberAR > NumberAA & NumberAR > NumberRR, "Het","Other")))) %>%
@@ -234,6 +267,52 @@ df20<-meta %>% left_join(data, by=c("Run"="samples")) %>%
 
 ```
 
+lca03 from mat
+```{r}
+df03<-read_csv("outputs/1206/lc03.csv")
+df0301<-df03 %>% select(FID, `genotype Inversion 1`) %>% mutate(Genotype=ifelse(`genotype Inversion 1`==1,"RHom",
+                                                                   ifelse(`genotype Inversion 1`==2,"Het","AHom")))
+df0302<-df03 %>% select(FID, `genotype Inversion 2`) %>% mutate(Genotype=ifelse(`genotype Inversion 2`==1,"RHom",
+                                                                   ifelse(`genotype Inversion 2`==2,"Het","AHom")))
+```
+
+Which individuals are hets for both
+
+```{r}
+df03 %>% filter(`genotype Inversion 1`==`genotype Inversion 2`) %>% filter(`genotype Inversion 1`==2)
+```
+
+sanity check
+
+```{r}
+d01<-read_csv("~/Dropbox/Australian-fishes/barra-con-gen/lca03-analyses/lg03-01-hets.csv") %>% 
+  left_join(df0301)
+
+labels01<-d01%>% group_by(Genotype) %>% mutate(Count=n())
+
+ggplot(d01) +
+  geom_boxplot(aes(x=Genotype, y=heterozygosity)) +
+  geom_text(data=labels01,aes(x=Genotype, y=0.4, label=Count)) +
+  ggtitle("Lca03-01 Heterozygosity")
+
+
+```
+
+
+```{r}
+d02<-read_csv("~/Dropbox/Australian-fishes/barra-con-gen/lca03-analyses/lg03-01-hets.csv") %>% 
+  left_join(df0302)
+
+labels02<-d02%>% group_by(Genotype) %>% mutate(Count=n())
+
+ggplot(d02) +
+  geom_boxplot(aes(x=Genotype, y=heterozygosity)) +
+  geom_text(data=labels02,aes(x=Genotype, y=0.4, label=Count)) +
+  ggtitle("Lca03-02 Heterozygosity")
+
+
+
+```
 
 ```{r}
 v<-t %<+% m103 + #bind_rows(m58, rm) +
@@ -248,24 +327,39 @@ v<-t %<+% m103 + #bind_rows(m58, rm) +
   geom_treescale()
 v
 ```
+
+
 ````{r}
 w<-v + 
-  geom_facet(panel = 'Admixture Proportions', data = admix, geom = geom_bar, 
+  #geom_facet(panel = 'Admixture Proportions', data = admix, geom = geom_bar, 
+   #              mapping = aes(x=Percentage, fill=Cluster), 
+    #            orientation = 'y', width = 1, stat="identity") +
+    geom_facet(panel = 'Admixture Proportions', data = q2, geom = geom_bar, 
                  mapping = aes(x=Percentage, fill=Cluster), 
                 orientation = 'y', width = 1, stat="identity") +
+   #   geom_facet(panel = 'Admixture Proportions T', data = q3, geom = geom_bar, 
+    #             mapping = aes(x=Percentage, fill=Cluster), 
+     #           orientation = 'y', width = 1, stat="identity") +
+   geom_facet(panel="Lca03-01", data=df0301, geom=geom_tile,
+                  mapping = aes(x=1, fill=Genotype))  +
+  geom_facet(panel="Lca03-02", data=df0302, geom=geom_tile,
+                  mapping = aes(x=1, fill=Genotype))  +
        geom_facet(panel="Lca05", data=df05, geom=geom_tile,
                   mapping = aes(x=1, fill=Genotype))  +
   geom_facet(panel="Lca20", data=df20, geom=geom_tile,
                   mapping = aes(x=1, fill=Genotype)) +
        xlim_tree(.09) + #scale_fill_viridis_d(option="magma", direction=-1) 
-       scale_fill_manual(values=c(viridis(4),viridis(3, option="magma")))
-facet_widths(w, c(Tree = 5, `Admixture Proportions`=1, `Lca05`=0.5,`Lca20`=0.5))
+       scale_fill_manual(values=c(viridis(3),viridis(3, option="magma")))
+facet_widths(w, c(Tree = 4, `Admixture Proportions`=1, `Lca03-01`=0.5, `Lca03-02`=0.5, `Lca05`=0.5,`Lca20`=0.5))
 ggsave("outputs/1204/mapping-mtdna-mitogenome-admixture-phylo.pdf", width=12, height=12)
 
 ```
 
 ```{r}
 
-admix %>% filter(pop=="Taiwan") %>% filter(Cluster=="4") %>% arrange(-Percentage)
+admix %>% filter(pop %in% c("Taiwan", "Thailand","Philippines")) %>% filter(Cluster=="3") %>% arrange(-Percentage)
+
+```
+
 
 ```

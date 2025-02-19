@@ -245,3 +245,81 @@ admix %>% filter(Region%in%c("Taiwan","OceanPick")) %>% select(Run, V1, V2, V3)
 ```{r}
 PlotAdmixture("outputs/1207/po/myplink2.4.Q", m80)
 ```
+
+
+## Subset Taiwan/Thailand
+
+outputs/1211/taiwan-thai.vcf
+
+```{r}
+m18<-m103 %>% filter(Region %in% c("Taiwan","Thailand"))
+```
+
+```{sh, eval=FALSE}
+plink --vcf taiwan-thai.vcf --make-bed --out myplink --allow-extra-chr --noweb
+plink -bfile myplink --recode12 -out myplink2 --allow-extra-chr --noweb
+
+for K in 1 2 3 4 5; \
+do ~/github/admixture/admixture --cv myplink2.ped $K | tee log${K}.out;
+done;
+
+grep -h CV log*.out | cut -f 3,4 -d ' '  | perl -pe 's/://g' | perl -pe s'/\(|\)//g' > scores.txt 
+```
+
+
+
+```{r}
+scores<-read_delim("outputs/1211/scores.txt", col_names = c("K","Cross-Validation Error")) %>% mutate(x=1:n())
+
+ggplot(scores) +
+  geom_line(aes(x=x, y=`Cross-Validation Error`)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_x_continuous(breaks=(1:nrow(scores)))
+```
+
+```{r}
+PlotAdmixture("outputs/1211/myplink2.2.Q",m18)
+```
+
+
+```{r}
+m18<-m103 %>% filter(Region %in% c("Taiwan","Thailand"))
+```
+
+with sj
+
+```{r}
+m23<-m103 %>% filter(Region %in% c("Taiwan","Thailand","Indonesia-SJ"))
+```
+
+```{sh, eval=FALSE}
+plink --vcf m23.vcf --make-bed --out myplink --allow-extra-chr --noweb
+plink -bfile myplink --recode12 -out myplink2 --allow-extra-chr --noweb
+
+for K in 1 2 3 4 5; \
+do ~/github/admixture/admixture --cv myplink2.ped $K | tee log${K}.out;
+done;
+
+grep -h CV log*.out | cut -f 3,4 -d ' '  | perl -pe 's/://g' | perl -pe s'/\(|\)//g' > scores.txt 
+```
+
+
+
+```{r}
+scores<-read_delim("outputs/1211/m23/scores.txt", col_names = c("K","Cross-Validation Error")) %>% mutate(x=1:n())
+
+ggplot(scores) +
+  geom_line(aes(x=x, y=`Cross-Validation Error`)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_x_continuous(breaks=(1:nrow(scores)))
+```
+
+```{r}
+PlotAdmixture("outputs/1211/m23/myplink2.2.Q",m23)
+```
+
+```{r}
+PlotAdmixture("outputs/1211/m23/myplink2.3.Q",m23)
+```

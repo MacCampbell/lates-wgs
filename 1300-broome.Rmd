@@ -1,0 +1,47 @@
+---
+title: "1300-broome"
+output: html_document
+date: "2025-02-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+downloading broome data
+
+~/lates-wgs/data/broome
+
+Also putting on barbera
+
+Let's rename and conduct a basic analysis.
+
+_1_ rename
+
+_2_ align
+bash ../../doAlign-zipped.sh to-align.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
+
+Have stats in meta114.
+
+```{r}
+m114<-read_csv("meta/m114.csv") 
+
+```
+
+
+_3_ Downsample.  
+
+```{r}
+
+down<-m114 %>% filter(Region=="Western Australia") %>% mutate(Frac=7/Coverage) %>%
+  mutate(Command = paste0("samtools view -bs ", Frac, " ", "data/broome/",Run,".sort.flt.bam", " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;"," samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;")) 
+down %>% select(Command)
+ down %>% select(Command) %>% write_tsv(file="1300.1-downsample.sh", col_names = FALSE)
+```
+
+module load parallel
+srun -p high --time 24:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=11 parallel -j 11 < 1300.1-downsample.sh

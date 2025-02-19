@@ -304,6 +304,37 @@ CAGAGCACGGATTACGCAGACCCCAGCCCCAACAGCTCCACCGAGTCTCTCAACCAGAGGTCCTTGGAGA
 TGGCCGCGGAGCTGCAGCACTATCAAGTGGAGATGCACAGCTTGCCTGCGCAGGGAAACCAGTCACCACC
 CCCGGCCCCACCCCCTCCTCCTCCATACAACCAAAAATTTGGTTCCCTGGGACTTTCCAGGAAGGACA
 
+JQ937721.1	NC_066839.1	100.000	1049	0	0	1	1049	7142520	7141472	0.0	1938
+HQ731243.1	NC_066839.1	99.905	1057	1	0	1	1057	7142520	7141464	0.0	1947
+HQ731244.1	NC_066839.1	99.523	1048	5	0	1	1048	7142511	7141464	0.0	1908
 
+
+NC_066839.1
 JQ937721.1	NC_066839.1	100.000	1049	0	0	1	1049	7142520	7141472	0.0	1938
 
+si:dkey-174m14.3
+
+7140508	7164609
+
+bcftools view -r NC_066839.1:7140508-7164609 ../1204/plink-01.vcf.gz | bcftools +fill-tags | bcftools view -i 'MAF > 0.10' > sidkey.vcf
+bcftools reheader --samples ../../bamlists/103-sample-names.txt sidkey.vcf > sidkey-renamed.vcf
+bcftools stats -s - sidkey-renamed.vcf | grep -E ^PSC | cut -f3,14 | awk '{if ($2 <= 1) print}' | cut -f 1 > key-nomissing.txt
+
+bcftools view -S key-nomissing.txt sidkey-renamed.vcf  > new-sidkey.vcf
+
+java -jar ~/bin/beagle.27Jan18.7e1.jar gt=new-sidkey.vcf out=sidkey-imputed
+
+~/vcf2fasta/vcf2fasta.py --fasta NC_066839.1.fasta --gff sidkey.gtf --vcf sidkey-imputed.vcf.gz --feat exon
+
+                                                  7140508 7142835
+this is exon 14
+
+
+(base) ➜  1209 git:(main) ✗ scp farm:~/lates-wgs/outputs/1209/vcf2fasta_exon/si\:dkey-174m14.3_exon_14.fas ./sidkey.fas
+
+iqtree2 -nt AUTO  -s sidkey.fas  -st DNA -m GTR+G -bb 10000 --redo
+
+
+iqtree2 -nt AUTO  -s test-sidkey.afas  -st DNA -m GTR+G -bb 10000 --redo
+
+The sidkey tree looks a lot better, but, then this is what we get from looking at some protein coding genes. Could just do the entire cds.

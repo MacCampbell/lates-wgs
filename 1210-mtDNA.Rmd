@@ -1,0 +1,120 @@
+---
+title: "1210-mtDNA"
+output: html_document
+date: "2025-02-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(ape)
+library(pegas)
+library(ggtree)
+library(phytools)
+library(phylotools)
+library(viridis)
+```
+
+
+
+Let's pull in the Vij et al. COI data and make a tree.
+
+71 from vij et al.
+
+16 from Ward et al.
+
+17 from Wei-Jen
+
+`(base) ➜  vij-et-al git:(main) ✗ cat ../To_Mac_012024/COI_WJC.fasta vij-coi.fasta ward-coi.fasta > comb.fas`
+`(base) ➜  vij-et-al git:(main) ✗ mafft comb.fas > comb.afas`
+
+lots of gaps from data, removing ambiguous sites in alignment
+
+bmge -i comb.afas -t DNA -g 0.05 -of comb-trim.fas
+655 to 606 characters
+Alignment has 104 sequences with 606 columns, 40 distinct patterns
+58 parsimony-informative, 1 singleton sites, 547 constant sites
+
+Could do
+iqtree2 -nt AUTO -s comb-trim.fas -T AUTO -st DNA -m MFP -bb 10000 --redo 
+
+need to exchange names for a network analysis.
+rownames(dna)
+
+```{r}
+dna<-read.dna(file="data/vij-et-al/comb-trim.fas", format="fasta")
+names<-rownames(dna) %>% as_tibble() %>% separate(value, sep = " ", into = c("Accession"))
+
+seqm<-read_tsv("data/vij-et-al/ward-vij-data.tsv") %>% mutate(Geo=ifelse(Location=="Thailand","Thailand",
+                                                                  ifelse(Location=="Taiwan","Taiwan",
+                                                                  ifelse(Location %in% c("Indian West Coast","Indian East Coast","Bangladesh","Myanmar","Andaman and Nicobar Islands"),"Indian Ocean",
+                                                                  ifelse(Location=="French Polynesia","French Polynesia","Other Location")))))
+
+mdf<-left_join(names,seqm)
+
+rownames(dna)<-mdf$Geo
+```
+
+
+```{r}
+
+haps<- haplotype(dna)
+
+net <- haploNet(haps)
+
+ind.hap<-with(
+  utils::stack(setNames(attr(haps, "index"), rownames(haps))),
+  table(hap=ind, individuals=rownames(dna)[values])
+ )
+
+
+plot(net, size=attr(net,"freq"), fast=FALSE)
+```
+
+
+```{r}
+pdf("outputs/1210/coi-network.pdf", width=11, height=8.5)
+
+plot(net, size=attr(net, "freq"), scale.ratio = .5, cex = 6, pie=ind.hap, labels = FALSE,
+     bg = viridis(n=length(colnames(ind.hap)), option="H"))
+legend("topright",colnames(ind.hap),text.col = viridis(n=length(colnames(ind.hap)), option="H"))
+
+dev.off()
+```
+
+
+## Calculation
+
+We had access to a previous 6 samples from Thailand (Vij et al. 2014; 2016), they produced 0 I0 haplotypes. We have the same fish I think and there are 7.
+
+We sequenced 5 samples from Thailand and found 3 IO haplotypes. The probability of sequencing six fish and not observing a IO haplotype based on the observed haplotypes we had (60%) is?
+
+Binomial distribution:
+
+6 flips, 0 heads (IO) as positive outcome
+
+```{r}
+dbinom(0, 7, .6)
+
+```
+
+Conversely, let's assume that Vij et al. were correct at the time/our data are representative
+
+```{r}
+dbinom(3,5,0)
+```
+
+
+Or, let's calculate them as a pooled sample
+
+6+5=11
+3 IO 
+
+```{r}
+dbinom(0,6,(3/11))
+```
+
+A 14% chance that six sequences would not reveal an IO haplotype if the chance is 3/11.
