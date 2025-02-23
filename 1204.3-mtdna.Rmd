@@ -229,9 +229,12 @@ q2<-bind_cols(q, m103 %>% select(Run)) %>% pivot_longer(cols = mynames, names_to
 
 ```{r}
 m18<-m103 %>% filter(Region %in% c("Taiwan","Thailand"))
+m41<-m103 %>% filter(Region %in% c("Taiwan","Thailand","Indonesia-SJ","Philippines","Cambodia","Vietnam","Indonesia-SU","Indonesia-K")) 
 
-q<-read_delim("outputs/1211/myplink2.2.Q", delim=" ", col_names=FALSE)
+#q<-read_delim("outputs/1211/myplink2.2.Q", delim=" ", col_names=FALSE)
 #Make generic colnames
+
+q<-read_delim("outputs/1207/sea05/myplink2.3.Q", delim=" ", col_names=FALSE)
 
 nums<-4:(length(colnames(q))+3)
 mynames<-paste0(nums)
@@ -240,7 +243,7 @@ qs<-length(colnames(q))-1
 
 colnames(q)<-mynames
 
-q3<-bind_cols(q, m18 %>% select(Run)) %>% pivot_longer(cols = mynames, names_to = "Cluster", values_to = "Percentage")
+q3<-bind_cols(q, m41 %>% select(Run)) %>% pivot_longer(cols = mynames, names_to = "Cluster", values_to = "Percentage")
 ```
 
 ```{r}
@@ -337,9 +340,9 @@ w<-v +
     geom_facet(panel = 'Admixture Proportions', data = q2, geom = geom_bar, 
                  mapping = aes(x=Percentage, fill=Cluster), 
                 orientation = 'y', width = 1, stat="identity") +
-   #   geom_facet(panel = 'Admixture Proportions T', data = q3, geom = geom_bar, 
-    #             mapping = aes(x=Percentage, fill=Cluster), 
-     #           orientation = 'y', width = 1, stat="identity") +
+      geom_facet(panel = 'Admixture Proportions T', data = q3, geom = geom_bar, 
+                 mapping = aes(x=Percentage, fill=Cluster), 
+                orientation = 'y', width = 1, stat="identity") +
    geom_facet(panel="Lca03-01", data=df0301, geom=geom_tile,
                   mapping = aes(x=1, fill=Genotype))  +
   geom_facet(panel="Lca03-02", data=df0302, geom=geom_tile,
@@ -349,8 +352,8 @@ w<-v +
   geom_facet(panel="Lca20", data=df20, geom=geom_tile,
                   mapping = aes(x=1, fill=Genotype)) +
        xlim_tree(.09) + #scale_fill_viridis_d(option="magma", direction=-1) 
-       scale_fill_manual(values=c(viridis(3),viridis(3, option="magma")))
-facet_widths(w, c(Tree = 4, `Admixture Proportions`=1, `Lca03-01`=0.5, `Lca03-02`=0.5, `Lca05`=0.5,`Lca20`=0.5))
+       scale_fill_manual(values=c(viridis(3),viridis(4, option = "rocket")[2:4], viridis(3, option="magma")))
+facet_widths(w, c(Tree = 4, `Admixture Proportions`=1,`Admixture Proportions T`=1, `Lca03-01`=0.5, `Lca03-02`=0.5, `Lca05`=0.5,`Lca20`=0.5))
 ggsave("outputs/1204/mapping-mtdna-mitogenome-admixture-phylo.pdf", width=12, height=12)
 
 ```

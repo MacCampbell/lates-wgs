@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 
 ```{r}
 library(tidyverse)
+library(RcppCNPy)
 ```
 
 downloading broome data
@@ -49,7 +50,8 @@ srun -p high --time 4:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=11 par
 _4_ Look at basic popgen in Australasia
 
 ```{r}
-m40<-m114 %>% filter(Lineage %in% c("AUS","Mainstream"))
+m40<-m114 %>% filter(Lineage %in% c("AUS","Mainstream")) %>% mutate(Individual=1:n())
+
 m40 %>% select(NewPath) %>% write_tsv("bamlists/40.bamlist", col_names=FALSE)
 meta<-m40
 ```
@@ -74,6 +76,8 @@ srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angs
 ```
 
 	-> Number of sites retained after filtering: 75260 (chrom01)
+	-> Number of sites retained after filtering: 1953593 
+
 
 ```{r}
 m <- as.matrix(read.table("outputs/1300/40-ibs-90.covMat"))
@@ -83,6 +87,17 @@ cumvar<-cumsum(eig$values)/sum(eig$values)
 
 head(var)
 head(cumvar)
+
+vdf<-var %>% as_tibble() %>% rename(Variance=value) %>% mutate(PC=1:n()) %>% head(n=10)
+
+ggplot(vdf) +
+  geom_line(aes(x=PC, y=Variance)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_x_continuous(breaks=vdf$PC) +
+  theme(axis.text=element_text(size=8))
+
+ggsave("outputs/1300/Australasian-scree-plot.jpeg")
 ```
 
 
@@ -93,7 +108,7 @@ text12<-covs %>% select(Run, Region, V1, V2) %>%
   group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
 
 ggplot(covs) +
-  geom_point(aes(x=V1, y=V2, fill=Locality), pch=21, alpha=0.75) +
+  geom_point(aes(x=V1, y=V2, fill=Locality), pch=21, alpha=0.75, cex=2) +
   geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
   xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
   ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
@@ -104,4 +119,91 @@ ggplot(covs) +
   theme(plot.title = element_text(hjust=0.5, face="bold"))
 
 ggsave("outputs/1300/australasian-lates-pc12.jpeg")
+
+text13<-covs %>% select(Run, Region, V1, V3) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
+
+ggplot(covs) +
+  geom_point(aes(x=V1, y=V3, fill=Locality), pch=21, alpha=0.75, cex=2) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC3", " ", round((100*var[3]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="magma") +
+  ggtitle("Genome-Wide PCA of Australasian L. calcarifer WGS Data") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
 ```
+
+Testing for kin:
+conda activate py27
+(py27) maccamp@farm:~/lates-wgs$ python ../pcangsd/pcangsd.py -kinship  -beagle outputs/1300/40-ibs-90.beagle.gz -o outputs/1300/40-kin
+
+```{sh,eval=FALSE}
+conda activate py27
+srun -p high -t 2:00:00 --mem=32G --nodes=1 --cpus-per-task=6 python ../pcangsd/pcangsd.py -threads 6 -kinship  -beagle outputs/1300/40-ibs-90.beagle.gz -o outputs/1300/40-kin
+
+srun -p high -t 2:00:00 --mem=32G --nodes=1 --cpus-per-task=6 python ../pcangsd/pcangsd.py -threads 6  -beagle outputs/1300/40-ibs-90.beagle.gz -relate outputs/1300/40-kin.kinship.npy -relate_tole 0.0625 -o outputs/1300/40-kinremoved
+
+conda deactivate
+```
+
+```{r}
+kin<-npyLoad("outputs/1300/40-kin.kinship.npy")
+#Convert upper half of matrix to data frame compatible 
+kinrind<-which(upper.tri(kin, diag = TRUE), arr.ind = TRUE)
+kin<-cbind(kinrind, kin[kinrind])
+
+kindf<-as_tibble(kin) %>%
+  rename(Ind1=row, Ind2=col, Kinship=V3) %>%
+  filter(Ind1 != Ind2) %>%
+  mutate(Mean=mean(Kinship))
+
+meta<-m40
+df<-kindf %>% left_join(meta, by=c("Ind1"="Individual")) %>% rename(Individual1=Run, Location1=Region) %>%
+  left_join(meta, by=c("Ind2"="Individual")) %>% rename(Individual2=Run, Location2=Region)
+
+df %>% filter(Kinship>0.0625) %>% select(Kinship, Individual1, Individual2)
+
+```
+
+
+### Generate calls
+
+```{r}
+m48<-m114 %>% filter(Lineage %in% c("AUS","Mainstream","SEA")) %>% filter(Region %in% c("Indonesia-K","Philippines","Indonesia-SJ","Taiwan","Northern Territory","Papua New Guinea","Western Australia"))
+
+m48 %>% select(NewPath) %>% write_tsv("bamlists/48.bamlist", col_names=FALSE)
+m48 %>% select(Run) %>% write_tsv("bamlists/48-sample-names.txt", col_names=FALSE)
+
+```
+
+
+
+Include Southeast Asian fish
+
+```{r}
+m91<-m114 %>% filter(Lineage %in% c("AUS","Mainstream","SEA","OceanPick")) 
+m91 %>% select(NewPath) %>% write_tsv("bamlists/91.bamlist", col_names=FALSE)
+m91 %>% select(Run) %>% write_tsv("bamlists/91-sample-names.txt", col_names=FALSE)
+```
+
+```{sh, eval=FALSE}
+srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angsd -P 6  \
+-bam bamlists/91.bamlist -rf meta/lates-lgs.txt \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 82 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1300/91-ibs-90 > outputs/1300/91-ibs-90.out 2> outputs/1300/91-ibs-90.err &
+
+srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 82 -bam bamlists/91.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf  meta/no-inv.txt -out outputs/1204/snps-wgs-01  \
+-minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1204/snps-wgs-01.out 2> outputs/1204/snps-wgs-01.err &
+
+
+```
+

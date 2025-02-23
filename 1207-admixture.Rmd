@@ -149,9 +149,23 @@ m41<-m103 %>% filter(! Region %in% c("OceanPick","Mainstream","Northern Territor
 
 ```{sh, eval=FALSE}
 bcftools view -S meta/sea-samples.txt outputs/1204/pruned-01-maf01-45.vcf.gz | bcftools +fill-tags  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.01' > outputs/1207/sea.vcf
+
+#Using random seed: 1740007529
+#41 inds, 8794 variants
+bcftools view -S meta/sea-samples.txt outputs/renamed-01.vcf.gz | bcftools +fill-tags -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |   bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand > outputs/1207/sea01/sea.vcf
+
+#Using random seed: 1740008018, 9413 variants
+bcftools view -S meta/sea-samples.txt outputs/renamed-01.vcf.gz | bcftools +fill-tags -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |   bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand > outputs/1207/sea05/sea.vcf
+
+##Using random seed: 1740008298, 9525 variants
+bcftools view -S meta/sea-samples.txt outputs/renamed-01.vcf.gz | bcftools +fill-tags -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.01' | bcftools view -i 'INFO/MAF < 0.45' |   bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand > outputs/1207/sea.vcf
+
 ```
 
 in outputs/1207
+in outputs/1207/sea01
+in outputs/1207/sea05
+
 ```{sh, eval=FALSE}
 plink --vcf sea.vcf --make-bed --out myplink --allow-extra-chr --noweb
 plink -bfile myplink --recode12 -out myplink2 --allow-extra-chr --noweb
@@ -165,7 +179,7 @@ grep -h CV log*.out | cut -f 3,4 -d ' '  | perl -pe 's/://g' | perl -pe s'/\(|\)
 
 
 ```{r}
-scores<-read_delim("outputs/1207/scores.txt", col_names = c("K","Cross-Validation Error")) %>% mutate(x=1:n())
+scores<-read_delim("outputs/1207/sea05/scores.txt", col_names = c("K","Cross-Validation Error")) %>% mutate(x=1:n())
 
 ggplot(scores) +
   geom_line(aes(x=x, y=`Cross-Validation Error`)) +
@@ -174,17 +188,26 @@ ggplot(scores) +
   scale_x_continuous(breaks=(1:nrow(scores)))
 ```
 
+
 ```{r}
-PlotAdmixture("outputs/1207/myplink2.2.Q", m41)
+PlotAdmixture("outputs/1207/sea01/myplink2.2.Q", m41)
 ```
 
 ```{r}
-PlotAdmixture("outputs/1207/myplink2.3.Q", m41)
+PlotAdmixture("outputs/1207/sea05/myplink2.2.Q", m41)
+```
+
+```{r}
+PlotAdmixture("outputs/1207/sea05/myplink2.2.Q", m41)
+```
+
+```{r}
+PlotAdmixture("outputs/1207/sea05/myplink2.3.Q", m41)
 ```
 
 
 ```{r}
-PlotAdmixture("outputs/1207/myplink2.4.Q", m41)
+PlotAdmixture("outputs/1207/sea05/myplink2.4.Q", m41)
 ```
 
 

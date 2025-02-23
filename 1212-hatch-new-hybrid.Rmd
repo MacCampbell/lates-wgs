@@ -1,0 +1,124 @@
+---
+title: "1212-hatch-new-hybrid"
+output: html_document
+date: "2025-02-20"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+Select hatchery fish and test hybridization levels with new hybrids
+
+
+```{r}
+m103<-read_csv("meta/m103.csv")
+m22<-m103 %>% filter(Region %in% c("OceanPick","Mainstream")) %>% mutate(Cat=ifelse(Run %in%
+          c("OceanPick5","OceanPick16","OceanPick17","OceanPick20","OceanPick2","OceanPick8"), "Hybrids",
+          ifelse(Run %in% c("OceanPick1","OceanPick3","OceanPick11","OceanPick15"),"OceanPick","Mainstream")))
+
+m22 %>% select(Run) %>% write_tsv("meta/samples22.txt", col_names = FALSE)
+
+m74<-m103 %>% filter(Region %in% c("OceanPick","Mainstream","Thailand","Vietnam","Cambodia","Taiwan","Philippines","Papua New Guinea","Indonesia-SJ","Northern Territory","Queensland"))
+
+m74 %>% select(Run) %>% write_tsv("meta/samples74.txt", col_names = FALSE)
+
+```
+
+```{sh, eval=FALSE}
+#Using random seed: 1740028727 7259 sites
+
+bcftools view -S meta/samples22.txt outputs/renamed-01.vcf.gz | bcftools +fill-tags -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |   bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand > outputs/1212/hatch05/m22.vcf
+
+#Using random seed: 1740094945
+bcftools view -S meta/samples74.txt outputs/renamed-01.vcf.gz | bcftools +fill-tags -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |   bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand > outputs/1212/m74-10.vcf
+
+```
+
+```{r}
+m<-m22
+vcf <-read.vcfR("outputs/1212/hatch05/m22.vcf") 
+
+m<-m74
+vcf <-read.vcfR("outputs/1212/m74-10.vcf")
+gl<-vcfR2genlight(vcf)
+gl$pop<-as.factor(gsub(" ","-",m$Region))
+```
+
+
+```{r}
+glx <- gl.compliance.check(gl) 
+
+gl3<-gl.filter.maf(glx, threshold = 0.05)
+gl3<-gl.filter.allna(gl3)
+gl3
+```
+
+
+```{r}
+snp<-import.snpR.data(gl3)
+
+structure<-plot_structure(snp, facet=c("pop"),
+               k=c(2,3,4,5,6))
+
+structure$plot
+
+ggsave("outputs/1212/admixture-plot.pdf")
+```
+
+
+## Test hybridization levels!!!!!!!!!
+
+
+```{r}
+hyb <- gl.nhybrids(gl3,
+p0=c("Mainstream","Northern-Territory","Queensland","Papua-New-Guinea"),
+p1=c("Indonesia-SJ","Cambodia","Philippines","Vietnam","Taiwan"),
+method="random",
+nhyb.directory="~/github/newhybrids", # Specify as necessary
+outpath="~/github/lates-wgs/outputs/1212",  # Specify as necessary, usually getwd() [= workspace]
+BurnIn=100000,
+sweeps=50000,
+verbose=3,
+plot=FALSE)
+
+```
+
+```{r}
+out<-read_csv("outputs/1212/aa-PofZ.csv", col_names = c("Sequence ID","Region","NoName","P0","P1","F1","F2","0-BX","1-BX"), skip=1)
+
+long<-out %>% pivot_longer(cols = 4:9, names_to = c("Class"), values_to = c("Prob"))
+
+
+#long$Region<-factor(long$Region, levels=c("Mainstream","OceanPick","Hybrids"))
+long$Region<-factor(long$Region, levels=c("Papua-New-Guinea","Northern-Territory","Queensland","Mainstream",
+                                          "OceanPick","Thailand","Cambodia","Vietnam","Indonesia-SJ","Taiwan",
+                                          "Philippines"))
+
+
+long$Class<-factor(long$Class, levels=c("P0","P1","F1","F2","0-BX","1-BX"))
+l2<-long %>% arrange(Region)
+l2$`Sequence ID`<-as.factor(l2$`Sequence ID`)
+
+l2
+```
+
+  
+```{r}
+ggplot(l2) + 
+  geom_tile(aes(x=`Sequence ID`, y=Class, fill=Prob)) +
+  scale_fill_viridis_c(direction=-1, option="plasma") +
+  facet_grid(.~Region, scales="free_x", space="free" ) +
+  theme_bw()+
+  theme(panel.grid=element_blank()) +
+  theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
+  xlab("Sequence ID") 
+
+ggsave("outputs/1212/OceanPick-hybridization.pdf", width=19, height=6)
+ggsave("outputs/1212/OceanPick-hybridization.jpeg", width=19, height=6)
+
+```
