@@ -543,19 +543,19 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 
 More Beagle Files
 ```{r}
-#matt asked for 
+#Matt asked for 
 #1 One for SEAsia plus Oceanpick 51 samples
-m103 %>% filter(Lineage %in% c("SEA","OceanPick")) %>% select(NewPath) %>% write_tsv("bamlists/sea-oceanpick.bamlist")
-m103 %>% filter(Lineage %in% c("SEA","OceanPick")) %>% select(Run) %>% write_tsv("bamlists/sea-oceanpick.names")
+m103 %>% filter(Lineage %in% c("SEA","OceanPick")) %>% select(NewPath) %>% write_tsv("bamlists/sea-oceanpick.bamlist", col_names = FALSE)
+m103 %>% filter(Lineage %in% c("SEA","OceanPick")) %>% select(Run) %>% write_tsv("bamlists/sea-oceanpick.names", col_names = FALSE)
 
-#2IO plus Oceanpick? 33 samples
+#2 IO plus Oceanpick? 33 samples
 
-m103 %>% filter(Lineage %in% c("IND","lakdiva","OceanPick")) %>% select(NewPath) %>% write_tsv("bamlists/ind-oceanpick.bamlist")
-m103 %>% filter(Lineage %in% c("IND","lakdiva","OceanPick")) %>% select(Run) %>% write_tsv("bamlists/ind-oceanpick.names")
+m103 %>% filter(Lineage %in% c("IND","lakdiva","OceanPick")) %>% select(NewPath) %>% write_tsv("bamlists/ind-oceanpick.bamlist", col_names = FALSE)
+m103 %>% filter(Lineage %in% c("IND","lakdiva","OceanPick")) %>% select(Run) %>% write_tsv("bamlists/ind-oceanpick.names", col_names = FALSE)
 
-#SEA
-m103 %>% filter(Lineage %in% c("SEA")) %>% select(NewPath) %>% write_tsv("bamlists/sea41.bamlist")
-m103 %>% filter(Lineage %in% c("SEA")) %>% select(Run) %>% write_tsv("bamlists/sea41.names")
+#3 SEA
+m103 %>% filter(Lineage %in% c("SEA")) %>% select(NewPath) %>% write_tsv("bamlists/sea41.bamlist", col_names = FALSE)
+m103 %>% filter(Lineage %in% c("SEA")) %>% select(Run) %>% write_tsv("bamlists/sea41.names", col_names = FALSE)
 
 ```
 
