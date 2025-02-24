@@ -532,6 +532,54 @@ srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 -minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1204/snps-wgs-01.out 2> outputs/1204/snps-wgs-01.err &
 
+#creating GLF
+srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 93 -bam bamlists/103.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf  meta/no-inv.txt -out outputs/1204/snps-wgs-01-glf  \
+-minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1204/snps-wgs-01-glf.out 2> outputs/1204/snps-wgs-01-glf.err &
+
+```
+
+More Beagle Files
+```{r}
+#matt asked for 
+#1 One for SEAsia plus Oceanpick 51 samples
+m103 %>% filter(Lineage %in% c("SEA","OceanPick")) %>% select(NewPath) %>% write_tsv("bamlists/sea-oceanpick.bamlist")
+m103 %>% filter(Lineage %in% c("SEA","OceanPick")) %>% select(Run) %>% write_tsv("bamlists/sea-oceanpick.names")
+
+#2IO plus Oceanpick? 33 samples
+
+m103 %>% filter(Lineage %in% c("IND","lakdiva","OceanPick")) %>% select(NewPath) %>% write_tsv("bamlists/ind-oceanpick.bamlist")
+m103 %>% filter(Lineage %in% c("IND","lakdiva","OceanPick")) %>% select(Run) %>% write_tsv("bamlists/ind-oceanpick.names")
+
+#SEA
+m103 %>% filter(Lineage %in% c("SEA")) %>% select(NewPath) %>% write_tsv("bamlists/sea41.bamlist")
+m103 %>% filter(Lineage %in% c("SEA")) %>% select(Run) %>% write_tsv("bamlists/sea41.names")
+
+```
+
+
+```{sh, eval=FALSE}
+#creating GLF
+srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 46 -bam bamlists/sea-oceanpick.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf  meta/no-inv.txt -out outputs/1204/glf-01-sea-oceanpick  \
+-minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1204/glf-01-sea-oceanpick.out 2> outputs/1204/glf-01-sea-oceanpick.err &
+
+srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 30 -bam bamlists/ind-oceanpick.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf  meta/no-inv.txt -out outputs/1204/glf-01-ind-oceanpick \
+-minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1204/glf-01-ind-oceanpick.out 2> outputs/1204/glf-01-ind-oceanpick.err &
+
+srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 37 -bam bamlists/sea41.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf  meta/no-inv.txt -out outputs/1204/glf-01-sea41 \
+-minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1204/glf-01-sea41.out 2> outputs/1204/glf-01-sea41.err &
+
 ```
 
 
