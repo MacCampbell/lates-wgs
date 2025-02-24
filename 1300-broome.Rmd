@@ -172,11 +172,29 @@ df %>% filter(Kinship>0.0625) %>% select(Kinship, Individual1, Individual2)
 ### Generate calls
 
 ```{r}
-m48<-m114 %>% filter(Lineage %in% c("AUS","Mainstream","SEA")) %>% filter(Region %in% c("Indonesia-K","Philippines","Indonesia-SJ","Taiwan","Northern Territory","Papua New Guinea","Western Australia"))
+m66<-m114 %>% filter(Lineage %in% c("AUS","Mainstream","SEA")) %>% filter(Region %in% c("Indonesia-K","Philippines","Indonesia-SJ","Taiwan","Northern Territory","Papua New Guinea","Western Australia","Queensland","Mainstream"))
 
-m48 %>% select(NewPath) %>% write_tsv("bamlists/48.bamlist", col_names=FALSE)
-m48 %>% select(Run) %>% write_tsv("bamlists/48-sample-names.txt", col_names=FALSE)
+m66 %>% select(NewPath) %>% write_tsv("bamlists/66.bamlist", col_names=FALSE)
+m66 %>% select(Run) %>% write_tsv("bamlists/66-sample-names.txt", col_names=FALSE)
 
+```
+
+
+Doing it genome wide for fun!
+
+```{sh, eval=FALSE}
+
+srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 36 -bam bamlists/40.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf  meta/lates-lgs.txt -out outputs/1204/snps-40-01  \
+-minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/1300/snps-40-01.out 2> outputs/1300/snps-40-01.err &
+
+srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 49 -bam bamlists/54.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf  meta/lates-lgs.txt -out outputs/1204/snps-54-01  \
+-minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/1300/snps-54-01.out 2> outputs/1300/snps-54-01.err &
 ```
 
 
@@ -198,11 +216,6 @@ srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angs
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/1300/91-ibs-90 > outputs/1300/91-ibs-90.out 2> outputs/1300/91-ibs-90.err &
 
-srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
--minInd 82 -bam bamlists/91.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--rf  meta/no-inv.txt -out outputs/1204/snps-wgs-01  \
--minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
--doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1204/snps-wgs-01.out 2> outputs/1204/snps-wgs-01.err &
 
 
 ```
