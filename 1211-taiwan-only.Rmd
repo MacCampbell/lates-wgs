@@ -39,7 +39,7 @@ m35 %>% select(Run) %>% write_tsv("meta/m35-samples.txt", col_names = FALSE)
 
 m23<-m103 %>% filter(Region %in% c("Taiwan","Thailand","Indonesia-SJ")) 
 m23 %>% select(Run) %>% write_tsv("meta/m23-samples.txt", col_names = FALSE)
-
+m41<-m103 %>% filter(Lineage %in% c("SEA"))
 ```
 
 Filter snps/samples with BCFtools

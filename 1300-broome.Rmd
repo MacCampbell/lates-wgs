@@ -53,6 +53,8 @@ _4_ Look at basic popgen in Australasia
 m40<-m114 %>% filter(Lineage %in% c("AUS","Mainstream")) %>% mutate(Individual=1:n())
 
 m40 %>% select(NewPath) %>% write_tsv("bamlists/40.bamlist", col_names=FALSE)
+m40 %>% select(Run) %>% write_tsv("bamlists/40-sample-names.txt", col_names=FALSE)
+
 meta<-m40
 ```
 
@@ -180,43 +182,34 @@ m66 %>% select(Run) %>% write_tsv("bamlists/66-sample-names.txt", col_names=FALS
 ```
 
 
-Doing it genome wide for fun!
+Doing it genome wide for fun! Including some SE Asian gene pools
 
 ```{sh, eval=FALSE}
 
 srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
 -minInd 36 -bam bamlists/40.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--rf  meta/lates-lgs.txt -out outputs/1204/snps-40-01  \
+-rf  meta/lates-lgs.txt -out outputs/1300/snps-40-01  \
 -minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/1300/snps-40-01.out 2> outputs/1300/snps-40-01.err &
+# 	-> Number of sites retained after filtering: 1247772 
 
-srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
--minInd 49 -bam bamlists/54.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--rf  meta/lates-lgs.txt -out outputs/1204/snps-54-01  \
+
+srun -t 24:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=6 $HOME/angsd/angsd -nthreads 6 \
+-minInd 59 -bam bamlists/66.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf  meta/lates-lgs.txt -out outputs/1300/snps-66-01  \
 -minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
--doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/1300/snps-54-01.out 2> outputs/1300/snps-54-01.err &
+-doGeno 2 -doPost 1 -postCutoff 0.95 -doPlink 2  > outputs/1300/snps-66-01.out 2> outputs/1300/snps-66-01.err &
 ```
 
-
-
-Include Southeast Asian fish
-
-```{r}
-m91<-m114 %>% filter(Lineage %in% c("AUS","Mainstream","SEA","OceanPick")) 
-m91 %>% select(NewPath) %>% write_tsv("bamlists/91.bamlist", col_names=FALSE)
-m91 %>% select(Run) %>% write_tsv("bamlists/91-sample-names.txt", col_names=FALSE)
-```
 
 ```{sh, eval=FALSE}
-srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angsd -P 6  \
--bam bamlists/91.bamlist -rf meta/lates-lgs.txt \
--ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--minInd 82 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
--doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
--doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
--out outputs/1300/91-ibs-90 > outputs/1300/91-ibs-90.out 2> outputs/1300/91-ibs-90.err &
+plink --tped snps-40-01.tped --tfam snps-40-01.tfam  --out plink-binary-01 --recode --allow-extra-chr --noweb
+plink --ped plink-binary-01.ped --map plink-binary-01.map --recode vcf --allow-extra-chr -out plink-01
+bgzip plink-01.vcf 
+tabix plink-01.vcf.gz
 
+bcftools reheader --samples bamlists/40-sample-names.txt -o outputs/1300/renamed-01.vcf.gz outputs/1204/plink-01.vcf.gz
 
+bcftools +fill-tags outputs/1300/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1300/pruned-01-maf05-45.vcf
 
 ```
-
