@@ -1,0 +1,139 @@
+---
+title: "1214-plotting-lg03"
+output: html_document
+date: "2025-03-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(grid)
+library(ggpubr)
+library(ggrepel)
+library(gridExtra)
+```
+
+```{r}
+m103<-read_csv("meta/m103.csv")
+m103$Region<-factor(m103$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
+                                           "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India East Coast","Sri Lanka","India West Coast"))
+
+```
+
+Creating origin classes.   
+```{r}
+origin<-m103 %>% mutate(Origin=ifelse(Lineage=="IND","Indian Ocean",
+                       ifelse(Region %in% c("Mainstream","OceanPick"),"Aquaculture",
+                       ifelse(Region %in% c("Queensland","Northern Territory","Papua New Guinea"),"Australasia","Southeast & \nEast Asian"))))
+origin$Origin<-factor(origin$Origin, levels=c("Indian Ocean","Australasia","Aquaculture","Southeast & \nEast Asian"))
+```
+lca03 from mat
+```{r}
+df03<-read_csv("outputs/1206/lc03.csv")
+df0301<-df03 %>% select(FID, `genotype Inversion 1`) %>% mutate(Genotype=ifelse(`genotype Inversion 1`==1,"RHom",
+                                                                   ifelse(`genotype Inversion 1`==2,"Het","AHom")))
+df0302<-df03 %>% select(FID, `genotype Inversion 2`) %>% mutate(Genotype=ifelse(`genotype Inversion 2`==1,"RHom",
+                                                                   ifelse(`genotype Inversion 2`==2,"Het","AHom")))
+```
+
+Which individuals are hets for both
+
+```{r}
+df03 %>% filter(`genotype Inversion 1`==`genotype Inversion 2`) %>% filter(`genotype Inversion 1`==2)
+```
+
+sanity check
+
+```{r}
+d01<-read_csv("~/Dropbox/Australian-fishes/barra-con-gen/lca03-analyses/lg03-01-hets.csv") %>% 
+  left_join(df0301)
+
+labels01<-d01%>% group_by(Genotype) %>% summarize(Count=n())
+
+panelC<-ggplot(d01) +
+  geom_boxplot(aes(x=Genotype, y=heterozygosity, fill=Genotype)) +
+  geom_text(data=labels01,aes(x=Genotype, y=0.42, label=Count), fontface="bold") +
+  scale_fill_viridis_d(option="magma", alpha=0.75) +
+  ggtitle("C") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  theme(plot.title = element_text(face="bold"),size=18) +
+  ylab("Heterozygosity") +
+  xlab("Inversion Genotype") +
+  theme(axis.title = element_text(size=14))+
+  theme(axis.text=element_text(size=10)) +
+  theme(legend.position = "none")
+
+panelC 
+ggsave("outputs/1204/het-figure.jpeg", width=8.5/2, height=11/3)
+
+```
+
+
+## LD
+
+Panel A
+
+```{r}
+lc<-read.delim("~/Dropbox/Australian-fishes/barra-con-gen/chr3_LDscan/CHR3_LDscan.ld",
+               sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% arrange(R2) %>%  filter(R2 >0.7)
+# Matt calculated at a minimum of .7
+
+lcsub<-sample_n(lc, 1.5e5)
+```
+
+
+```{r}
+panelA<-ggplot(lcsub %>% arrange(R2)) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.75) +
+  scale_color_gradient(low="black", high="red") + 
+  theme_bw() +
+  coord_equal() +
+  xlab("SNP Position 1") +
+  ylab("SNP Position 2") +
+  ggtitle("A") +
+  theme(axis.title = element_text(size=14))+
+  theme(axis.text=element_text(size=8)) +
+  theme(plot.title = element_text(face="bold"),size=18) +
+  theme(panel.grid = element_blank())
+
+panelA
+```
+
+## Panel B
+
+```{r}
+pcs<-read_tsv("~/Dropbox/Australian-fishes/barra-con-gen/lca03-analyses/barra_LG03_CI1.txt")
+pcs <- pcs %>% left_join(origin, by=c("Sample_ID"="Run"))
+```
+
+```{r}
+panelB<-ggplot(pcs) +
+  geom_point(aes(x=PC1, y=PC2, shape=Origin), fill="grey50") +
+  scale_shape_manual(values=c(23,21,22,24)) +
+  theme_bw() +
+  ggtitle("B") +
+  theme(panel.grid = element_blank()) +
+  theme(axis.title = element_text(size=14))+
+  theme(axis.text=element_text(size=10)) +
+  theme(plot.title = element_text(face="bold"),size=18) 
+
+panelB
+```
+
+```{r}
+ggarrange(panelA, 
+          panelB + theme(legend.position = "none"),
+          panelC,
+          ncol = 1)
+
+ggsave("outputs/1214/lca03-01.pdf", width=8.5/2, height=11)
+ggsave("outputs/1214/lca03-01.jpeg", width=8.5/2, height=11)
+
+```

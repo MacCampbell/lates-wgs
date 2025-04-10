@@ -754,6 +754,11 @@ x <- pcadapt(input = filename, K = 20)
 ```
 
 ```{r}
+var<-round(x$singular.values^2*100,2)
+var
+```
+
+```{r}
 #plot(x, option = "screeplot")
 panela<-plot(x, option = "screeplot", K = 10) + ggtitle("A") +
   theme(plot.title = element_text(size=14, face="bold")) +

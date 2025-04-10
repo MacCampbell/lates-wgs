@@ -78,7 +78,11 @@ _2_ convert to consensus fasta
 _3_ getbarcode region
 
 Here is a loop:
+
+```{sh, eval=FALSE}
+
 srun -p high --nodes=1 --mem=32G -t 01:30:00 cut -f 1 -d ',' meta/58.csv | while read run; do samtools view -b data/split/$run.sort.flt.bam NC_007439.1 > data/mtdna/$run-mtdna.bam; samtools index data/mtdna/$run-mtdna.bam; /home/maccamp/proovread/bin/bam2cns --bam data/mtdna/$run-mtdna.bam --ref genome/NC_007439.1.fasta --prefix data/mtdna/$run-mtdna;  ~/seqtk/seqtk seq -a -q20 -n N data/mtdna/$run-mtdna.fq > data/mtdna/$run-mtdna-q20.fasta; samtools faidx data/mtdna/$run-mtdna-q20.fasta NC_007439.1:6329-7879 > data/mtdna/$run-coi.fasta; done;
+```
 
 
 ```{sh, eval=FALSE}
@@ -291,13 +295,23 @@ sanity check
 d01<-read_csv("~/Dropbox/Australian-fishes/barra-con-gen/lca03-analyses/lg03-01-hets.csv") %>% 
   left_join(df0301)
 
-labels01<-d01%>% group_by(Genotype) %>% mutate(Count=n())
+labels01<-d01%>% group_by(Genotype) %>% summarize(Count=n())
 
 ggplot(d01) +
-  geom_boxplot(aes(x=Genotype, y=heterozygosity)) +
-  geom_text(data=labels01,aes(x=Genotype, y=0.4, label=Count)) +
-  ggtitle("Lca03-01 Heterozygosity")
-
+  geom_boxplot(aes(x=Genotype, y=heterozygosity, fill=Genotype)) +
+  geom_text(data=labels01,aes(x=Genotype, y=0.42, label=Count), fontface="bold") +
+  scale_fill_viridis_d(option="magma", alpha=0.75) +
+  ggtitle("C") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  theme(plot.title = element_text(face="bold"),size=18) +
+  ylab("Heterozygosity") +
+  xlab("Inversion Genotype") +
+  theme(axis.title = element_text(size=14))+
+  theme(axis.text=element_text(size=10)) +
+  theme(legend.position = "none")
+  
+ggsave("outputs/1204/het-figure.jpeg", width=8.5/2, height=11/3)
 
 ```
 
@@ -317,22 +331,30 @@ ggplot(d02) +
 
 ```
 
+Creating origin classes.   
 ```{r}
-v<-t %<+% m103 + #bind_rows(m58, rm) +
+origin<-m103 %>% mutate(Origin=ifelse(Lineage=="IND","Indian Ocean",
+                       ifelse(Region %in% c("Mainstream","OceanPick"),"Aquaculture",
+                       ifelse(Region %in% c("Queensland","Northern Territory","Papua New Guinea"),"Australasia","Southeast & \nEast Asian"))))
+origin$Origin<-factor(origin$Origin, levels=c("Indian Ocean","Australasia","Aquaculture","Southeast & \nEast Asian"))
+```
+
+```{r}
+v<-t %<+% origin + #bind_rows(m58, rm) +
  # geom_point(data=e,  fill="gray50", cex=2, alpha=1, pch=22) +
   #geom_point(data=d,  fill="black", cex=2, alpha=1, pch=22) +
   geom_tiplab(aes(label=paste0(label," ",Region), x=x+0.003), align = FALSE, size=2) +
-  geom_tippoint(aes(shape=Lineage, x=x+0.001),fill="grey50", cex=2)+
+  geom_tippoint(aes(shape=Origin, x=x+0.001),fill="grey50", cex=2)+
   #geom_text(data=t$data %>% filter(isTip==TRUE) %>% filter(label %in% Run), aes(label=label, x=x+0.01), size=3) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
-  scale_shape_manual(values=c(21,23,23,21,21,24)) + 
+  scale_shape_manual(values=c(23,21,22,24)) + 
   #theme(legend.position = "none") +
   geom_treescale()
 v
 ```
 
 
-````{r}
+```{r}
 w<-v + 
   #geom_facet(panel = 'Admixture Proportions', data = admix, geom = geom_bar, 
    #              mapping = aes(x=Percentage, fill=Cluster), 
@@ -340,9 +362,9 @@ w<-v +
     geom_facet(panel = 'Admixture Proportions', data = q2, geom = geom_bar, 
                  mapping = aes(x=Percentage, fill=Cluster), 
                 orientation = 'y', width = 1, stat="identity") +
-      geom_facet(panel = 'Admixture Proportions T', data = q3, geom = geom_bar, 
-                 mapping = aes(x=Percentage, fill=Cluster), 
-                orientation = 'y', width = 1, stat="identity") +
+ #     geom_facet(panel = 'Admixture Proportions T', data = q3, geom = geom_bar, 
+  #               mapping = aes(x=Percentage, fill=Cluster), 
+   #             orientation = 'y', width = 1, stat="identity") +
    geom_facet(panel="Lca03-01", data=df0301, geom=geom_tile,
                   mapping = aes(x=1, fill=Genotype))  +
   geom_facet(panel="Lca03-02", data=df0302, geom=geom_tile,
@@ -352,17 +374,51 @@ w<-v +
   geom_facet(panel="Lca20", data=df20, geom=geom_tile,
                   mapping = aes(x=1, fill=Genotype)) +
        xlim_tree(.09) + #scale_fill_viridis_d(option="magma", direction=-1) 
-       scale_fill_manual(values=c(viridis(3),viridis(4, option = "rocket")[2:4], viridis(3, option="magma")))
-facet_widths(w, c(Tree = 4, `Admixture Proportions`=1,`Admixture Proportions T`=1, `Lca03-01`=0.5, `Lca03-02`=0.5, `Lca05`=0.5,`Lca20`=0.5))
+    #   scale_fill_manual(values=c(viridis(3),viridis(4, option = "rocket")[2:4], viridis(3, option="magma")))
+#facet_widths(w, c(Tree = 4, `Admixture Proportions`=1,`Admixture Proportions T`=1, `Lca03-01`=0.5, `Lca03-02`=0.5, `Lca05`=0.5,`Lca20`=0.5))
+  scale_fill_manual(values=c(viridis(3), viridis(3, option="magma"))) 
+  facet_widths(w, c(Tree = 4, `Admixture Proportions`=1, `Lca03-01`=0.5, `Lca03-02`=0.5, `Lca05`=0.5,`Lca20`=0.5))
+
 ggsave("outputs/1204/mapping-mtdna-mitogenome-admixture-phylo.pdf", width=12, height=12)
 
 ```
 
-```{r}
 
-admix %>% filter(pop %in% c("Taiwan", "Thailand","Philippines")) %>% filter(Cluster=="3") %>% arrange(-Percentage)
+let's look at the Taiwanese ones.  
+
+```{r}
+ingenos<-df0301 %>% rename(`Lca03-01 Genotype`=Genotype) %>% select(-`genotype Inversion 1`) %>%
+  left_join(df0302 %>% rename(`Lca03-02 Genotype`=Genotype) %>% select(-`genotype Inversion 2`)) %>%
+  left_join(df05 %>% select(Run, Genotype) %>% rename(FID=Run, `Lca05 Genotype`=Genotype)) %>%
+  left_join(df20 %>% select(Run, Genotype) %>% rename(FID=Run, `Lca20 Genotype`=Genotype))
 
 ```
 
+taiwanese admixture
+```{r}
+q<-read_delim("outputs/1207/sea05/myplink2.3.Q", delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0(nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+alt<-bind_cols(q, m41 %>% select(Run, Region)) %>% left_join(ingenos, by=c("Run"="FID"))
+alt %>% filter(Region %in% c("Taiwan","Philippines")) %>% arrange(-`1`) 
+```
+
+
+```{r}
+alt2<-alt %>% filter(Region %in% c("Taiwan","Philippines")) %>% arrange(-`1`) %>% relocate(Run,Region)  %>% pivot_longer(cols=6:9, names_to="Inversion", values_to="Genotype")
+order<-alt %>% filter(Region %in% c("Taiwan","Philippines")) %>% arrange(-`1`) 
+alt2$Run<-factor(alt2$Run, levels=order$Run)
+ggplot(alt2) + geom_raster(aes(x=Run, y=Inversion, fill=Genotype)) +
+  scale_fill_viridis_d(option="magma", alpha=0.8) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) 
 
 ```

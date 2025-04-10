@@ -1,0 +1,4 @@
+samtools view -bs 0.159515437676179 data/uwisara/1613156.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/1613156.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/1613156.reduced.bam ;
+samtools view -bs 0.128630835016253 data/uwisara/1613186.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/1613186.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/1613186.reduced.bam ;
+samtools view -bs 0.155819409756076 data/uwisara/1613217.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/1613217.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/1613217.reduced.bam ;
+samtools view -bs 0.167184939980607 data/uwisara/1613247.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/1613247.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/1613247.reduced.bam ;

@@ -1,0 +1,58 @@
+---
+title: "1301-uwisara"
+output: html_document
+date: "2025-04-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+putting in data/uwisara
+
+-at some point I can clean up the farm a bit
+
+Two lanes of each, that should be combined. 
+
+1613156
+1613186
+1613217
+1613247
+
+```{sh, eval=FALSE}
+#checksums
+ maccamp@farm:~/lates-wgs/data/uwisara/AGRF_NXGSQCAGRF24120169-1_22YMCCLT3$ for f in *.fastq.gz; do echo $f; md5sum $f  >> md5s.txt; done;
+
+cat AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613156_22YMCCLT3_TTGGACATCG-GAATCTGGTC_L007_R1.fastq.gz AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613156_22YMCCLT3_TTGGACATCG-GAATCTGGTC_L008_R1.fastq.gz > 1613156-R1.fastq.gz
+
+cat AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613156_22YMCCLT3_TTGGACATCG-GAATCTGGTC_L007_R2.fastq.gz AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613156_22YMCCLT3_TTGGACATCG-GAATCTGGTC_L008_R2.fastq.gz > 1613156-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613186_22YMCCLT3_AACGTTGAGA-CGGTCGGTAA_L007_R1.fastq.gz AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613186_22YMCCLT3_AACGTTGAGA-CGGTCGGTAA_L008_R1.fastq.gz > 1613186-fastq.gz
+
+cat AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613186_22YMCCLT3_AACGTTGAGA-CGGTCGGTAA_L007_R2.fastq.gz AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613186_22YMCCLT3_AACGTTGAGA-CGGTCGGTAA_L008_R2.fastq.gz > 1613186-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613217_22YMCCLT3_GGCCAGTGAA-TCTGCTAATG_L007_R1.fastq.gz AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613217_22YMCCLT3_GGCCAGTGAA-TCTGCTAATG_L008_R1.fastq.gz > 1613217-R1.fastq.gz
+
+cat AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613217_22YMCCLT3_GGCCAGTGAA-TCTGCTAATG_L007_R2.fastq.gz AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613217_22YMCCLT3_GGCCAGTGAA-TCTGCTAATG_L008_R2.fastq.gz > 1613217-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613247_22YMCCLT3_ATGTCTCCGG-CTCTTATTCG_L007_R1.fastq.gz AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613247_22YMCCLT3_ATGTCTCCGG-CTCTTATTCG_L008_R1.fastq.gz > 1613247-R1.fastq.gz
+
+cat AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613247_22YMCCLT3_ATGTCTCCGG-CTCTTATTCG_L007_R2.fastq.gz AGRF_NXGSQCAGRF24120169-1_22YMCCLT3/1613247_22YMCCLT3_ATGTCTCCGG-CTCTTATTCG_L008_R2.fastq.gz > 1613247-R2.fastq.gz
+
+```
+
+bash ../../doAlign-zipped.sh to-align.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
+
+```{r}
+m118<-read_csv("meta/m118.csv")
+down<-m118 %>% filter(Region=="Myanmar") %>% mutate(Frac=7/Coverage) %>%
+  mutate(Command = paste0("samtools view -bs ", Frac, " ", "data/uwisara/",Run,".sort.flt.bam", " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;"," samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;")) 
+down %>% select(Command)
+ down %>% select(Command) %>% write_tsv(file="1301.1-downsample.sh", col_names = FALSE)
+```
+
+# Trial of Chromosome 1 to visualize PCA of all samples.

@@ -13,10 +13,13 @@ What if we only look at Taiwan and filter for MAF and such, do we still see sepa
 
 ```{r}
 library(tidyverse)
+library(grid)
+library(ggpubr)
 library(ggrepel)
 library(dartR)
 library(pcadapt)
 library(snpR)
+library(gridExtra)
 ```
 
 ```{r}
@@ -78,16 +81,16 @@ filename <- read.pcadapt(path_to_file, type = "vcf")
 _1_ choose a K   
 
 ```{r}
-x <- pcadapt(input = filename, K = 10) 
+x <- pcadapt(input = filename, K = 8) 
 var<-round(x$singular.values^2*100,2)
 ```
 
 ```{r}
 #plot(x, option = "screeplot")
-panela<-plot(x, option = "screeplot", K = 10) + ggtitle("A") +
+panela<-plot(x, option = "screeplot", K = 8) + ggtitle("A") +
   theme(plot.title = element_text(size=14, face="bold")) +
   theme(panel.grid = element_blank(), panel.background = element_blank()) +
-  scale_x_continuous(breaks=seq(1,10,1), labels=seq(1,10,1)) +
+  scale_x_continuous(breaks=seq(1,8,1), labels=seq(1,8,1)) +
   ylab("Proption of Explained Variance\n") +
   xlab("\nPrincipal Component") +
   theme(axis.title=element_text(size=12))
@@ -113,7 +116,7 @@ pcadata<-pcadata %>% bind_cols(m)
 ```{r}
 cols<-viridis(17,option = "H")
 text12<-pcadata %>% group_by(Region) %>% summarize(x=mean(V1),y=mean(V2))
-ggplot(pcadata) +
+pc12<-ggplot(pcadata) +
   geom_jitter(aes(x=V1, y=V2, shape=Lineage, fill=Region), alpha=0.95, cex=2) +
   geom_label_repel(data=text12, aes(x=x, y=y, label=Region, fill=Region), alpha=0.8) +
  # geom_text_repel(data=pcadata %>% filter(Region %in% c("Taiwan")), aes(x=V1, y=V2,label=Run)) +
@@ -125,9 +128,93 @@ ggplot(pcadata) +
   theme(panel.grid = element_blank()) +
   xlab(paste0("PC1 ",var[1],"%")) +
   ylab(paste0("PC2 ",var[2],"%"))
-
+pc12
 ggsave("outputs/1211/sea-pca.pdf", width=6, height=5)
 ```
+```{r}
+blank <- grid.rect(gp=gpar(col="white"))
+```
+
+```{r}
+ggarrange(arrangeGrob(panela,blank, ncol=1), pc12+ggtitle("B") + theme(plot.title = element_text(size=14, face="bold")), widths = c(1,2))
+ggsave("outputs/1211/sea-pca.pdf", width=10, height=6)
+ggsave("outputs/1211/sea-pca.jpeg", width=10, height=6)
+
+```
+
+New Hybrids version
+```{r}
+m<-m41
+mm41<-m41 %>% mutate(NewPop=ifelse(Run %in% c("WJC9164","WJC9188","WJC9196","WJC9560"), "Taiwan2",as.character(Region) )) %>% select(NewPop)
+mm35<-m35 %>% mutate(NewPop=ifelse(Run %in% c("WJC9164","WJC9188","WJC9196","WJC9560"), "Taiwan2",as.character(Region) )) %>% select(NewPop)
+#vcf <-read.vcfR("outputs/1207/sea05/sea.vcf")
+vcf <-read.vcfR("outputs/1211/m35-05.vcf")
+
+gl<-vcfR2genlight(vcf)
+gl$pop<-as.factor(gsub(" ","-",mm35$NewPop))
+glt2 <- gl.compliance.check(gl) 
+gl3<-gl.filter.maf(glt2, threshold = 0.2)
+
+```
+
+
+```{r}
+snp<-import.snpR.data(gl3)
+
+structure<-plot_structure(snp, facet=c("pop"),
+               k=c(2,3,4,5,6))
+
+structure$plot
+
+ggsave("outputs/1211/sea-admixture-plot.pdf")
+```
+
+```{r}
+plot_clusters(snp, facets = c("pop"))
+```
+
+```{r}
+hyb <- gl.nhybrids(gl3,
+p0=c("Indonesia-SJ","Thailand","Vietnam","Cambodia"),
+p1=c("Philippines","Taiwan"),
+method="rand",
+nhyb.directory="~/github/newhybrids", # Specify as necessary
+outpath="~/github/lates-wgs/outputs/1211",  # Specify as necessary, usually getwd() [= workspace]
+BurnIn=100000,
+sweeps=50000,
+verbose=3,
+plot=FALSE)
+```
+
+```{r}
+out<-read_csv("outputs/1211/aa-PofZ.csv", col_names = c("Sequence ID","Region","NoName","P0","P1","F1","F2","0-BX","1-BX"), skip=1)
+
+long<-out %>% pivot_longer(cols = 4:9, names_to = c("Class"), values_to = c("Prob"))
+
+
+long$Region<-factor(long$Region, levels=c("Indonesia-K","Indonesia-SU","Indonesia-SJ","Thailand","Vietnam","Cambodia","Taiwan2","Taiwan","Philippines"))
+
+
+long$Class<-factor(long$Class, levels=c("P0","P1","F1","F2","0-BX","1-BX"))
+l2<-long %>% arrange(Region)
+l2$`Sequence ID`<-as.factor(l2$`Sequence ID`)
+
+ggplot(l2) + 
+  geom_tile(aes(x=`Sequence ID`, y=Class, fill=Prob)) +
+  scale_fill_viridis_c(direction=-1, option="plasma") +
+  facet_grid(.~Region, scales="free_x", space="free" ) +
+  theme_bw()+
+  theme(panel.grid=element_blank()) +
+  theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
+  xlab("Sequence ID") 
+
+ggsave("outputs/1211/taiwan-hybridization.pdf", width=12, height=6)
+ggsave("outputs/1211/taiwan-hybridization.jpeg", width=12, height=6)
+
+```
+
+
+
 
 ```{r}
 path_to_file <- "outputs/1211/m35-05.vcf"
@@ -190,42 +277,14 @@ ggsave("outputs/1211/sea-pca-nowallacean.pdf", width=6, height=5)
 ```
 
 
+
+
 ## Admix
 
 ```{r}
 m<-m18
 vcf <-read.vcfR("outputs/1211/taiwan-thai.vcf") 
 
-m<-m41
-vcf <-read.vcfR("outputs/1207/sea05/sea.vcf") 
-
-
-gl<-vcfR2genlight(vcf)
-gl$pop<-as.factor(gsub(" ","-",m$Region))
-```
-```{r}
-#glt<-gl[gl$pop %in% c("Taiwan","Thailand"),]
-
-glx<-gl
-glx <- gl.compliance.check(glx) 
-
-gl3<-gl.filter.maf(glx, threshold = 0.05)
-#gl3<-gl.filter.allna(gl3)
-gl3<-glx
-```
-
-
-```{r}
-snp<-import.snpR.data(gl3)
-
-structure<-plot_structure(snp, facet=c("pop"), facet.order = c("Indonesia-K", "Indonesia-SU","Indonesia-SJ",
-                                                               "Philippines","Taiwan","Vietnam","Cambodia",
-                                                               "Thailand"),
-               k=c(2,3,4,5))
-
-structure$plot
-
-ggsave("outputs/1211/taiwan-admixture-plot.pdf")
 ```
 
 ```{r}

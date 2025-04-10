@@ -1,0 +1,24 @@
+---
+title: "001-GenbankNotes"
+output: html_document
+date: "2025-03-04"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+_1_ GenBank for hatchery influences paper
+
+BioProject:
+
+```{sh, eval=FALSE}
+lftp subftp@ftp-private.ncbi.nlm.nih.gov
+cd uploads/drmaccampbell_gmail.com_0iwC7PhT
+mkdir aqua
+cd aqua
+mput *.fastq.gz
+
+```
+
+

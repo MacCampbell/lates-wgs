@@ -12,6 +12,11 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 library(tidyverse)
 library(RcppCNPy)
 library(pcadapt)
+library(ggrepel)
+library(viridis)
+library(vcfR)
+library(dartR)
+library(snpR)
 ```
 
 downloading broome data

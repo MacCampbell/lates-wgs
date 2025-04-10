@@ -115,6 +115,55 @@ ggplot(rdf) +
 }
 ```
 
+```{r, echo=FALSE}
+PlotAdmixtureNoLabels<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  ylab("Q\n") +
+  theme(legend.position = "") +
+  theme(axis.title.y=element_text(size=14, face="bold")) +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+  #theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  theme(axis.text.x=element_blank()) +
+  scale_fill_viridis_d(option="viridis") +
+  theme(axis.ticks.x = element_blank())
+
+}
+```
+
 ```{r}
 PlotAdmixture("outputs/1204/admixture/myplink2.2.Q", m103)
 ```
@@ -194,21 +243,140 @@ PlotAdmixture("outputs/1207/sea01/myplink2.2.Q", m41)
 ```
 
 ```{r}
-PlotAdmixture("outputs/1207/sea05/myplink2.2.Q", m41)
+a<-PlotAdmixtureNoLabels("outputs/1207/sea05/myplink2.2.Q", m41)
+a
 ```
 
 ```{r}
-PlotAdmixture("outputs/1207/sea05/myplink2.2.Q", m41)
+b<-PlotAdmixture("outputs/1207/sea05/myplink2.3.Q", m41)
+c<-PlotAdmixture("outputs/1207/sea05/myplink2.4.Q", m41)
 ```
 
 ```{r}
-PlotAdmixture("outputs/1207/sea05/myplink2.3.Q", m41)
+ggarrange(a+ggtitle("K=2")+theme(plot.title=element_text(size=18, face="bold",hjust=0.5)) +
+            scale_fill_viridis_d(option="rocket", alpha=0.8),
+          b+ggtitle("K=3")+theme(plot.title=element_text(size=18, face="bold",hjust=0.5)) +
+            scale_fill_viridis_d(option="rocket", alpha=0.8),
+          ncol=1, heights = c(1,1.25))
+
+ggsave("outputs/1207/sea-admixture.pdf", width=8, height=6)
+ggsave("outputs/1207/sea-admixture.jpeg", width=8, height=6)
+
+```
+
+```{r}
+d2<-read_tsv("~/Dropbox/Australian-fishes/barra-con-gen/admixture-analyses/SEA_k2.txt") %>% mutate(Region=population)
+
+d2$Region<-factor(d2$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
+                                           "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India East Coast","Sri Lanka","India West Coast"))
+d3<-d2 %>% dplyr::select(-admixID) %>% pivot_wider(names_from = ancestry, values_from = Q) %>% arrange(Region) %>% mutate(Index=1:n()) 
+d4<-d3 %>% pivot_longer(4:5, names_to = "Ancestry", values_to = "Q")
+labels<-d4 %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  dplyr::select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+ka<-ggplot(d4) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  ylab("Q\n") +
+  theme(legend.position = "") +
+  theme(axis.title.y=element_text(size=14, face="bold")) +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+    theme(axis.text = element_text(size=10, face="bold")) +
+  #theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  theme(axis.text.x=element_blank()) +
+  scale_fill_viridis_d(option="rocket", alpha=0.8) +
+  theme(axis.ticks.x = element_blank()) +
+  ggtitle("NGSAdmix\nK=2")+theme(plot.title=element_text(size=18, face="bold",hjust=0.5)) 
+
+ka
+```
+
+```{r}
+d2<-read_tsv("~/Dropbox/Australian-fishes/barra-con-gen/admixture-analyses/SEA_k3.txt") %>% mutate(Region=population)
+
+d2$Region<-factor(d2$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
+                                           "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India East Coast","Sri Lanka","India West Coast"))
+
+d2<-mutate(d2,NewAncestry=ifelse(ancestry=="Q1", "Q2",ifelse(ancestry=="Q2","Q1","Q3"))) %>% dplyr::select(-ancestry) %>% rename(ancestry=NewAncestry)
+d3<-d2 %>% dplyr::select(-admixID) %>% pivot_wider(names_from = ancestry, values_from = Q) %>% arrange(Region) %>% mutate(Index=1:n()) 
+d4<-d3 %>% pivot_longer(4:6, names_to = "Ancestry", values_to = "Q")
+labels<-d4 %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  dplyr::select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+rocket<-viridis(3,option = "rocket", alpha=0.8)
+kb<-ggplot(d4) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  ylab("Q\n") +
+  theme(legend.position = "") +
+  theme(axis.title.y=element_text(size=14, face="bold")) +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+    theme(axis.text = element_text(size=10, face="bold")) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+ # theme(axis.text.x=element_blank()) +
+  theme(axis.ticks.x = element_blank()) +
+  ggtitle("K=3")+theme(plot.title=element_text(size=18, face="bold",hjust=0.5)) +
+    scale_fill_viridis_d(option="rocket", alpha=0.8) 
+#  scale_fill_manual(values=c(rocket[2],rocket[1],rocket[3]))
+
+kb
+```
+
+#Both admixture/ngsadmix
+
+```{r}
+ggarrange(ka, kb, ncol=1, heights=c(1,1.25))
+```
+```{r}
+ggarrange(arrangeGrob(a+ggtitle("Admixture\nK=2")+theme(plot.title=element_text(size=18, face="bold",hjust=0.5)) +
+            scale_fill_viridis_d(option="rocket", alpha=0.8),
+          b+ggtitle("K=3")+theme(plot.title=element_text(size=18, face="bold",hjust=0.5)) +
+            scale_fill_viridis_d(option="rocket", alpha=0.8),
+          ncol=1, heights = c(1,1.25)),
+arrangeGrob(ggarrange(ka, kb, ncol=1, heights=c(1,1.25))))
+
+ggsave("outputs/1207/comb-sea-admixture.pdf", width=11, height=8)
+ggsave("outputs/1207/comb-sea-admixture.jpeg", width=11, height=8)
+
+```
+
+
+
+```{r}
+d2
 ```
 
 
 ```{r}
 PlotAdmixture("outputs/1207/sea05/myplink2.4.Q", m41)
 ```
+Plot as two figures
+
+
 
 
 ## Subset data...
