@@ -113,7 +113,7 @@ Broome08,Broome08,Broome08,Western Australia,Broome,222645191,193763704,41.3708,
 Broome09,Broome09,Broome09,Western Australia,Broome,202762440,177491562,37.5655,,AUS,data/broome,data/downsample/Broome09.reduced.bam
 Broome10,Broome10,Broome10,Western Australia,Broome,171600751,151953142,32.2395,,AUS,data/broome,data/downsample/Broome10.reduced.bam
 Fitzroy01,Fitzroy01,Fitzroy01,Western Australia,Fitzroy River,212711523,184316324,39.0858,,AUS,data/broome,data/downsample/Fitzroy01.reduced.bam
-1613156,1613156,1613156,Myanmar,river estuaries between Yangon and Sittang,255617622,215385799,43.8829,,uwisara,data/downsample/1613156.reduced.bam,
-1613186,1613186,1613186,Myanmar,river estuaries between Yangon and Sittang,319315511,267501410,54.4193,,uwisara,data/downsample/1613186.reduced.bam,
-1613217,1613217,1613217,Myanmar,river estuaries between Yangon and Sittang,262785983,220530140,44.9238,,uwisara,data/downsample/1613217.reduced.bam,
-1613247,1613247,1613247,Myanmar,river estuaries between Yangon and Sittang,241004825,206567626,41.8698,,uwisara,data/downsample/1613247.reduced.bam,
+1613156,1613156,1613156,Myanmar,river estuaries between Yangon and Sittang,255617622,215385799,43.8829,,uwisara,data/uwisara,data/downsample/1613156.reduced.bam
+1613186,1613186,1613186,Myanmar,river estuaries between Yangon and Sittang,319315511,267501410,54.4193,,uwisara,data/uwisara,data/downsample/1613186.reduced.bam
+1613217,1613217,1613217,Myanmar,river estuaries between Yangon and Sittang,262785983,220530140,44.9238,,uwisara,data/uwisara,data/downsample/1613217.reduced.bam
+1613247,1613247,1613247,Myanmar,river estuaries between Yangon and Sittang,241004825,206567626,41.8698,,uwisara,data/uwisara,data/downsample/1613247.reduced.bam

@@ -49,6 +49,7 @@ bash ../../doAlign-zipped.sh to-align.txt /home/maccamp/lates-wgs/genome/GCF_001
 
 ```{r}
 m118<-read_csv("meta/m118.csv")
+m118 %>% select(NewPath) %>% write_tsv("bamlists/118.bamlist", col_names = FALSE)
 down<-m118 %>% filter(Region=="Myanmar") %>% mutate(Frac=7/Coverage) %>%
   mutate(Command = paste0("samtools view -bs ", Frac, " ", "data/uwisara/",Run,".sort.flt.bam", " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;"," samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;")) 
 down %>% select(Command)
@@ -56,3 +57,14 @@ down %>% select(Command)
 ```
 
 # Trial of Chromosome 1 to visualize PCA of all samples.
+
+need a bamlist
+
+srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angsd -P 6  \
+-bam bamlists/188.bamlist -r NC_066833.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 106 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1301/118-ibs-90 > outputs/1301/118-ibs-90.out 2> outputs/1301/118-ibs-90.err &
+
