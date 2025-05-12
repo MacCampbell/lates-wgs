@@ -1,0 +1,71 @@
+---
+title: "1302-kinship"
+output: html_document
+date: "2025-05-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+
+Can we identify kinship in a sample of barra?
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+main<-read_csv("meta/m118.csv") %>% filter(Locality=="Mainstream")
+
+```
+
+```{r, eval=FALSE}
+main %>% select(NewPath) %>% write_tsv("bamlists/kin.bamlist", col_names = FALSE)
+```
+
+Make duplicates, then combine a couple for fake kin.
+
+in data/kin
+
+```{sh, eval=FALSE}
+cp ../data/downsample/Mainstream1.reduced.bam ./kin/Dup1.bam
+cp ../data/downsample/Mainstream2.reduced.bam ./kin/Dup2.bam
+cp ../data/downsample/Mainstream3.reduced.bam ./kin/Dup3.bam
+for f in *.bam; do samtools index $f; done;
+
+samtools merge -o Comb12.bam Dup1.bam Dup2.bam; samtools merge -o Comb13.bam Dup1.bam Dup3.bam; samtools merge -o Comb23.bam Dup2.bam Dup3.bam; 
+
+for f in Comb*.bam; do samtools index $f; done;
+```
+
+Have 18 samples!
+
+## Analysis
+in outputs/1302
+18 individuals
+
+srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angsd -P 6  \
+-bam bamlists/118.bamlist -rf meta/lates-lgs.txt \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 106 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1301/118-ibs-90 > outputs/1301/118-ibs-90.out 2> outputs/1301/118-ibs-90.err &
+
+```{sh, eval=FALSE}
+# https://github.com/ANGSD/NgsRelate
+### First we generate a file with allele frequencies (angsdput.mafs.gz) and a file with genotype likelihoods (angsdput.glf.gz).
+
+srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angsd -P 6  \
+-b bamlists/kin.bamlist -rf meta/lates-lgs.txt \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 16 -minMapQ 20 -minQ 20 \
+-GL 2 -doMajorMinor 1 -doMaf 1 -snp_pval 1e-6 -minMaf 0.05 -doGlf 3 \
+-out outputs/1302/kin > outputs/1302/kin.out 2> outputs/1302/kin.err &
+
+zcat outputs/1302/kin.mafs.gz | cut -f6 |sed 1d > outputs/1302/freq
+
+```
+
+

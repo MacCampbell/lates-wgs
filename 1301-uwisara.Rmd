@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 
 ```{r}
 library(tidyverse)
+library(ggrepel)
 ```
 
 putting in data/uwisara
@@ -50,6 +51,8 @@ bash ../../doAlign-zipped.sh to-align.txt /home/maccamp/lates-wgs/genome/GCF_001
 ```{r}
 m118<-read_csv("meta/m118.csv")
 m118 %>% select(NewPath) %>% write_tsv("bamlists/118.bamlist", col_names = FALSE)
+ind<-m118 %>% filter(Lineage %in% c("IND","uwisara","lakdiva"))
+ind  %>% select(NewPath) %>% write_tsv("bamlists/27.bamlist", col_names = FALSE)
 down<-m118 %>% filter(Region=="Myanmar") %>% mutate(Frac=7/Coverage) %>%
   mutate(Command = paste0("samtools view -bs ", Frac, " ", "data/uwisara/",Run,".sort.flt.bam", " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;"," samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;")) 
 down %>% select(Command)
@@ -58,13 +61,170 @@ down %>% select(Command)
 
 # Trial of Chromosome 1 to visualize PCA of all samples.
 
-need a bamlist
 
+```{sh, eval=FALSE}
 srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angsd -P 6  \
--bam bamlists/188.bamlist -r NC_066833.1 \
+-bam bamlists/118.bamlist -r NC_066833.1 \
 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 106 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/1301/118-ibs-90 > outputs/1301/118-ibs-90.out 2> outputs/1301/118-ibs-90.err &
 
+
+
+
+srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angsd -P 6  \
+-bam bamlists/118.bamlist -rf meta/lates-lgs.txt \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 106 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1301/118-ibs-90 > outputs/1301/118-ibs-90.out 2> outputs/1301/118-ibs-90.err &
+
+#	-> Number of sites retained after filtering: 160916 
+
+```
+
+
+
+```{r}
+m <- as.matrix(read.table("outputs/1301/118-ibs-90.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+
+vdf<-var %>% as_tibble() %>% rename(Variance=value) %>% mutate(PC=1:n()) %>% head(n=10)
+
+ggplot(vdf) +
+  geom_line(aes(x=PC, y=Variance)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_x_continuous(breaks=vdf$PC) +
+  theme(axis.text=element_text(size=8))
+
+ggsave("outputs/1301/range-wide-scree-plot.jpeg")
+```
+
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(m118)
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Lineage), pch=21, alpha=0.75, cex=2) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="magma") +
+  ggtitle("PCA of Lates WGS Data") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+ggsave("outputs/1301/lates-range-wide-pc12.jpeg")
+
+text13<-covs %>% select(Run, Region, V1, V3) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
+
+ggplot(covs) +
+  geom_point(aes(x=V1, y=V3, fill=Locality), pch=21, alpha=0.75, cex=2) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC3", " ", round((100*var[3]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="magma") +
+  ggtitle("PCA of Lates WGS Data") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+```
+
+# Indian Ocean ones
+
+```{sh}
+srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angsd -P 6  \
+-bam bamlists/27.bamlist -r NC_066833.1 \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 24 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1301/27-ibs-90 > outputs/1301/27-ibs-90.out 2> outputs/1301/27-ibs-90.err &
+
+
+#	-> Number of sites retained after filtering: 216071 
+
+
+srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angsd -P 6  \
+-bam bamlists/27.bamlist -rf meta/lates-lgs.txt \
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 24 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1301/27-ibs-90 > outputs/1301/27-ibs-90.out 2> outputs/1301/27-ibs-90.err &
+
+```
+
+
+
+```{r}
+m <- as.matrix(read.table("outputs/1301/27-ibs-90.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+
+vdf<-var %>% as_tibble() %>% rename(Variance=value) %>% mutate(PC=1:n()) %>% head(n=10)
+
+ggplot(vdf) +
+  geom_line(aes(x=PC, y=Variance)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_x_continuous(breaks=vdf$PC) +
+  theme(axis.text=element_text(size=8))
+
+ggsave("outputs/1301/indian-ocean-scree-plot.jpeg")
+```
+
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(ind)
+
+text12<-covs %>% dplyr::select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Lineage), pch=21, alpha=0.75, cex=2) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="magma") +
+  ggtitle("PCA of Lates WGS Data") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+ggsave("outputs/1301/indian-ocean-lates-pc12.jpeg")
+
+text13<-covs %>% dplyr::select(Run, Region, V1, V3) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
+
+ggplot(covs) +
+  geom_point(aes(x=V1, y=V3, fill=Lineage), pch=21, alpha=0.75, cex=2) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC3", " ", round((100*var[3]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="magma") +
+  ggtitle("PCA of Lates WGS Data") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+```

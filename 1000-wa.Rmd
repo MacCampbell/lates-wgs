@@ -148,10 +148,38 @@ Others, let's downsample to 30.
 
 
 ```{r}
-conebay<-dg %>% filter(site_2=="Cone Bay") %>% mutate(ToSequence=Count) %>% select(-Count, -`Sample Size`)
-others<-dg %>% filter(site_2!="Cone Bay")  %>% mutate(ToSequence=ifelse(Count > 30, 30, Count)) %>% select(-Count, -`Sample Size`)
+conebay<-dg %>% filter(site_2=="Cone Bay") %>% mutate(ToSequence=Count) %>% dplyr::select(-Count, -`Sample Size`)
+others<-dg %>% filter(site_2!="Cone Bay")  %>% mutate(ToSequence=ifelse(Count > 30, 30, Count)) %>% dplyr::select(-Count, -`Sample Size`)
 toseq<-others %>% bind_rows(conebay)
 toseq %>% ungroup() %>% summarize(Sum=sum(ToSequence))
 ```
 
-860 fish
+860 
+
+## Get some more samples from Dave Morgan
+
+```{r}
+fitz<-read_csv("~/Dropbox/Australian-fishes/wa-barra/from-dave-morgan/Barramundi biologicals Fitzroy-MAC edit.csv")
+sites<-fitz %>% group_by(SITE, Latitude, Longitude) %>% summarize(`Sample Size`=n()) %>% filter(!Latitude %in% c(NA,"?"))
+sites$Latitude<-as.numeric(sites$Latitude)
+sites$Longitude<-as.numeric(sites$Longitude)
+sites 
+```
+
+
+```{r}
+ggplot() +
+  geom_raster(data = rast.table, mapping = aes(x = x, y = y), fill = rast.table$rgb, interpolate = TRUE)  +
+  geom_sf(data=oz, fill=NA) +
+  geom_jitter(data=sites, aes(x=Longitude, y=Latitude, size=`Sample Size`, fill=`Sample Size`), pch=21, alpha=0.75) +
+  geom_text_repel(data=sites, aes(x=Longitude, y=Latitude, label=SITE), max.overlaps = Inf) +
+ # geom_text_repel(data=site2, aes(x=Longitude, y=Latitude, label=site_2), max.overlaps = Inf) +
+  coord_sf(xlim = c(domain[1]+5,domain[2]-5), ylim=c(domain[3]+3, domain[4]-2)) +
+  ylab("Latitude\n") +
+  xlab("\nLongitude") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_c(option="magma")
+
+ggsave("outputs/1000/morgans-fitz-samples.pdf", width=11, height=8)
+```
