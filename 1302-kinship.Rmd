@@ -13,11 +13,11 @@ Can we identify kinship in a sample of barra?
 
 ```{r}
 library(tidyverse)
+library(viridis)
 ```
 
 ```{r}
 main<-read_csv("meta/m118.csv") %>% filter(Locality=="Mainstream")
-
 ```
 
 ```{r, eval=FALSE}
@@ -39,19 +39,17 @@ samtools merge -o Comb12.bam Dup1.bam Dup2.bam; samtools merge -o Comb13.bam Dup
 for f in Comb*.bam; do samtools index $f; done;
 ```
 
-Have 18 samples!
+Have 18 samples! Edited bamlists/kin.bamlist by hand.
+
+```{r}
+bamlist<-read_tsv("bamlists/kin.bamlist", col_names = c("NewPath"))
+bamlist
+```
 
 ## Analysis
 in outputs/1302
 18 individuals
 
-srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angsd -P 6  \
--bam bamlists/118.bamlist -rf meta/lates-lgs.txt \
--ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--minInd 106 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
--doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
--doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
--out outputs/1301/118-ibs-90 > outputs/1301/118-ibs-90.out 2> outputs/1301/118-ibs-90.err &
 
 ```{sh, eval=FALSE}
 # https://github.com/ANGSD/NgsRelate
@@ -64,8 +62,98 @@ srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angs
 -GL 2 -doMajorMinor 1 -doMaf 1 -snp_pval 1e-6 -minMaf 0.05 -doGlf 3 \
 -out outputs/1302/kin > outputs/1302/kin.out 2> outputs/1302/kin.err &
 
+### Then we extract the frequency column from the allele frequency file and remove the header (to make it in the format NgsRelate needs)
+
 zcat outputs/1302/kin.mafs.gz | cut -f6 |sed 1d > outputs/1302/freq
+
+### run NgsRelate
+module load ngsrelate/2.0     
+srun -p high -t 12:00:00 --mem=32G --nodes=1 --cpus-per-task=2 ngsRelate -g outputs/1302/kin.glf.gz -n 18 -f outputs/1302/freq  -O outputs/1302/kin-res.tsv
 
 ```
 
+```{sh, eval=FALSE}
+        -> Total number of sites analyzed: 561133706
+        -> Number of sites retained after filtering: 1339952 
+        [ALL done] cpu-time used =  11670.12 sec
+        [ALL done] walltime used =  5466.00 sec
 
+
+srun: job 23027799 queued and waiting for resources
+srun: job 23027799 has been allocated resources
+        -> Seed is: 1776028300
+        -> Frequency file: 'outputs/1302/freq' contain 1339952 number of sites
+        -> nind:18 overall_number_of_sites:1339952
+        -> Done reading data from file: 1.71 2.00
+        -> Starting analysis now
+        -> length of joblist:153
+        [ALL done] cpu-time used =  920.68 sec (filereading took: 1.71 sec)
+        [ALL done] walltime used =  464.00 sec (filereading took: 2.00 sec)
+```
+
+Convert bamlist so something useful, bamlist is 0 referenced
+
+```{r}
+mkin<-bamlist
+mkin$NewPath<-gsub("data/downsample/|.reduced.bam|data/kin/|.bam","",mkin$NewPath) 
+mkin<-mkin %>% mutate(SampleID=1:n()) %>% rename(SampleName=NewPath)
+mkin$SampleID=mkin$SampleID-1
+mkin
+```
+
+Get data and join on sample names
+```{r}
+rel<-read_tsv(file = "outputs/1302/kin-res.tsv") %>% left_join(mkin, by=c("a"="SampleID")) %>% 
+  rename(SampleNameA=SampleName) %>%
+  left_join(mkin, by=c("b"="SampleID")) %>% 
+  rename(SampleNameB=SampleName) %>% relocate(SampleNameA, SampleNameB)
+
+rel %>% arrange(-theta) %>% select(SampleNameA, SampleNameB, rab, theta) %>% 
+  write_csv("outputs/1302/dummy-kin.csv")
+
+rel %>% arrange(-theta) %>% select(SampleNameA, SampleNameB, rab, theta) %>% 
+  filter(rab>0.5)
+```
+
+some colors
+
+```{r}
+cols<-viridis(6, alpha=0.75)
+```
+
+plot 
+
+```{r}
+ggplot(rel)+geom_histogram(aes(x=rab), bins=50, fill="grey", color="grey") +
+  geom_vline(xintercept =.50, col=cols[1]) + #Parent offspring/full sibs
+  geom_vline(xintercept =.25, col=cols[2]) + #2nd degree half sib, grandparent, aunt/uncle, double first cousins
+  geom_vline(xintercept =.125, col=cols[3]) + # 3rd cousins
+  geom_vline(xintercept = .0625, col=cols[4]) + 
+  geom_vline(xintercept = .03125, col=cols[5]) +
+  geom_vline(xintercept = 0.0, col=cols[6]) +
+  scale_x_continuous(breaks=c(0,.03125, .0625, .125, .25, .5),
+                     labels=c("0 / Unrelated","5th Deg.","4th Deg.","3rd Deg.", "2nd Deg.", "1st Deg.")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(hjust=1, angle=45)) +
+  theme(panel.grid=element_blank()) +
+  ylab("Count") +
+  xlab("Pairwise Relatedness") 
+```
+
+
+```{r}
+ggplot(rel)+geom_histogram(aes(x=theta), bins=50, fill="grey", color="grey") +
+  geom_vline(xintercept =.25, col=cols[1]) + #Parent offspring/full sibs
+  geom_vline(xintercept =.125, col=cols[2]) + #2nd degree
+  geom_vline(xintercept =.0625, col=cols[3]) + # 3rd
+  geom_vline(xintercept = .0313, col=cols[4]) +
+  geom_vline(xintercept = .0156, col=cols[5]) +
+  geom_vline(xintercept = 0.0, col=cols[6]) +
+  scale_x_continuous(breaks=c(0,0.0156, 0.0313, 0.0625, 0.125, 0.25),
+                     labels=c("0 / Unrelated","5th Deg.","4th Deg.","3rd Deg.", "2nd Deg.", "1st Deg.")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(hjust=1, angle=45)) +
+  theme(panel.grid=element_blank()) +
+  ylab("Count") +
+  xlab("Kinship Coefficient")
+```
