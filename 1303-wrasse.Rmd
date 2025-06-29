@@ -1,0 +1,31 @@
+---
+title: "1303-wrasse"
+output: html_document
+date: "2025-06-29"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warnign=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+Have data from Sam in data/wrasse
+
+gl.vcf = unfiltered data from DArT
+bg_metadata_mc.csv = metadata for unfiltered data from DArT
+
+gl.qc.vcf = filtered data with basic quality control:
+	- read depth 10X to 200X
+	- reproducibility > 90% (see dart for description) 
+	- locus callrate (missing data) > 90%
+	- minor allele count > 1 (singletons removed)
+	- individual callrate > 90%
+	- individual heterozygosity > 0.25 (outliers removed, plausible cross-contamination)
+bg_metadata_mc_qc.csv = metadata for filtered data with basic qc
+
+
+hmmm... I don't get the position information, asked Sam.
+
