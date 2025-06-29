@@ -1,0 +1,153 @@
+---
+title: "1215-genome-wide-called-pca"
+output: html_document
+date: "2025-06-20"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(dartR)
+library(snpR)
+library(grid)
+library(ggpubr)
+library(phytools)
+library(tanggle)
+library(phangorn)
+library(viridis)
+library(pcadapt)
+library(ape)
+library(ggrepel)
+```
+
+```{r}
+m103<-read_csv("meta/m103.csv")
+m103$Region<-factor(m103$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
+                                           "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India East Coast","Sri Lanka","India West Coast"))
+```
+
+```{r}
+path_to_file <- "outputs/1204/pruned-01-maf01-45.vcf.gz"
+#path_to_file <- "outputs/1204/pruned-01-maf10-45.vcf"
+
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+
+
+_1_ choose a K   
+
+```{r}
+x <- pcadapt(input = filename, K = 20) 
+```
+
+```{r}
+var<-round(x$singular.values^2*100,2)
+var
+```
+
+```{r}
+#plot(x, option = "screeplot")
+panela<-plot(x, option = "screeplot", K = 10) + ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  scale_x_continuous(breaks=seq(1,10,1), labels=seq(1,10,1)) +
+  ylab("Proption of Explained Variance\n") +
+  xlab("\nPrincipal Component") +
+  theme(axis.title=element_text(size=12))
+panela
+```
+```{r}
+m<-m103
+```
+
+```{r}
+plot(x, option = "scores", pop = factor(m$Region, levels=c("Northern Territory","Queensland",
+                                                           "Papua New Guinea","Mainstream","OceanPick","Indonesia-K","Indonesia-SU",
+                                                           "Indonesia-SJ",
+                                                           
+                                      "Philippines","Taiwan","Vietnam","Cambodia","Thailand","Bangladesh","Sri Lanka",
+                                              "India East Coast","India West Coast"))) 
+ 
+```
+
+
+Get scree plot and PCA. set up aes
+ [1] Northern Territory Queensland         India East Coast   India West Coast   Indonesia-K        Indonesia-SJ       Indonesia-SU       Cambodia          
+ [9] Papua New Guinea   Philippines        Thailand           Vietnam            Bangladesh         Sri Lanka          Mainstream         OceanPick         
+[17] Taiwan   
+```{r}
+pcadata<-x$scores[,1:5] %>% as_tibble()
+pcadata<-pcadata %>% bind_cols(m)
+pcadata<-pcadata %>% mutate(Origin=ifelse(Region %in% c("Sri Lanka","India East Coast","India West Coast","Bangladesh"),"Indian Ocean",
+                          ifelse(Region %in% c("Northern Territory","Queensland","Papua New Guinea"),"Australasia",
+                          ifelse(Region %in% c("Philippines","Vietnam","Mainstream","OceanPick"),"Aquaculture","Southeast &\nEast Asian"))))
+pcadata$Origin<-factor(pcadata$Origin, levels=c("Indian Ocean","Southeast &\nEast Asian","Australasia","Aquaculture"))
+```
+
+
+```{r}
+pcb<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V2, shape=Origin, fill=Region), alpha=0.95) +
+  scale_shape_manual(values=c(23,24,21,22)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 2") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+
+
+#labels13<-pcadata %>% filter(Region %in% c("Indonesia-K","Indonesia-SU")) %>% 
+ # select(Region,V1, V3) %>% group_by(Region) %>% summarize(x=mean(V1), y=mean(V3)) 
+
+pcc<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V3, shape=Origin, fill=Region), alpha=0.9) +
+#  geom_text_repel(data=labels13, aes(x=x, y=y, label=Region))+
+  scale_shape_manual(values=c(23,24,21,22)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  theme(legend.position = "none") +
+
+  xlab("PC 1") +
+  ylab("PC 3") +
+  ggtitle("C") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+
+pcd<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V4, shape=Origin, fill=Region), alpha=0.9) +
+#  geom_text_repel(data=labels13, aes(x=x, y=y, label=Region))+
+  scale_shape_manual(values=c(23,24,21,22)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 4") +
+  ggtitle("D") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+```
+
+```{r}
+blank <- grid.rect(gp=gpar(col="white"))
+```
+
+
+
+```{r}
+a<-ggplotGrob(ggarrange(panela, pcb, blank, ncol=3, widths=c(1,1.2,.5)))
+bc<-ggplotGrob(ggarrange(pcc, pcd, ncol=2, widths=c(1,1.4)))
+ggarrange(a,bc, ncol=1, heights=c(1,1))
+
+ggsave("outputs/1215/called-snp-pcas.pdf", width=12, height=10)
+```

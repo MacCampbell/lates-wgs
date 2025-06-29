@@ -29,7 +29,7 @@ m103$Region<-factor(m103$Region, levels=c("Queensland","Northern Territory","Pap
 Creating origin classes.   
 ```{r}
 origin<-m103 %>% mutate(Origin=ifelse(Lineage=="IND","Indian Ocean",
-                       ifelse(Region %in% c("Mainstream","OceanPick"),"Aquaculture",
+                       ifelse(Region %in% c("Mainstream","OceanPick","Vietnam","Philippines"),"Aquaculture",
                        ifelse(Region %in% c("Queensland","Northern Territory","Papua New Guinea"),"Australasia","Southeast & \nEast Asian"))))
 origin$Origin<-factor(origin$Origin, levels=c("Indian Ocean","Australasia","Aquaculture","Southeast & \nEast Asian"))
 ```
@@ -111,6 +111,8 @@ panelA
 ```{r}
 pcs<-read_tsv("~/Dropbox/Australian-fishes/barra-con-gen/lca03-analyses/barra_LG03_CI1.txt")
 pcs <- pcs %>% left_join(origin, by=c("Sample_ID"="Run"))
+pcs$Origin<-factor(pcs$Origin, levels=c("Indian Ocean","Southeast & \nEast Asian",
+                                        "Australasia","Aquaculture"))
 ```
 
 ```{r}
@@ -129,11 +131,11 @@ panelB
 
 ```{r}
 ggarrange(panelA, 
-          panelB + theme(legend.position = "none"),
+          panelB,
           panelC,
           ncol = 1)
 
-ggsave("outputs/1214/lca03-01.pdf", width=8.5/2, height=11)
-ggsave("outputs/1214/lca03-01.jpeg", width=8.5/2, height=11)
+ggsave("outputs/1214/lca03-01.pdf", width=9/2, height=11)
+ggsave("outputs/1214/lca03-01.jpeg", width=9/2, height=11)
 
 ```

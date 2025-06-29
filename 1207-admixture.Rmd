@@ -236,7 +236,11 @@ ggplot(scores) +
   theme(panel.grid = element_blank()) +
   scale_x_continuous(breaks=(1:nrow(scores)))
 ```
+```{r}
+read_delim("outputs/1207/sea01/myplink2.2.Q", delim=" ",col_names = c("Q1","Q2")) %>% bind_cols(m41) %>% filter(Region=="Taiwan")
 
+read_delim("outputs/1207/sea01/myplink2.2.Q", delim=" ",col_names = c("Q1","Q2")) %>% bind_cols(m41) %>% filter(Region=="Taiwan") %>% select(Run)
+``` 
 
 ```{r}
 PlotAdmixture("outputs/1207/sea01/myplink2.2.Q", m41)

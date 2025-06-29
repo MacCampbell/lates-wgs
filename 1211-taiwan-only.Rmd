@@ -13,6 +13,7 @@ What if we only look at Taiwan and filter for MAF and such, do we still see sepa
 
 ```{r}
 library(tidyverse)
+library(viridis)
 library(grid)
 library(ggpubr)
 library(ggrepel)
@@ -110,17 +111,17 @@ Get scree plot and PCA
 ```{r}
 pcadata<-x$scores[,1:5] %>% as_tibble()
 pcadata<-pcadata %>% bind_cols(m)
-
+pcadata<-pcadata %>% mutate(Shape=ifelse(Region %in% c("Philippines","Vietnam"),22,24))
 ```
 
 ```{r}
 cols<-viridis(17,option = "H")
 text12<-pcadata %>% group_by(Region) %>% summarize(x=mean(V1),y=mean(V2))
 pc12<-ggplot(pcadata) +
-  geom_jitter(aes(x=V1, y=V2, shape=Lineage, fill=Region), alpha=0.95, cex=2) +
+  geom_jitter(aes(x=V1, y=V2, fill=Region), shape=pcadata$Shape,alpha=0.95, cex=2) +
   geom_label_repel(data=text12, aes(x=x, y=y, label=Region, fill=Region), alpha=0.8) +
  # geom_text_repel(data=pcadata %>% filter(Region %in% c("Taiwan")), aes(x=V1, y=V2,label=Run)) +
-  scale_shape_manual(values=c(24)) + 
+ # scale_shape_manual(values=c(24)) + 
   scale_fill_manual(values=cols[6:13]) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
   theme_bw() +

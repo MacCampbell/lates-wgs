@@ -1,0 +1,119 @@
+---
+title: "1302-de-novo-mtdna"
+output: html_document
+date: "2025-06-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+m118<-read_csv("meta/m118.csv")
+```
+
+see 1203 for a generation of paths
+
+
+https://github.com/Kinggerm/GetOrganelle
+
+Let's run this a few times and see what we get!!!
+
+conda create -n getorganelle
+conda activate getorganelle
+conda install -c bioconda getorganelle
+get_organelle_config.py -a animal_mt
+
+Basic approach:
+get_organelle_from_reads.py -1 forward.fq -2 reverse.fq -R 10 -k 21,45,65,85,105 -F animal_mt -o animal_mt_out   
+
+
+Basic commands from spades:
+srun -p bigmemm -t 168:00:00 --mem=520GB --nodes=1 --cpus-per-task=6 spades.py --phred-offset 33 -1 data/uwisara/1613156-R1.fastq.gz -2 data/uwisara/1613156-R2.fastq.gz -o data/denovo/1613156 > data/denovo/1613156.out 2> data/denovo/1613156.err &
+srun -p bigmemm -t 168:00:00 --mem=520GB --nodes=1 --cpus-per-task=6 spades.py --phred-offset 33 -1 data/uwisara/1613186-R1.fastq.gz -2 data/uwisara/1613186-R2.fastq.gz -o data/denovo/1613186 > data/denovo/1613186.out 2> data/denovo/1613186.err &
+srun -p bigmemm -t 168:00:00 --mem=520GB --nodes=1 --cpus-per-task=6 spades.py --phred-offset 33 -1 data/uwisara/1613217-R1.fastq.gz -2 data/uwisara/1613217-R2.fastq.gz -o data/denovo/1613217 > data/denovo/1613217.out 2> data/denovo/1613217.err &
+srun -p bigmemm -t 168:00:00 --mem=520GB --nodes=1 --cpus-per-task=6 spades.py --phred-offset 33 -1 data/uwisara/1613247-R1.fastq.gz -2 data/uwisara/1613247-R2.fastq.gz -o data/denovo/1613247 > data/denovo/1613247.out 2> data/denovo/1613247.err &
+
+```{sh, eval=FALSE}
+conda activate getorganelle
+
+srun -p high -t 48:00:00 --mem=62GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/uwisara/1613156-R1.fastq.gz -2 data/uwisara/1613156-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/1613156
+```
+
+Total cost 17105.34 s
+2025-06-27 00:10:34,814 - INFO: Writing PATH1 of complete animal_mt to data/harvest/1613156/animal_mt.K105.complete.graph1.1.path_sequence.fasta
+
+putting in outputs/1302/1613156.fasta and annotating.... Looks complete!
+
+Set up additional samples
+```{sh, eval=FALSE}
+
+conda activate getorganelle
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/uwisara/1613186-R1.fastq.gz -2 data/uwisara/1613186-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/1613186 > data/harvest/1613186.out 2> data/harvest/1613186.err &
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/uwisara/1613217-R1.fastq.gz -2 data/uwisara/1613217-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/1613217 > data/harvest/1613217.out 2> data/harvest/1613217.err &
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/uwisara/1613247-R1.fastq.gz -2 data/uwisara/1613247-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/1613247 > data/harvest/1613247.out 2> data/harvest/1613247.err &
+
+```
+
+Pulled out CR
+
+in data/cr
+
+combined, but dropped 1613247 because lacks a big indel in the others:
+>1613247 D-loop
+ATACTGAACTTATATTACGTAAATACTAAATACATGTATGTATTTTCACCATACTTATAT
+GTCAACCATAATTAATCCATATGGTGTAAATACATATATGTTTAATCAACATTAGACCCT
+AAATGTACTATTAATCATATTAAGTATAAAAACATAATAACTATAAATGCTTTAGCGCTT
+TAATTTTTAATCCAAACATTCGATAATCTCTAGTACAAGATTCCTCTAAACATTTTAAAA
+TTCAATATACTAACCCTTAATTCAATATAATGAGAGACCACCAACCAGTGAATTTCGAAG
+TGTTAGCGATCCTTGATAATCAAGGACAGATAACTGTGAGGGTAACACAAATTGAATTAT
+TACTGGCATTTGGTTCCTACCTCAGGTCCATAACGAATAAAACATTCCCCTAACGTTCCT
+TCATAAATGGCATAAGTTAATGGTGGAATACATGAACCCTCGTTACCCACCAAGCCGAGC
+CTTCTCTCCAGCGGGTAAGGGGTTTTTTCTTATTTTTTTCTCATTTCATCTTGCATATCA
+CAGTGTAAAAAACAATTGAAATTAAGGTGGCACATAATTTTTTTAAATATTGTAATAAAA
+GTAATGCCAGGTGAATGGTGAAAGGACTTGGTTTAGAAAAGTTGACATAATAAAATCTCA
+CGAGCATAAGCATTGACTGATCTCCCAACTCCCAGTTATATCTATTACCTACCCCGTTAA
+TTTTACGCGCAAAAATCTTCGCAAAGATCGGAAGAGCACACGTCTGAACTCCAACATACC
+CCCGGAGGGTGGAGAGAAAAAAAACCCCCCCCCCCCCCCCCCCCCAAAACTCCCGGGATC
+ACTAACACTCCTGATAAACACCCCAGAAACAGGAAAGCCCCGCGATATTCGGCCTTAATT
+TAAAAATACATTATTTACACCATTTACACTATTTAAAATATTTTAAGTT
+
+Putting it back in, because whatever, doesn't seem to matter.
+
+
+
+(base) ➜  cr git:(main) ✗ iqtree2 -m MFP -bb 10000 -s comb.afasta --redo
+
+Trying with all the seqs...
+cat vij-popset-cr.fasta uwisara-cr.fasta > popset-uwisara.fas
+ mafft popset-uwisara.fas > popset-uwisara.afas
+ iqtree2 -m MFP -bb 10000 -s popset-uwisara.afas --redo
+ 
+ 
+## Lates lakdiva!
+data/lakdiva
+
+Mannar1
+Trinco1
+Jaffna1
+
+
+Set up additional samples
+```{sh, eval=FALSE}
+
+conda activate getorganelle
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/lakdiva/Jaffna1-R1.fastq.gz -2 data/lakdiva/Jaffna1-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/Jaffna1 > data/harvest/Jaffna1.out 2> data/harvest/Jaffna1.err &
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/lakdiva/Mannar1-R1.fastq.gz -2 data/lakdiva/Mannar1-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/Mannar1 > data/harvest/Mannar1.out 2> data/harvest/Mannar1.err &
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/lakdiva/Trinco1-R1.fastq.gz -2 data/lakdiva/Trinco1-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/Trinco1 > data/harvest/Trinco1.out 2> data/harvest/Trinco1.err &
+
+```

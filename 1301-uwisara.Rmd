@@ -244,8 +244,9 @@ is spades.py
 Create commands:
 
 ```{r}
+conda activate spades
 #trialing indonesian sample
-ind %>% filter(Lineage=="uwisara") %>% mutate(Command=paste0("srun -p bigmemm -t 72:00:00 --mem=520GB --nodes=1 --cpus-per-task=6 spades.py --phred-offset 33 -1 data/uwisara/",Run,"-R1.fastq.gz -2 data/uwisara/",Run,"-R2.fastq.gz -o data/denovo/",Run," > data/denovo/",Run,".out 2> data/denovo/",Run,".err &")) %>% select(Command) %>%
+ind %>% filter(Lineage=="uwisara") %>% mutate(Command=paste0("srun -p bigmemm -t 168:00:00 --mem=520GB --nodes=1 --cpus-per-task=6 spades.py --phred-offset 33 -1 data/uwisara/",Run,"-R1.fastq.gz -2 data/uwisara/",Run,"-R2.fastq.gz -o data/denovo/",Run," > data/denovo/",Run,".out 2> data/denovo/",Run,".err &")) %>% select(Command) %>%
   write_tsv("1301.2-spades.txt")
 ```
 
