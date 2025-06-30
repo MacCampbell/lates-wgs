@@ -243,7 +243,7 @@ is spades.py
 
 Create commands:
 
-```{r}
+```{sh, eval=FALSE}
 conda activate spades
 #trialing indonesian sample
 ind %>% filter(Lineage=="uwisara") %>% mutate(Command=paste0("srun -p bigmemm -t 168:00:00 --mem=520GB --nodes=1 --cpus-per-task=6 spades.py --phred-offset 33 -1 data/uwisara/",Run,"-R1.fastq.gz -2 data/uwisara/",Run,"-R2.fastq.gz -o data/denovo/",Run," > data/denovo/",Run,".out 2> data/denovo/",Run,".err &")) %>% select(Command) %>%
@@ -251,3 +251,20 @@ ind %>% filter(Lineage=="uwisara") %>% mutate(Command=paste0("srun -p bigmemm -t
 ```
 
 
+
+## Call some snps
+
+Let's not include OceanPick or Mainstream fish. Compare to 1204
+
+```{r}
+m118 %>% filter(!Region %in% c("Mainstream","OceanPick")) %>% select(NewPath) %>% write_tsv("bamlists/96.bamlist", col_names = FALSE)
+m118 %>% filter(!Region %in% c("Mainstream","OceanPick")) %>% select(Run) %>% write_tsv("bamlists/96.names", col_names = FALSE)
+```
+
+```{sh, eval=FALSE}
+srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 86 -bam bamlists/96.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf  meta/no-inv.txt -out outputs/1204/snps-wgs-01-glf  \
+-minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1301/snps-wgs-01-glf.out 2> outputs/1301/snps-wgs-01-glf.err &
+```

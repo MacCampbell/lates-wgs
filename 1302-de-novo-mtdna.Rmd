@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 
 ```{r}
 library(tidyverse)
+library(ape)
+library(ggtree)
 ```
 
 ```{r}
@@ -124,7 +126,7 @@ What about Wallacea---
 I have de novo assembled this previously...
 SRR3165613 is from Kalimantan
 
->SRR3165613
+>SRR3165613-spades
 ATATAATTATACATATATGTATTTACACCATGCATTTATGCTAACCAATAAGTGAATATA
 TGGTGTAAATGCATATATATATATATGTATTAATCAACATCTGCTTGTAATCAAAGGACA
 TATGTGCATTCAATGGTATTCGTAAATGTAATGTACGGTGACCTATAATTAATGTACTTT
@@ -195,4 +197,116 @@ srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_fro
 srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/denovo/SRR3165629.sralite.1_pass_1.fastq.gz -2 data/denovo/SRR3165629.sralite.1_pass_2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/SRR3165629 > data/harvest/SRR3165629.out 2> data/harvest/SRR3165629.err &
 
 srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/denovo/SRR3165624.sralite.1_pass_1.fastq.gz -2 data/denovo/SRR3165624.sralite.1_pass_2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/SRR3165624 > data/harvest/SRR3165624.out 2> data/harvest/SRR3165624.err &
+```
+
+
+These all ran to completion. Annotating with mitoannotator and putting in data/complete-mitogenomes-for-phame
+
+
+let's combine and make a basic tree
+
+```{sh, eval=FALSE}
+cat vij-popset-cr.fasta lakdiva.fasta uwisara-cr.fasta wallacea.fasta australasia-cr.fasta > temp.fasta
+mafft temp.fasta > temp.afasta
+~/Dropbox/bin/seqConverter.pl -dtemp.afasta -on
+
+```
+
+neat!
+
+paup execute
+nj
+save trees file=temp.tre brlens=yes
+
+set criterion=distance
+bootstrap nreps=10000 search=NJ  conLevel=50 treefile=temp.boot.tre
+savetrees file=bootMajRule.tree from=1 to=1 savebootp=nodelabels brlens=yes;
+gettrees file=temp.boot.tre StoreTreeWts=yes mode=3;
+contree all/strict=no majrule=yes usetreewts=yes treefile=temp-major-rule.tre;
+
+```{r}
+t<-read.nexus("data/cr/temp.tre") %>% midpoint.root()
+ggtree(t) %<+% m118 + geom_tiplab(size=2) +
+  geom_nodelab() +
+  geom_tiplab(aes(label=Locality,x=200), size=2, linetype = 0) +
+  xlim(0,300) 
+
+ggsave("outputs/1302/cr-nj-tree.pdf")
+```
+
+```{r}
+nex<-read.dna("data/cr/temp.afasta",format = "fasta")
+f <- function(x) nj(dist.dna(x))
+tr <- f(nex) %>% midpoint.root()
+nodes<-boot.phylo(tr, nex, f, quiet=FALSE, B=1000)
+
+```
+```{r}
+boot<-ggtree(tr, ignore.negative.edge=TRUE) %<+% m118 
+node<-boot$data %>% filter(isTip==FALSE)
+node$Boot<-nodes/1000
+
+boot +
+  geom_nodelab(data=node %>% filter(Boot>.50),(aes(x=x, y=y, label=round(Boot,2)))) +
+  geom_tiplab(size=2) +
+  geom_tiplab(aes(label=Locality,x=.2), size=2, linetype = 0) +
+  xlim(0,.35)
+
+ggsave("outputs/1302/bootstrapped-nj-tre.pdf", height=11, width=8.5)
+```
+## Indian West Coast
+
+hmmm... We can assemble all of these I think now less
+SRR3165612
+SRR3165613
+SRR3165614
+SRR3165618
+SRR3165629
+SRR3165624
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/denovo/SRR3165618.sralite.1_pass_1.fastq.gz -2 data/denovo/SRR3165618.sralite.1_pass_2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/SRR3165618 > data/harvest/SRR3165618.out 2> data/harvest/SRR3165618.err &
+
+```{r}
+m118 %>% filter(grepl("SRR",Run)) %>% filter(!Run %in% c("SRR3165612","SRR3165613","SRR3165614","SRR3165618","SRR3165629","SRR3165624") ) %>%
+  mutate(Command=paste0("srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/denovo/",Run,".sralite.1_pass_1.fastq.gz -2 data/denovo/",Run,".sralite.1_pass_2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/",Run," > data/harvest/",Run,".out 2> data/harvest/",Run,".err &")) %>%
+  select(Command) %>% write_tsv("1302-srr-assemblies.sh", col_names = FALSE)
+```
+
+
+Finish SL samples
+
+```{sh, eval=FALSE}
+
+conda activate getorganelle
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/lakdiva/Jaffna2-R1.fastq.gz -2 data/lakdiva/Jaffna2-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/Jaffna2 > data/harvest/Jaffna2.out 2> data/harvest/Jaffna2.err &
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/lakdiva/Mannar2-R1.fastq.gz -2 data/lakdiva/Mannar2-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/Mannar2 > data/harvest/Mannar2.out 2> data/harvest/Mannar2.err &
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/lakdiva/Mannar3-R1.fastq.gz -2 data/lakdiva/Mannar3-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/Mannar3 > data/harvest/Mannar3.out 2> data/harvest/Mannar3.err &
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/lakdiva/Mannar4-R1.fastq.gz -2 data/lakdiva/Mannar4-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/Mannar4 > data/harvest/Mannar4.out 2> data/harvest/Mannar4.err &
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/lakdiva/Mannar5-R1.fastq.gz -2 data/lakdiva/Mannar5-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/Mannar5 > data/harvest/Mannar5.out 2> data/harvest/Mannar5.err &
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/lakdiva/Tranco2-R1.fastq.gz -2 data/lakdiva/Tranco2-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/Tranco2 > data/harvest/Tranco2.out 2> data/harvest/Tranco2.err &
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/lakdiva/Tranco3-R1.fastq.gz -2 data/lakdiva/Tranco3-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/Tranco3 > data/harvest/Tranco3.out 2> data/harvest/Tranco3.err &
+
+```
+
+Taiwan
+
+```{r}
+m118 %>% filter(grepl("WJC",Run)) %>% 
+  mutate(Command=paste0("srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/taiwan/",Run,"-R1.fastq.gz -2 data/taiwan/",Run,"-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/",Run," > data/harvest/",Run,".out 2> data/harvest/",Run,".err &")) %>%
+  select(Command) %>% write_tsv("1302.2-taiwan-assemblies.sh", col_names = FALSE)
+```
+
+WA
+
+```{r}
+m118 %>% filter(grepl("Broome|Fitz",Run)) %>% 
+  mutate(Command=paste0("srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/broome/",Run,"-R1.fastq.gz -2 data/broome/",Run,"-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/",Run," > data/harvest/",Run,".out 2> data/harvest/",Run,".err &")) %>%
+  select(Command) %>% write_tsv("1302.3-broome-assemblies.sh", col_names = FALSE)
 ```
