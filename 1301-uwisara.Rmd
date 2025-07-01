@@ -8,8 +8,19 @@ date: "2025-04-07"
 knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```
 
+
 ```{r}
 library(tidyverse)
+library(dartR)
+library(snpR)
+library(grid)
+library(ggpubr)
+library(phytools)
+library(tanggle)
+library(phangorn)
+library(viridis)
+library(pcadapt)
+library(ape)
 library(ggrepel)
 ```
 
@@ -264,7 +275,211 @@ m118 %>% filter(!Region %in% c("Mainstream","OceanPick")) %>% select(Run) %>% wr
 ```{sh, eval=FALSE}
 srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
 -minInd 86 -bam bamlists/96.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--rf  meta/no-inv.txt -out outputs/1204/snps-wgs-01-glf  \
+-rf  meta/no-inv.txt -out outputs/1301/snps-wgs-01-glf  \
 -minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1301/snps-wgs-01-glf.out 2> outputs/1301/snps-wgs-01-glf.err &
 ```
+
+Possible commands
+	-> Number of sites retained after filtering: 7625790 
+
+
+```{sh}
+plink --tped snps-wgs-01-glf.tped --tfam snps-wgs-01-glf.tfam  --out plink-binary-01 --recode --allow-extra-chr --noweb
+plink --ped plink-binary-01.ped --map plink-binary-01.map --recode vcf --allow-extra-chr -out plink-01
+bgzip plink-01.vcf 
+tabix plink-01.vcf.gz
+
+#renaming vcf bcftools/1.13
+module load bcftools
+
+bcftools reheader --samples bamlists/96.names -o outputs/1301/renamed-01.vcf.gz outputs/1301/plink-01.vcf.gz
+
+bcftools +fill-tags outputs/1301/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1301/pruned-01-maf05-45.vcf
+
+bcftools +fill-tags outputs/1301/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.01' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1301/pruned-01-maf01-45.vcf
+
+bcftools +fill-tags outputs/1301/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1301/pruned-01-maf10-45.vcf
+
+#Convert to phylip and then to nex
+conda activate py2;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf01-45.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf05-45.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45.vcf;
+
+conda deactivate;
+```
+
+```{r}
+dat<-read.dna(file="outputs/1301/pruned-01-maf05-45.min4.phy")
+write.nexus.data(dat, file="outputs/1301/pruned-01-maf05-45.nex")
+
+dat<-read.dna(file="outputs/1301/pruned-01-maf01-45.min4.phy")
+write.nexus.data(dat, file="outputs/1301/pruned-01-maf01-45.nex")
+
+dat<-read.dna(file="outputs/1301/pruned-01-maf10-45.min4.phy")
+write.nexus.data(dat, file="outputs/1301/pruned-01-maf10-45.nex")
+```
+
+
+
+```{r}
+path_to_file <- "outputs/1301/pruned-01-maf05-45.vcf"
+
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+
+
+_1_ choose a K   
+
+```{r}
+x <- pcadapt(input = filename, K = 20) 
+```
+
+```{r}
+var<-round(x$singular.values^2*100,2)
+var
+```
+
+```{r}
+#plot(x, option = "screeplot")
+panela<-plot(x, option = "screeplot", K = 10) + ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  scale_x_continuous(breaks=seq(1,10,1), labels=seq(1,10,1)) +
+  ylab("Proption of Explained Variance\n") +
+  xlab("\nPrincipal Component") +
+  theme(axis.title=element_text(size=12))
+panela
+```
+
+```{r}
+m<-m118 %>% filter(!Region %in% c("Mainstream","OceanPick"))
+```
+
+```{r}
+plot(x, option = "scores", pop = factor(m$Region, levels=c("Northern Territory","Queensland",
+                                                           "Papua New Guinea","Indonesia-K","Indonesia-SU",
+                                                           "Indonesia-SJ",
+                                                           
+                                      "Philippines","Taiwan","Vietnam","Cambodia","Thailand","Myanmar","Bangladesh","Sri Lanka",
+                                              "India East Coast","India West Coast"))) 
+ 
+```
+
+
+Get scree plot and PCA    
+```{r}
+pcadata<-x$scores[,1:5] %>% as_tibble()
+pcadata<-pcadata %>% bind_cols(m)
+
+```
+
+```{r}
+ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V2, shape=Lineage, fill=Region), alpha=0.95) +
+  #geom_text_repel(data=pcadata %>% filter(Region %in% c("Cambodia")), aes(x=V1, y=V2,label=Run)) +
+  scale_shape_manual(values=c(21,23,23,24,22)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 2") 
+
+ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V4, shape=Lineage, fill=Region), alpha=0.95) +
+ # geom_text_repel(data=pcadata %>% filter(Region %in% c("Queensland")), aes(x=V1, y=V4,label=Run)) +
+  scale_shape_manual(values=c(21,23,23,24,22)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 2") 
+```
+
+```{r}
+pcb<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V2, shape=Lineage, fill=Region), alpha=0.95) +
+  scale_shape_manual(values=c(21,23,23,24,22)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 2") +
+  ggtitle("B") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+
+#labels13<-pcadata %>% filter(Region %in% c("Indonesia-K","Indonesia-SU")) %>% 
+ # select(Region,V1, V3) %>% group_by(Region) %>% summarize(x=mean(V1), y=mean(V3)) 
+
+pcc<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V3, shape=Lineage, fill=Region), alpha=0.9) +
+#  geom_text_repel(data=labels13, aes(x=x, y=y, label=Region))+
+  scale_shape_manual(values=c(21,23,23,24,22)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  theme(legend.position = "none") +
+
+  xlab("PC 1") +
+  ylab("PC 3") +
+  ggtitle("C") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+
+pcd<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V4, shape=Lineage, fill=Region), alpha=0.9) +
+#  geom_text_repel(data=labels13, aes(x=x, y=y, label=Region))+
+  scale_shape_manual(values=c(21,23,23,24,22)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  xlab("PC 1") +
+  ylab("PC 4") +
+  ggtitle("D") +
+  theme(plot.title = element_text(size=14, face="bold")) 
+```
+
+```{r}
+blank <- grid.rect(gp=gpar(col="white"))
+```
+
+
+
+```{r}
+a<-ggplotGrob(ggarrange(panela, pcb, blank, ncol=3, widths=c(1,1.2,.5)))
+bc<-ggplotGrob(ggarrange(pcc, pcd, ncol=2, widths=c(1,1.4)))
+ggarrange(a,bc, ncol=1, heights=c(1,1))
+
+ggsave("outputs/1301/called-snp-pcas.pdf", width=12, height=10)
+```
+
+
+
+## Trees
+
+in outputs/1301/phylo
+
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf01-45.min4.phy --seqtype DNA --redo
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf01-45.min4.phy.varsites.phy --seqtype DNA --redo
+
+
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf05-45.min4.phy --seqtype DNA --redo
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf05-45.min4.phy.varsites.phy --seqtype DNA --redo
+
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf10-45.min4.phy --seqtype DNA --redo
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf10-45.min4.phy.varsites.phy --seqtype DNA --redo
+
+
+## IO only
+
+filter renamed vcf
+
