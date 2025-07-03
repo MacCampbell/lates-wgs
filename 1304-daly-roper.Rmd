@@ -1,0 +1,48 @@
+---
+title: "1304-daly-roper"
+output: html_document
+date: "2025-07-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+rsync -avh -e ssh MatthewCampbell1@agrf-data.agrf.org.au:files/AGRF_NXGSQCAGRF25050141-1_22YGFCLT4 ./
+D1 - D8 are spread across 8 lines
+
+sending to data/daly
+
+```{sh,eval=FALSE}
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D1*R1.fastq.gz > Daly01-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D1*R2.fastq.gz > Daly01-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D2*R1.fastq.gz > Daly02-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D2*R2.fastq.gz > Daly02-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D3*R1.fastq.gz > Daly03-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D3*R2.fastq.gz > Daly03-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D4*R1.fastq.gz > Daly04-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D4*R2.fastq.gz > Daly04-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D5*R1.fastq.gz > Daly05-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D5*R2.fastq.gz > Daly05-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D6*R1.fastq.gz > Daly06-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D6*R2.fastq.gz > Daly06-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D7*R1.fastq.gz > Daly07-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D7*R2.fastq.gz > Daly07-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D8*R1.fastq.gz > Daly08-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25050141-1_22YGFCLT4/D8*R2.fastq.gz > Daly08-R2.fastq.gz
+```
+
+basic align
+
+bash ../../doAlign-zipped.sh to-align.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz

@@ -270,6 +270,9 @@ Let's not include OceanPick or Mainstream fish. Compare to 1204
 ```{r}
 m118 %>% filter(!Region %in% c("Mainstream","OceanPick")) %>% select(NewPath) %>% write_tsv("bamlists/96.bamlist", col_names = FALSE)
 m118 %>% filter(!Region %in% c("Mainstream","OceanPick")) %>% select(Run) %>% write_tsv("bamlists/96.names", col_names = FALSE)
+
+m118 %>% filter(Region %in% c("India East Coast","India West Coast", "Sri Lanka","Myanmar","Bangladesh")) %>% select(Run) %>% write_tsv("bamlists/ind96-27.names", col_names=FALSE)
+mind<-m118 %>% filter(Region %in% c("India East Coast","India West Coast", "Sri Lanka","Myanmar","Bangladesh"))
 ```
 
 ```{sh, eval=FALSE}
@@ -482,4 +485,65 @@ iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf10-45.min4.phy.varsites.ph
 ## IO only
 
 filter renamed vcf
+
+bcftools view -S bamlists/ind96-27.names outputs/1301/renamed-01.vcf.gz | bcftools +fill-tags  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1301/ind.vcf
+
+
+```{r}
+path_to_file <- "outputs/1301/ind.vcf"
+
+filename <- read.pcadapt(path_to_file, type = "vcf")
+```
+
+
+
+_1_ choose a K   
+
+```{r}
+x <- pcadapt(input = filename, K = 10) 
+```
+
+```{r}
+var<-round(x$singular.values^2*100,2)
+var
+```
+
+```{r}
+#plot(x, option = "screeplot")
+panela<-plot(x, option = "screeplot", K = 10) + ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  scale_x_continuous(breaks=seq(1,10,1), labels=seq(1,10,1)) +
+  ylab("Proption of Explained Variance\n") +
+  xlab("\nPrincipal Component") +
+  theme(axis.title=element_text(size=12))
+panela
+```
+
+```{r}
+m<-mind 
+```
+
+```{r}
+plot(x, option = "scores", pop = factor(m$Region, levels=c("Northern Taerritory","Queensland",
+                                                           "Papua New Guinea","Indonesia-K","Indonesia-SU",
+                                                           "Indonesia-SJ",
+                                                           
+                                      "Philippines","Taiwan","Vietnam","Cambodia","Thailand","Myanmar","Bangladesh","Sri Lanka",
+                                              "India East Coast","India West Coast"))) 
+ 
+```
+
+
+convert for phylogeny
+
+conda activate py2;
+~/github/mccloud-rrt/vcf2phylip.py -i ind.vcf;
+conda deactivate;
+
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s ind.min4.phy --seqtype DNA --redo
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s ind.min4.phy.varsites.phy --seqtype DNA --redo
+
+Alignment has 27 sequences with 2250 columns, 2246 distinct patterns
+WTF, lost a bunch of sites. Maybe I should increase MAF
 

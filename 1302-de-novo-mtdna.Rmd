@@ -310,3 +310,15 @@ m118 %>% filter(grepl("Broome|Fitz",Run)) %>%
   mutate(Command=paste0("srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/broome/",Run,"-R1.fastq.gz -2 data/broome/",Run,"-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/",Run," > data/harvest/",Run,".out 2> data/harvest/",Run,".err &")) %>%
   select(Command) %>% write_tsv("1302.3-broome-assemblies.sh", col_names = FALSE)
 ```
+
+Bangladesh and bungled trinco 
+
+```{sh, eval=FALSE}
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/lakdiva/Trinco2-R1.fastq.gz -2 data/lakdiva/Trinco2-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/Trinco2 > data/harvest/Tranco2.out 2> data/harvest/Trinco2.err &
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/lakdiva/Trinco3-R1.fastq.gz -2 data/lakdiva/Trinco3-R2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/Trinco3 > data/harvest/Trinco3.out 2> data/harvest/Trinco3.err &
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/bangladesh/split/SRR26358744_pass_1.fastq.gz -2 data/bangladesh/split/SRR26358744_pass_2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/SRR26358744 > data/harvest/SRR26358744.out 2> data/harvest/SRR26358744.err &
+
+srun -p med -t 40:00:00 --mem=32GB --nodes=1 --cpus-per-task=4 get_organelle_from_reads.py -1 data/bangladesh/split/SRR26402930_pass_1.fastq.gz -2 data/bangladesh/split/SRR26402930_pass_2.fastq.gz -R 10 -k 21,45,65,85,105 -F animal_mt -o data/harvest/SRR26402930 > data/harvest/SRR26402930.out 2> data/harvest/SRR26402930.err &
+```
