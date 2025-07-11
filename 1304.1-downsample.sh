@@ -1,0 +1,8 @@
+samtools view -bs 0.119149747402536 data/daly/Daly01.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/Daly01.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/Daly01.reduced.bam ;
+samtools view -bs 0.116258212812319 data/daly/Daly02.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/Daly02.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/Daly02.reduced.bam ;
+samtools view -bs 0.148897520218156 data/daly/Daly03.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/Daly03.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/Daly03.reduced.bam ;
+samtools view -bs 0.161809305421999 data/daly/Daly04.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/Daly04.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/Daly04.reduced.bam ;
+samtools view -bs 0.10501743289386 data/daly/Daly05.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/Daly05.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/Daly05.reduced.bam ;
+samtools view -bs 0.131675724075401 data/daly/Daly06.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/Daly06.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/Daly06.reduced.bam ;
+samtools view -bs 0.125576756101236 data/daly/Daly07.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/Daly07.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/Daly07.reduced.bam ;
+samtools view -bs 0.134253674235377 data/daly/Daly08.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/Daly08.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/Daly08.reduced.bam ;
