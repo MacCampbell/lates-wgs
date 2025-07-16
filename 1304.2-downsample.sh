@@ -1,0 +1,5 @@
+samtools view -bs 0.1424620287814 data/daly/Roper02.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/Roper02.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/Roper02.reduced.bam ;
+samtools view -bs 0.176469105301636 data/daly/Roper07.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/Roper07.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/Roper07.reduced.bam ;
+samtools view -bs 0.196011447068509 data/daly/Roper08.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/Roper08.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/Roper08.reduced.bam ;
+samtools view -bs 0.20711100854185 data/daly/Roper09.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/Roper09.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/Roper09.reduced.bam ;
+samtools view -bs 0.190656211443186 data/daly/Roper10.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/Roper10.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/Roper10.reduced.bam ;

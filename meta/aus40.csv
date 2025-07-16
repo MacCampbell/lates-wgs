@@ -1,0 +1,41 @@
+Run,BioSample,Sample,Region,Locality,Aligned,Filtered,Coverage,Path,Lineage,DataDir,NewPath,Mito
+SRR3165618,SAMN04482561,SRS1284061,Northern Territory,Darwin Harbour,43311444,42229480,6.27037,data/split/SRR3165618.sort.flt.bam,AUS,NA,data/split/SRR3165618.sort.flt.bam,NA
+SRR3165619,SAMN04482562,SRS1284062,Northern Territory,Darwin Harbour,38046019,37284074,5.53852,data/split/SRR3165619.sort.flt.bam,AUS,NA,data/split/SRR3165619.sort.flt.bam,NA
+SRR3165620,SAMN04482563,SRS1284063,Northern Territory,Darwin Harbour,34569503,33794982,5.02076,data/split/SRR3165620.sort.flt.bam,AUS,NA,data/split/SRR3165620.sort.flt.bam,NA
+SRR3165621,SAMN04482564,SRS1284064,Northern Territory,Darwin Harbour,43100095,42194909,6.26656,data/split/SRR3165621.sort.flt.bam,AUS,NA,data/split/SRR3165621.sort.flt.bam,NA
+SRR3165622,SAMN04482565,SRS1284065,Northern Territory,Darwin Harbour,42833880,41944785,6.23001,data/split/SRR3165622.sort.flt.bam,AUS,NA,data/split/SRR3165622.sort.flt.bam,NA
+SRR3165623,SAMN04482566,SRS1284066,Northern Territory,Darwin Harbour,37564845,36718029,5.45181,data/split/SRR3165623.sort.flt.bam,AUS,NA,data/split/SRR3165623.sort.flt.bam,NA
+SRR3165629,SAMN04482572,SRS1284073,Queensland,Hinchinbrook Channel,42727945,41919976,6.22876,data/split/SRR3165629.sort.flt.bam,AUS,NA,data/split/SRR3165629.sort.flt.bam,NA
+SRR3165630,SAMN04482573,SRS1284074,Queensland,Hinchinbrook Channel,36057176,35316921,5.24624,data/split/SRR3165630.sort.flt.bam,AUS,NA,data/split/SRR3165630.sort.flt.bam,NA
+SRR3165631,SAMN04482574,SRS1284075,Queensland,Hinchinbrook Channel,32689855,32071955,4.76502,data/split/SRR3165631.sort.flt.bam,AUS,NA,data/split/SRR3165631.sort.flt.bam,NA
+SRR3165632,SAMN04482575,SRS1284076,Queensland,Hinchinbrook Channel,33950939,33297017,4.9482,data/split/SRR3165632.sort.flt.bam,AUS,NA,data/split/SRR3165632.sort.flt.bam,NA
+SRR3165633,SAMN04482576,SRS1284077,Queensland,Hinchinbrook Channel,34206590,33484747,4.974,data/split/SRR3165633.sort.flt.bam,AUS,NA,data/split/SRR3165633.sort.flt.bam,NA
+SRR3165634,SAMN04482577,SRS1284078,Queensland,Hinchinbrook Channel,40549352,39725840,5.90283,data/split/SRR3165634.sort.flt.bam,AUS,NA,data/split/SRR3165634.sort.flt.bam,NA
+SRR3165624,SAMN04482567,SRS1284067,Papua New Guinea,Fly River,46009810,45091295,6.69989,data/split/SRR3165624.sort.flt.bam,AUS,NA,data/split/SRR3165624.sort.flt.bam,NA
+SRR3165625,SAMN04482568,SRS1284068,Papua New Guinea,Fly River,36385434,35592008,5.28765,data/split/SRR3165625.sort.flt.bam,AUS,NA,data/split/SRR3165625.sort.flt.bam,NA
+SRR3165626,SAMN04482569,SRS1284070,Papua New Guinea,Fly River,40019282,39174817,5.81982,data/split/SRR3165626.sort.flt.bam,AUS,NA,data/split/SRR3165626.sort.flt.bam,NA
+SRR3165627,SAMN04482570,SRS1284071,Papua New Guinea,Fly River,40858088,40059128,5.95206,data/split/SRR3165627.sort.flt.bam,AUS,NA,data/split/SRR3165627.sort.flt.bam,NA
+SRR3165628,SAMN04482571,SRS1284072,Papua New Guinea,Fly River,37198470,36318355,5.39644,data/split/SRR3165628.sort.flt.bam,AUS,NA,data/split/SRR3165628.sort.flt.bam,NA
+Broome02,Broome02,Broome02,Western Australia,Broome,202764846,177077927,37.4788,NA,AUS,data/broome,data/downsample/Broome02.reduced.bam,NA
+Broome03,Broome03,Broome03,Western Australia,Broome,175481648,154232642,32.6315,NA,AUS,data/broome,data/downsample/Broome03.reduced.bam,NA
+Broome04,Broome04,Broome04,Western Australia,Broome,187213611,163507998,34.4726,NA,AUS,data/broome,data/downsample/Broome04.reduced.bam,NA
+Broome05,Broome05,Broome05,Western Australia,Broome,187226133,164698052,34.4075,NA,AUS,data/broome,data/downsample/Broome05.reduced.bam,NA
+Broome06,Broome06,Broome06,Western Australia,Broome,188787410,165800171,34.8697,NA,AUS,data/broome,data/downsample/Broome06.reduced.bam,NA
+Broome07,Broome07,Broome07,Western Australia,Broome,182668764,159339778,33.8805,NA,AUS,data/broome,data/downsample/Broome07.reduced.bam,NA
+Broome08,Broome08,Broome08,Western Australia,Broome,222645191,193763704,41.3708,NA,AUS,data/broome,data/downsample/Broome08.reduced.bam,NA
+Broome09,Broome09,Broome09,Western Australia,Broome,202762440,177491562,37.5655,NA,AUS,data/broome,data/downsample/Broome09.reduced.bam,NA
+Broome10,Broome10,Broome10,Western Australia,Broome,171600751,151953142,32.2395,NA,AUS,data/broome,data/downsample/Broome10.reduced.bam,NA
+Fitzroy01,Fitzroy01,Fitzroy01,Western Australia,Fitzroy River,212711523,184316324,39.0858,NA,AUS,data/broome,data/downsample/Fitzroy01.reduced.bam,NA
+Daly01,Daly01,Daly01,Northern Territory,Daly River,316492070,271334403,58.7496,NA,AUS,data/daly,data/downsample/Daly01.reduced.bam,NA
+Daly02,Daly02,Daly02,Northern Territory,Daly River,326046177,283926139,60.2108,NA,AUS,data/daly,data/downsample/Daly02.reduced.bam,NA
+Daly03,Daly03,Daly03,Northern Territory,Daly River,250931941,216745151,47.0122,NA,AUS,data/daly,data/downsample/Daly03.reduced.bam,NA
+Daly04,Daly04,Daly04,Northern Territory,Daly River,228200523,200254294,43.2608,NA,AUS,data/daly,data/downsample/Daly04.reduced.bam,NA
+Daly05,Daly05,Daly05,Northern Territory,Daly River,358110468,308080850,66.6556,NA,AUS,data/daly,data/downsample/Daly05.reduced.bam,NA
+Daly06,Daly06,Daly06,Northern Territory,Daly River,288183066,246600489,53.1609,NA,AUS,data/daly,data/downsample/Daly06.reduced.bam,NA
+Daly07,Daly07,Daly07,Northern Territory,Daly River,302850614,258326860,55.7428,NA,AUS,data/daly,data/downsample/Daly07.reduced.bam,NA
+Daly08,Daly08,Daly08,Northern Territory,Daly River,277003928,240831949,52.1401,NA,AUS,data/daly,data/downsample/Daly08.reduced.bam,NA
+Roper02,Roper02,Roper02,Northern Territory,Roper River,305214628,237233317,49.1359,NA,AUS,data/roper,data/downsample/Roper02.reduced.bam,NA
+Roper07,Roper07,Roper07,Northern Territory,Roper River,240383448,192310744,39.667,NA,AUS,data/roper,data/downsample/Roper07.reduced.bam,NA
+Roper08,Roper08,Roper08,Northern Territory,Roper River,218701103,172576592,35.7122,NA,AUS,data/roper,data/downsample/Roper08.reduced.bam,NA
+Roper09,Roper09,Roper09,Northern Territory,Roper River,209993253,163360453,33.7983,NA,AUS,data/roper,data/downsample/Roper09.reduced.bam,NA
+Roper10,Roper10,Roper10,Northern Territory,Roper River,220737088,177538875,36.7153,NA,AUS,data/roper,data/downsample/Roper10.reduced.bam,NA

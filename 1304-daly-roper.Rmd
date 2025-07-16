@@ -101,8 +101,7 @@ m36<-m126 %>% filter(Lineage %in% c("AUS")) %>% mutate(Individual=1:n())
 m36 %>% select(NewPath) %>% write_tsv("bamlists/36.bamlist", col_names=FALSE)
 m36 %>% select(Run) %>% write_tsv("bamlists/36-sample-names.txt", col_names=FALSE)
 
-meta<-m36
-meta$Locality<-factor(meta$Locality, levels=c("Broome","Fitzroy River","Daly River","Darwin Harbour","Fly River","Hinchinbrook Channel"))
+m36$Locality<-factor(m36$Locality, levels=c("Broome","Fitzroy River","Daly River","Darwin Harbour","Fly River","Hinchinbrook Channel"))
 ```
 
 Chrom01 then all chroms
@@ -124,7 +123,7 @@ srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angs
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/1304/48-ibs-90 > outputs/1304/48-ibs-90.out 2> outputs/1304/48-ibs-90.err &
 
-srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angsd -P 6  \
+srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=12  $HOME/angsd/angsd -P 12  \
 -bam bamlists/36.bamlist -r NC_066833.1 \
 -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 32 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
@@ -135,11 +134,13 @@ srun -p high -t 16:00:00 --mem=32G --nodes=1 --cpus-per-task=6  $HOME/angsd/angs
 ```
 
 	-> Number of sites retained after filtering: 75260 (chrom01) with 40 AUS samples, with 48 78166
-	-> Number of sites retained after filtering: 1953593  with 40 AUS samples, with 48
+	-> Number of sites retained after filtering: 1953593  with 40 AUS samples, with 48 2022812
+
+	-> Number of sites retained after filtering with 36 samples: 78566 (no Mainstream)
 
 
 ```{r}
-m <- as.matrix(read.table("outputs/1304/48-ibs-90-Lcal01.covMat"))
+m <- as.matrix(read.table("outputs/1304/48-ibs-90.covMat"))
 eig <- eigen(m)
 var<-eig$values/sum(eig$values)
 cumvar<-cumsum(eig$values)/sum(eig$values)
@@ -220,10 +221,154 @@ ggarrange(ggplotGrob(ggarrange(scree, blank, ncol=1)), ggplotGrob(ggarrange(pc12
 ggsave("outputs/1304/daly-pcs.pdf", width=16, height=6)
 ```
 
+Without Mainstream
 
+
+```{r}
+m <- as.matrix(read.table("outputs/1304/36-ibs-90-Lcal01.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+
+vdf<-var %>% as_tibble() %>% rename(Variance=value) %>% mutate(PC=1:n()) %>% head(n=10)
+
+scree<-ggplot(vdf) +
+  geom_line(aes(x=PC, y=Variance)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_x_continuous(breaks=vdf$PC) +
+  theme(axis.text=element_text(size=8)) +
+  ggtitle("Scree Plot") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+scree
+
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(m36)
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+text12L<-covs %>% select(Run, Locality, V1, V2) %>%
+  group_by(Locality) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+pc12<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Locality), pch=21, alpha=0.75, cex=2) +
+  #  geom_text(aes(x=V1, y=V2, label=Run), pch=21, alpha=0.75, cex=2) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  geom_text_repel(data=text12L, aes(x=x, y=y, label=Locality), size=3, max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  ggtitle("PCs 1 and 2") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+pc12
+```
+
+
+```{r}
+
+ggplot(covs %>% filter(Region == "Western Australia")) +
+  geom_point(aes(x=V1, y=V2, fill=Locality), pch=21, alpha=0.75) +
+  geom_text_repel(aes(x=V1, y=V2, label=Run), pch=21, alpha=0.75) +
+   xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  ggtitle("PCs 1 and 2") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+
+
+```
 # Now with Roper
-_1_ Consider dropping Mainstream kin from analyses?
-_2_ Then make calls across chroms and try a local pca?
-_3_ PCAdapt
+
+Downloading into two subdirs 
+/data/daly/AGRF_NXGSQCAGRF25050141-2_233HVWLT3
+/data/daly/AGRF_NXGSQCAGRF25050141-2_233NNGLT3
+
+Lane	Sample Name	Paired Reads	Data Yield (bp)
+Roper02	102,584,556	30.78 Gb
+Roper07	77,414,867	23.22 Gb
+Roper08	74,945,311	22.48 Gb
+Roper09	69,129,170	20.74 Gb
+Roper10	70,693,485	21.21 Gb
+Total	394,767,389	118.43 Gb
+150bp Paired End - Flowcell ID: 233NNGLT3
+Lane	Sample Name	Paired Reads	Data Yield (bp)
+Roper02	49,241,340	14.77 Gb
+Roper07	42,152,334	12.65 Gb
+Roper08	33,853,448	10.16 Gb
+Roper09	35,299,669	10.59 Gb
+Roper10	39,158,875	11.75 Gb
+Total	199,705,666	59.91 Gb
+
+Combined Total for Two Flowcells	594,473,055	178.34 Gb
+
+```{sh, eval=FALSE}
+cat AGRF_NXGSQCAGRF25050141-2_233HVWLT3/Roper02*R1.fastq.gz AGRF_NXGSQCAGRF25050141-2_233NNGLT3/Roper02*R1.fastq.gz > Roper02-R1.fastq.gz &
+cat AGRF_NXGSQCAGRF25050141-2_233HVWLT3/Roper02*R2.fastq.gz AGRF_NXGSQCAGRF25050141-2_233NNGLT3/Roper02*R2.fastq.gz > Roper02-R2.fastq.gz &
+
+cat AGRF_NXGSQCAGRF25050141-2_233HVWLT3/Roper07*R1.fastq.gz AGRF_NXGSQCAGRF25050141-2_233NNGLT3/Roper07*R1.fastq.gz > Roper07-R1.fastq.gz &
+cat AGRF_NXGSQCAGRF25050141-2_233HVWLT3/Roper07*R2.fastq.gz AGRF_NXGSQCAGRF25050141-2_233NNGLT3/Roper07*R2.fastq.gz > Roper07-R2.fastq.gz &
+
+cat AGRF_NXGSQCAGRF25050141-2_233HVWLT3/Roper08*R1.fastq.gz AGRF_NXGSQCAGRF25050141-2_233NNGLT3/Roper08*R1.fastq.gz > Roper08-R1.fastq.gz &
+cat AGRF_NXGSQCAGRF25050141-2_233HVWLT3/Roper08*R2.fastq.gz AGRF_NXGSQCAGRF25050141-2_233NNGLT3/Roper08*R2.fastq.gz > Roper08-R2.fastq.gz &
+
+cat AGRF_NXGSQCAGRF25050141-2_233HVWLT3/Roper09*R1.fastq.gz AGRF_NXGSQCAGRF25050141-2_233NNGLT3/Roper09*R1.fastq.gz > Roper09-R1.fastq.gz &
+cat AGRF_NXGSQCAGRF25050141-2_233HVWLT3/Roper09*R2.fastq.gz AGRF_NXGSQCAGRF25050141-2_233NNGLT3/Roper09*R2.fastq.gz > Roper09-R2.fastq.gz &
+
+cat AGRF_NXGSQCAGRF25050141-2_233HVWLT3/Roper10*R1.fastq.gz AGRF_NXGSQCAGRF25050141-2_233NNGLT3/Roper10*R1.fastq.gz > Roper10-R1.fastq.gz &
+cat AGRF_NXGSQCAGRF25050141-2_233HVWLT3/Roper10*R2.fastq.gz AGRF_NXGSQCAGRF25050141-2_233NNGLT3/Roper10*R2.fastq.gz > Roper10-R2.fastq.gz &
+
+```
+
+align
+bash ../../doAlign-zipped.sh to-align2.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
+
+```{r}
+m41<- read_csv("meta/m131.csv") %>% filter(Lineage %in% c("AUS")) 
+m40<-m41 %>% filter(Run != "Broome01")
+
+write_csv(m40, file="meta/aus40.csv")
+```
+
+```{r}
+down<-m41 %>% filter(Locality=="Roper River") %>% mutate(Frac=7/Coverage) %>%
+  mutate(Command = paste0("samtools view -bs ", Frac, " ", "data/daly/",Run,".sort.flt.bam", " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;"," samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;")) 
+down %>% select(Command)
+down %>% select(Command) %>% write_tsv(file="1304.2-downsample.sh", col_names = FALSE)
+ 
+```
+
+module load parallel
+srun -p high --time 4:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=8 parallel -j 4 < 1304.2-downsample.sh
+
+_1_ Consider dropping Mainstream kin from analyses? Actually, dropping all Mainstream may make sense
+    Consider dropping the one weird Broome Sample?
+    Now have m40
+    
+One chrom GLs for sanity
+
+```{sh, eval=FALSE}
+srun -p high -t 10:00:00 --mem=32G --nodes=1 --cpus-per-task=12  $HOME/angsd/angsd -P 12  \
+-bam bamlists/40.bamlist -r NC_066833.1 \
+-ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 36 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1304/40-ibs-90-Lcal01 > outputs/1304/40-ibs-90-Lcal01.out 2> outputs/1304/40-ibs-90-Lcal01.err &
+
+```
+
+Continue 
+_2_ Then make calls across chroms -> PCAdapt for divergences across the range
+_3_ LocalPCA for adaptive regions shared between regions, identify growth variant from Yeo et al (2025)
 _4_ Per chromosome PCAs and LD plots?
--ref and -rf
+-ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna and -rf  meta/lates-lgs.txt
