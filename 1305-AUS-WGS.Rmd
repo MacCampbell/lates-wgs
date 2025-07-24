@@ -12,9 +12,89 @@ Examine Australian barra in detail
 
 ```{r}
 library(tidyverse)
+library(ggrepel)
 library(grid)
+library(RColorBrewer)
 library(pcadapt)
 library(ggpubr)
+```
+
+
+```{r}
+m40<-read_csv("meta/aus40.csv")
+m40 %>% select(NewPath) %>% write_tsv("bamlists/aus40.bamlist", col_names=FALSE)
+m40 %>% select(Run) %>% write_tsv("bamlists/aus40.names", col_names=FALSE)
+meta<-m40
+```
+
+One chrom GLs for sanity
+
+```{sh, eval=FALSE}
+srun -p high -t 5:00:00 --mem=32G --nodes=1 --cpus-per-task=12  $HOME/angsd/angsd -P 12  \
+-bam bamlists/aus40.bamlist -r NC_066833.1 \
+-ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 36 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1305/40-ibs-90-Lcal01 > outputs/1305/40-ibs-90-Lcal01.out 2> outputs/1305/40-ibs-90-Lcal01.err &
+
+```
+
+77681 sites, seems alright
+
+
+```{r}
+m <- as.matrix(read.table("outputs/1305/40-ibs-90-Lcal01.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+
+vdf<-var %>% as_tibble() %>% rename(Variance=value) %>% mutate(PC=1:n()) %>% head(n=10)
+
+scree<-ggplot(vdf) +
+  geom_line(aes(x=PC, y=Variance)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_x_continuous(breaks=vdf$PC) +
+  theme(axis.text=element_text(size=8)) +
+  ggtitle("Scree Plot") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+scree
+ggsave("outputs/1305/chrom01-australasian-scree-plot.jpeg")
+```
+
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta)
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+text12L<-covs %>% select(Run, Locality, V1, V2) %>%
+  group_by(Locality) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+pc12<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Locality), pch=21, alpha=0.75, cex=2) +
+  #  geom_text(aes(x=V1, y=V2, label=Run), pch=21, alpha=0.75, cex=2) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  geom_text_repel(data=text12L, aes(x=x, y=y, label=Locality), size=3, max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  ggtitle("PCs 1 and 2") +
+  theme(plot.title = element_text(hjust=0.5, face="bold")) +
+  theme(legend.position = "none")
+
+pc12
+ggsave("outputs/1305/chrom01-australasian-lates-pc12.jpeg", width=6, height=6)
+ggsave("outputs/1305/chrom01-australasian-lates-pc12.pdf", width=6, height=6)
+
 ```
 
 Continue from 1304
@@ -24,29 +104,20 @@ _4_ Per chromosome PCAs and LD plots?
 -ref  genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna and -rf  meta/lates-lgs.txt
 
 
-```{r}
-m40<-read_csv("meta/aus40.csv")
-m40 %>% select(NewPath) %>% write_tsv("bamlists/aus40.bamlist", col_names=FALSE)
-m40 %>% select(Run) %>% write_tsv("bamlists/aus40.names", col_names=FALSE)
-```
-
-
 
 Calls with GLF
 
-```{sh, eval=false}
+```{sh, eval=FALSE}
 srun -t 72:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
 -minInd 36 -bam bamlists/aus40.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -rf meta/lates-lgs.txt -out outputs/1305/snps-wgs-05-glf  \
 -minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
--doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1301/snps-wgs-05-glf.out 2> outputs/1301/snps-wgs-05-glf.err &
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1305/snps-wgs-05-glf.out 2> outputs/1305/snps-wgs-05-glf.err &
 ```
 
-Possible commands
-	-> Number of sites retained after filtering: 7625790 
+	-> Number of sites retained after filtering: 1166730 
 
-
-```{sh}
+```{sh, eval=FALSE}
 plink --tped snps-wgs-05-glf.tped --tfam snps-wgs-05-glf.tfam  --out plink-binary-05 --recode --allow-extra-chr --noweb
 plink --ped plink-binary-05.ped --map plink-binary-05.map --recode vcf --allow-extra-chr -out plink-05
 bgzip plink-05.vcf 
@@ -55,16 +126,16 @@ tabix plink-05.vcf.gz
 #renaming vcf bcftools/1.13
 module load bcftools
 
-bcftools reheader --samples bamlists/aus40.names -o outputs/1305/renamed-05.vcf.gz outputs/1301/plink-05.vcf.gz
+bcftools reheader --samples bamlists/aus40.names -o outputs/1305/renamed-05.vcf.gz outputs/1305/plink-05.vcf.gz
 
-bcftools +fill-tags outputs/1301/renamed-05.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1301/pruned-05.vcf
+bcftools +fill-tags outputs/1305/renamed-05.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1305/pruned-05.vcf
 ```
 
 
 ## Copy from here
 
 ```{r}
-path_to_file <- "outputs/1305/pruned-05.vcf"
+path_to_file <- "outputs/1305/pruned-05.vcf.gz"
 
 filename <- read.pcadapt(path_to_file, type = "vcf")
 ```
@@ -99,7 +170,7 @@ m<-m40
 ```
 
 ```{r}
-plot(x, option = "scores", pop = factor(m$Region, levels=c("Western Australia","Northern Territory","Papua New Guinea","Queensland")
+plot(x, option = "scores", pop = factor(m$Region, levels=c("Western Australia","Northern Territory","Papua New Guinea","Queensland")))
  
 ```
 
@@ -138,8 +209,12 @@ ggplot(pcadata) +
 ```
 
 ```{r}
+labels12<-pcadata %>% select(Locality,V1, V2) %>% group_by(Locality) %>% summarize(x=mean(V1), y=mean(V2)) 
+
+
 pcb<-ggplot(pcadata) +
   geom_point(aes(x=V1, y=V2, shape=Lineage, fill=Region), alpha=0.95) +
+  geom_text_repel(data=labels12, aes(x=x, y=y, label=Locality)) +
   scale_shape_manual(values=c(21,23,23,24,22)) + 
   scale_fill_viridis_d(option="H") +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
@@ -151,12 +226,11 @@ pcb<-ggplot(pcadata) +
   ggtitle("B") +
   theme(plot.title = element_text(size=14, face="bold")) 
 
-#labels13<-pcadata %>% filter(Region %in% c("Indonesia-K","Indonesia-SU")) %>% 
- # select(Region,V1, V3) %>% group_by(Region) %>% summarize(x=mean(V1), y=mean(V3)) 
+labels13<-pcadata %>% select(Locality,V1, V3) %>% group_by(Locality) %>% summarize(x=mean(V1), y=mean(V3)) 
 
 pcc<-ggplot(pcadata) +
   geom_point(aes(x=V1, y=V3, shape=Lineage, fill=Region), alpha=0.9) +
-#  geom_text_repel(data=labels13, aes(x=x, y=y, label=Region))+
+  geom_text_repel(data=labels13, aes(x=x, y=y, label=Locality))+
   scale_shape_manual(values=c(21,23,23,24,22)) + 
   scale_fill_viridis_d(option="H") +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
@@ -169,9 +243,11 @@ pcc<-ggplot(pcadata) +
   ggtitle("C") +
   theme(plot.title = element_text(size=14, face="bold")) 
 
+labels14<-pcadata %>% select(Locality,V1, V4) %>% group_by(Locality) %>% summarize(x=mean(V1), y=mean(V4)) 
+
 pcd<-ggplot(pcadata) +
   geom_point(aes(x=V1, y=V4, shape=Lineage, fill=Region), alpha=0.9) +
-#  geom_text_repel(data=labels13, aes(x=x, y=y, label=Region))+
+  geom_text_repel(data=labels14, aes(x=x, y=y, label=Locality))+
   scale_shape_manual(values=c(21,23,23,24,22)) + 
   scale_fill_viridis_d(option="H") +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
@@ -194,5 +270,438 @@ a<-ggplotGrob(ggarrange(panela, pcb, blank, ncol=3, widths=c(1,1.2,.5)))
 bc<-ggplotGrob(ggarrange(pcc, pcd, ncol=2, widths=c(1,1.4)))
 ggarrange(a,bc, ncol=1, heights=c(1,1))
 
-ggsave("outputs/1301/called-snp-pcas.pdf", width=12, height=10)
+ggsave("outputs/1305/called-snp-pcas.pdf", width=12, height=10)
+```
+
+
+## Divergent SNPS?
+
+# Outliers
+
+Test Statistic
+
+```{r}
+x <- pcadapt(filename, K = 4)
+summary(x)
+```
+
+```{r}
+plot(x , option = "manhattan")
+```
+
+```{r}
+plot(x, option = "qqplot")
+```
+
+```{r}
+hist(x$pvalues, xlab = "p-values", main = NULL, breaks = 50, col = "orange")
+```
+
+```{r}
+plot(x, option = "stat.distribution")
+```
+
+
+Manual suggests LD thining for snps from WGS data, but not RAD, checking for clustering around certain regions    
+```{R}
+par(mfrow = c(2, 2))
+for (i in 1:4)
+  plot(x$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```    
+```{r}
+plot(x)
+```
+```{r}
+padj <- p.adjust(x$pvalues,method="BH")
+alpha <- 0.05
+outliers <- which(padj < alpha)
+length(outliers)
+
+snp_pc <- get.pc(x, outliers)
+snp_pc %>% group_by(PC) %>% summarize(Count=n())
+
+```
+
+```{r}
+padj <- p.adjust(x$pvalues,method="bonferroni")
+alpha <- 0.05
+outliers <- which(padj < alpha)
+length(outliers)
+
+snp_pc <- get.pc(x, outliers)
+snp_pc %>% group_by(PC) %>% summarize(Count=n())
+
+```
+
+Pull outliers from PC1?
+(base) ➜  1305 git:(main) ✗ gunzip -c pruned-05.vcf.gz | grep -v "#" | awk 'NR==8790;NR==8791;NR==8792'
+https://github.com/GenomicsAotearoa/Outlier_Analysis_Workshop
+
+The first thing we will do is create list of SNPs in VCF, assign line numbers that can be used to find matching line numbers in outliers (SNP ID is lost in PCadapt & Bayescan, line numbers used as signifiers).
+
+We create this in the analysis folder because we will use it for more than just mapping the outlier SNPs for PCAdapt.
+
+grep -v "^#" $DIR/data/starling_3populations.recode.vcf | cut -f1-3 | awk '{print $0"\t"NR}' > starling_3populations_SNPs.txt
+gunzip -c pruned-05.vcf.gz| grep -v "^#" | cut -f1-3 | awk '{print $0"\t"NR}' > pruned-05-snp-numbers.tsv
+
+```{r}
+snp_pc %>% filter(PC==1)
+```
+
+
+```{r}
+snpnumbers<-read_tsv("outputs/1305/pruned-05-snp-numbers.tsv", col_names = c("Chrom","Pos","Marker","SNP"))
+snps<-left_join(as_tibble(snp_pc), snpnumbers) 
+
+snps %>% group_by(PC, Chrom) %>% summarize(Count=n()) %>% arrange(-Count)
+
+snps %>% filter(Chrom=="NC_066842.1")
+```
+ctsb was located on chromosome 2:26695089–26703361
+
+
+The first SNP (SNP1) was located in intron 2 of cstb at chromosome two (Chr 2: 26,696,183, C > T),
+while the second SNP (SNP2) was located in intron 8 of ctsb at chromosome two, position 26,697,550 (Chr 2: 26,697,550, T > C). F
+In silico mapping revealed that the gene ctsb was located on chromosome 2:26695089–26703361.
+
+not variable in my data set?
+
+XM_018666941.2 aligns to:
+NC_066834.1 26696284-26695590
+26702863-26702640
+
+(base) ➜  1305 git:(main) ✗ gunzip -c renamed-05.vcf.gz| grep NC_066834.1 | awk '$2>=26695089 {print;}' | awk '$2 <= 26703361 {print;}'
+bcftools view renamed-05.vcf.gz NC_066834.1:26695089-26703361.
+
+17 snps here.
+
+
+, IGF2 and TH1 https://onlinelibrary.wiley.com/doi/10.1111/j.1365-2052.2007.01672.x
+LG10-> ig2b and th positions: 18200571-18207483 18209117-18215884
+
+bcftools view renamed-05.vcf.gz NC_066842.1:18200571-18215884 > vcfs/ig2b-th.vcf
+64 variants
+
+```{r}
+snpdf <-x$pvalues %>% as_tibble() %>% dplyr::rename(Pvalue=value) %>% mutate(SNP = 1:n())
+snpdf %>% arrange(Pvalue) %>% left_join(snps)
+```                                                                                                                                                                                                           
+
+NC_066853.1	27281471 intergenic
+NC_066853.1 11148835 grik4
+NC_066851.1 8417 intergenic
+```{r}
+ggplot(snpdf%>% left_join(snps)) +
+  geom_point(aes(x=SNP, y=-log10(Pvalue), color=Chrom)) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  theme(legend.position = "none") +
+  facet_wrap(.~PC)
+```
+## Local PCA
+
+Probably want to thin the unpruned .vcf
+
+```{sh, eval=FALSE}
+gunzip -c renamed-05.vcf.gz |  grep "#" > header.txt 
+gunzip -c renamed-05.vcf.gz | grep -v "#" | awk 'BEGIN{i=0}{i++;if (i%100==0) print}' > t100.vcf
+gunzip -c renamed-05.vcf.gz | grep -v "#" | awk 'BEGIN{i=0}{i++;if (i%50==0) print}' > t50.vcf
+gunzip -c renamed-05.vcf.gz | grep -v "#" | awk 'BEGIN{i=0}{i++;if (i%20==0) print}' > t20.vcf
+
+cat header.txt t100.vcf > thinned100.vcf; bgzip thinned100.vcf; tabix thinned100.vcf.gz;
+cat header.txt t50.vcf > thinned50.vcf; bgzip thinned50.vcf; tabix thinned50.vcf.gz;
+cat header.txt t20.vcf > thinned20.vcf; bgzip thinned20.vcf; tabix thinned20.vcf.gz;
+
+```
+
+(base) ➜  1305 git:(main) ✗ gunzip -c thinned100.vcf.gz | wc
+   11697  571771 2511082
+
+(base) ➜  1305 git:(main) ✗ gunzip -c thinned50.vcf.gz| wc
+   23364 1143454 5020480
+   
+ gunzip -c thinned20.vcf.gz| wc
+   58366 2858552 12548908
+
+```{sh, eval=FALSE}
+cat meta/lates-lgs.txt  | while read line; do bcftools view -Ov -r $line outputs/1305/thinned50.vcf.gz  > outputs/1305/vcfs/$line.vcf; done;
+
+for f in *.vcf; do plink --vcf $f --r2 inter-chr --ld-window-r2 0.1 --out `basename $f vcf`ldf --allow-extra-chr --double-id; done;
+```
+
+```{r, eval=FALSE}
+files<-list.files("outputs/1305/vcfs",pattern = "*.ldf.ld", full.names = TRUE)
+
+plotLd<-function(file) {
+  chrom<-gsub("outputs/1305/vcfs/","",file)
+  chrom<-gsub(".ldf.ld","", chrom)
+  lc<-read.delim(file,sep="",stringsAsFactors=FALSE) %>% as_tibble() %>% dplyr::arrange(R2) %>%  filter(R2 >0.2)
+
+  ggplot(lc) +
+  geom_point(aes(x=BP_A, y=BP_B, color=R2), alpha=0.5) +
+  scale_color_gradient(low="khaki1", high="red") + 
+  ggtitle(paste0(chrom))+
+  theme_bw() +
+  theme(panel.grid = element_blank())
+ggsave(paste0("outputs/1305/chrom-ld/",chrom,"-ld.pdf"))
+}
+
+lapply(files, plotLd)
+```
+
+Chrom PCS
+
+```{r, eval=FALSE}
+files<-list.files("outputs/1305/vcfs",pattern = "*.vcf", full.names = TRUE)
+
+plotPCA<-function(file) {
+  meta<-m40
+  chrom<-gsub("outputs/1305/vcfs/","",file)
+  chrom<-gsub(".vcf","", chrom)
+  
+  vcf<-read.vcfR(file=file)
+  genind<-vcfR2genind(vcf)
+  genind@pop<-as.factor(meta$Locality)
+
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(meta)
+eig<-pca1$eig/sum(pca1$eig)*100
+
+
+pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Locality),pch=21, alpha=0.75, cex=2) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "top") 
+ # geom_text_repel(aes(x=Axis1, y=Axis2,label=id))
+pc12
+
+ggsave(paste0("outputs/1305/chrom-pcs/",chrom,"-pcs.pdf"))
+}
+
+lapply(files, plotPCA)
+```
+
+### None of this is convincing for anything!
+
+Local PCA
+
+Need bcf files
+
+```{sh, eval=FALSE}
+
+cat meta/lates-lgs.txt  | while read line; do bcftools view -Ob -r $line outputs/1305/thinned20.vcf.gz > outputs/1305/bcf/$line.bcf; done;
+cat meta/lates-lgs.txt  | while read line; do bcftools view -Ob -r $line outputs/1305/renamed-05.vcf.gz > outputs/1305/bcf/$line.bcf; done;
+
+for f in outputs/1305/bcf/*.bcf; do bcftools index $f; done;
+```
+
+need a file like so:
+
+```{r}
+samples<-m40 %>% select(Run) %>% rename(ID=Run)
+
+population<-m40 %>% select(Locality) %>% rename(population=Locality)
+
+table<-cbind(samples, population)
+write.table(table, "outputs/1305/bcf/sample_info.tsv", quote = TRUE, row.names = FALSE, sep="\t")
+```
+
+871 variants with thinned 50 on chrom01 thinned 50, meaning 43 mindows with 20 snps.
+redoing with thinned 20, 2133 variants on chrom 01 meaning 106 windowns
+43554 variants on unthinned chrom, with 40 snps, ~1000 windows, yikes!!
+Could try 80 snps for ~550 windows?
+
+Trying unthinned one
+Run lostruct in `/Users/mac/github/local_pca/templated`
+`./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/1305/bcf -t snp -s 20 -m 4 -I /Users/mac/github/lates-wgs/outputs/1305/bcf/sample_info.tsv -j 1305`    
+`cp lostruct_results/type_snp_size_20_weights_none_jobid_1305/mds_coords.csv ~/github/lates-wgs/outputs/1305 `
+
+
+`./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/1305/bcf -t snp -s 40 -m 4 -I /Users/mac/github/lates-wgs/outputs/1305/bcf/sample_info.tsv -j 1305`    
+`cp lostruct_results/type_snp_size_40_weights_none_jobid_1305/mds_coords.csv ~/github/lates-wgs/outputs/1305/mds_coords40.csv `
+
+`./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/1305/bcf -t snp -s 100 -m 4 -I /Users/mac/github/lates-wgs/outputs/1305/bcf/sample_info.tsv -j 1306`    
+`cp lostruct_results/type_snp_size_100_weights_none_jobid_1306/mds_coords.csv ~/github/lates-wgs/outputs/1305/mds_coords100-unthinned.csv `
+
+`./run_lostruct.R -i /Users/mac/github/lates-wgs/outputs/1305/bcf -t snp -s 200 -m 4 -I /Users/mac/github/lates-wgs/outputs/1305/bcf/sample_info.tsv -j 1306`    
+`cp lostruct_results/type_snp_size_200_weights_none_jobid_1306/mds_coords.csv ~/github/lates-wgs/outputs/1305/mds_coords200-unthinned.csv `
+```{r}
+mds<-read_csv("outputs/1305/mds_coords.csv") # 20 snp windows
+mds<-read_csv("outputs/1305/mds_coords40.csv") # 20 snp windows
+mds<-read_csv("outputs/1305/mds_coords100-unthinned.csv") # 100 snp windows
+#mds<-read_csv("outputs/1305/mds_coords200-unthinned.csv") # 200 snp windows
+
+#make tidy
+tidymds<-mds %>% gather(MDS, Value, 3:6)
+MDS1<-filter(tidymds, MDS=="MDS1") %>% rename(MDS1=MDS) %>% rename(Value1=Value)
+MDS2<-filter(tidymds, MDS=="MDS2") %>% rename(MDS2=MDS) %>% rename(Value2=Value)
+MDS3<-filter(tidymds, MDS=="MDS3") %>% rename(MDS3=MDS) %>% rename(Value3=Value)
+MDS4<-filter(tidymds, MDS=="MDS4") %>% rename(MDS4=MDS) %>% rename(Value4=Value)
+```
+
+
+```{r}
+ggplot(mds)+
+  geom_point(aes(x=MDS1, y=MDS2, fill=chrom), pch=21, alpha=0.75) +
+  scale_fill_viridis_d(option="magma") +
+  theme_bw() +
+  theme(legend.position = 'none')
+```
+
+
+```{r}
+ggplot(mds)+
+  geom_point(aes(x=MDS1, y=MDS3, fill=chrom), pch=21, alpha=0.75) +
+  scale_fill_viridis_d(option="magma") +
+  theme_bw() +
+  theme(legend.position = 'none')
+```
+
+     
+     
+     
+```{r}
+ggplot(mds)+
+  geom_point(aes(x=MDS1, y=MDS4, fill=chrom), pch=21, alpha=0.75) +
+  scale_fill_viridis_d(option="magma") +
+  theme_bw() +
+  theme(legend.position = 'none')
+```
+     
+Plotting outliers by chrom.
+
+### MDS1
+
+```{r}
+p1<-MDS1 %>% mutate(Index=1:n())
+
+out <- boxplot.stats(p1$Value1)$out
+out_ind <- which(p1$Value1 %in% c(out))
+length(out_ind)
+```
+
+
+```{r}
+outliers<-p1[out_ind,]
+outliers %>% group_by(chrom) %>% summarize(Count=n()) %>% arrange(-Count)
+```
+
+```{r}
+#places to put labels based on index
+chroms<-p1 %>% group_by(chrom) %>% mutate(Start=min(Index), Stop=max(Index)) %>% select(chrom,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2))
+
+#Make enough colors
+nb.cols <- nrow(chroms)
+mycolors <- colorRampPalette(brewer.pal(8, "Set1"))(nb.cols)
+
+ggplot(p1) +
+  geom_rect(data=chroms, aes(xmin=Start, xmax=Stop, ymin=min(p1$Value1), ymax=max(p1$Value1)), fill=mycolors, alpha=0.25) +
+  geom_point(data=p1, aes(x=Index, y=Value1, color=chrom), alpha=0.75, cex=0.5) +
+  geom_point(data=outliers, aes(x=Index, y=Value1), color="black", cex=0.5) +
+  theme_bw() +
+  scale_x_continuous(breaks=chroms$Position, labels=chroms$chrom) +
+  theme(axis.text.x = element_text(angle=45, hjust = 1, face="bold", size=6)) +
+  theme(legend.title = element_blank()) +
+  theme(panel.grid = element_blank()) +
+  theme(legend.position = "none") +
+  scale_color_manual(values=mycolors) +
+  ylab("MDS1") +
+  xlab("Chromosome")
+```
+
+### MDS2
+```{r}
+p2<-MDS2 %>% mutate(Index=1:n())
+
+out2 <- boxplot.stats(p2$Value2)$out
+out_ind2 <- which(p2$Value2 %in% c(out2))
+length(out_ind2)
+```
+```{r}
+outliers2<-p2[out_ind2,]
+outliers2 %>% group_by(chrom) %>% summarize(Count=n()) %>% arrange(-Count)
+```
+
+```{r}
+#places to put labels based on index
+chroms<-p2 %>% group_by(chrom) %>% mutate(Start=min(Index), Stop=max(Index)) %>% select(chrom,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2))
+
+#Make enough colors
+nb.cols <- nrow(chroms)
+mycolors <- colorRampPalette(brewer.pal(8, "Set1"))(nb.cols)
+
+ggplot(p2) +
+  geom_rect(data=chroms, aes(xmin=Start, xmax=Stop, ymin=min(p2$Value2), ymax=max(p2$Value2)), fill=mycolors, alpha=0.25) +
+  geom_point(data=p2, aes(x=Index, y=Value2, color=chrom), alpha=0.75, cex=0.5) +
+  geom_point(data=outliers2, aes(x=Index, y=Value2), color="black", cex=0.5) +
+  theme_bw() +
+  scale_x_continuous(breaks=chroms$Position, labels=chroms$chrom) +
+  theme(axis.text.x = element_text(angle=45, hjust = 1, face="bold", size=6)) +
+  theme(legend.title = element_blank()) +
+  theme(panel.grid = element_blank()) +
+  theme(legend.position = "none") +
+  scale_color_manual(values=mycolors) +
+  ylab("MDS2") +
+  xlab("Chromosome")
+```
+
+### MDS3     
+
+```{r}
+p3<-MDS3 %>% mutate(Index=1:n())
+
+out3 <- boxplot.stats(p3$Value3)$out
+out_ind3 <- which(p3$Value3 %in% c(out3))
+out_ind3
+```
+```{r}
+outliers3<-p3[out_ind3,]
+outliers3 %>% group_by(chrom) %>% summarize(Count=n()) %>% arrange(-Count)
+
+```
+
+```{r}
+#places to put labels based on index
+chroms<-p3 %>% group_by(chrom) %>% mutate(Start=min(Index), Stop=max(Index)) %>% select(chrom,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2))
+
+#Make enough colors
+nb.cols <- nrow(chroms)
+mycolors <- colorRampPalette(brewer.pal(8, "Set1"))(nb.cols)
+
+
+#Hmm.. I should be able to include a bunch of rectangles to offset chroms
+ggplot(p3) +
+  geom_rect(data=chroms, aes(xmin=Start, xmax=Stop, ymin=min(p3$Value3), ymax=max(p3$Value3)), fill=mycolors, alpha=0.25) +
+  geom_point(data=p3, aes(x=Index, y=Value3, color=chrom), alpha=0.75, cex=0.5) +
+  geom_point(data=outliers3, aes(x=Index, y=Value3), color="black", cex=0.5) +
+  theme_bw() +
+  scale_x_continuous(breaks=chroms$Position, labels=chroms$chrom) +
+  theme(axis.text.x = element_text(angle=45, hjust = 1, face="bold", size=6)) +
+  theme(legend.title = element_blank()) +
+  theme(panel.grid = element_blank()) +
+  theme(legend.position = "none") +
+  scale_color_manual(values=mycolors) +
+  ylab("MDS3") +
+  xlab("Chromosome")
+```
+
+Locations:
+
+```{r}
+MDS1 %>% arrange(-Value1)
+MDS2 %>% arrange(Value2)
+
 ```

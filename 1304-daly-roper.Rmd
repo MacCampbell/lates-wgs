@@ -348,26 +348,14 @@ down %>% select(Command) %>% write_tsv(file="1304.2-downsample.sh", col_names = 
 ```
 
 module load parallel
-srun -p high --time 4:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=8 parallel -j 4 < 1304.2-downsample.sh
+srun -p high --time 4:00:00 --nodes=1 --ntasks-per-node=1 --cpus-per-task=4 parallel -j 4 < 1304.2-downsample.sh
+
+Ahh crap, there were 5 samples, oops.
+
 
 _1_ Consider dropping Mainstream kin from analyses? Actually, dropping all Mainstream may make sense
     Consider dropping the one weird Broome Sample?
     Now have m40
-    
-One chrom GLs for sanity
-
-```{sh, eval=FALSE}
-srun -p high -t 10:00:00 --mem=32G --nodes=1 --cpus-per-task=12  $HOME/angsd/angsd -P 12  \
--bam bamlists/40.bamlist -r NC_066833.1 \
--ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--minInd 36 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
--doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
--doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
--out outputs/1304/40-ibs-90-Lcal01 > outputs/1304/40-ibs-90-Lcal01.out 2> outputs/1304/40-ibs-90-Lcal01.err &
-
-```
-
-Continue 
 _2_ Then make calls across chroms -> PCAdapt for divergences across the range
 _3_ LocalPCA for adaptive regions shared between regions, identify growth variant from Yeo et al (2025)
 _4_ Per chromosome PCAs and LD plots?

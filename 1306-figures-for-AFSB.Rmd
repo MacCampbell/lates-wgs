@@ -1,0 +1,190 @@
+---
+title: "1306-figures-for-AFSB"
+output: html_document
+date: "2025-07-23"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(raster)
+library(ozmaps)
+library(ggrepel)
+```
+Plot Range on world map.
+
+```{r}
+range<-read_csv("outputs/range-map/1693178727.csv")
+range$`Overall Probability`<-as.numeric(range$`Overall Probability`)
+range
+```
+
+```{r}
+ggplot() +
+geom_raster(data=range, aes(x=`Center Long`, y=`Center Lat`, fill=`Overall Probability`),alpha=0.75) +
+  scale_fill_gradient(low="yellow", high="red")
+```
+
+```{r}
+range2<-na.omit(range)
+domain <- c(min(range2$`Center Long`)-5, max(range2$`Center Long`)+5, 
+            min(range2$`Center Lat`)-5, max(range2$`Center Lat`)+5)
+```
+
+
+
+```{r, eval=FALSE}
+nat.earth<-stack("~/github/fish-lake/data/earth/NE2_HR_LC_SR_W_DR/NE2_HR_LC_SR_W_DR.tif")
+
+nat.crop <- crop(nat.earth, y=extent(domain))
+
+rast.table <- data.frame(xyFromCell(nat.crop, 1:ncell(nat.crop)),
+                         getValues(nat.crop/255))
+
+
+rast.table$rgb <- with(rast.table, rgb(NE2_HR_LC_SR_W_DR_1,
+                                       NE2_HR_LC_SR_W_DR_2,
+                                       NE2_HR_LC_SR_W_DR_3,
+                                       1))
+
+save(rast.table, file="data/earth/world-rast.rda")
+```
+
+```{r, eval=FALSE}
+load("data/earth/world-rast.rda")
+ggplot() +
+  geom_raster(data = rast.table, mapping = aes(x = x, y = y), fill = rast.table$rgb, interpolate = TRUE)  +
+  geom_raster(data=range, aes(x=`Center Long`, y=`Center Lat`, fill=`Overall Probability`),alpha=0.75) +
+  scale_fill_gradient(low="yellow", high="red") +
+  ylab("Latitude\n") +
+  xlab("\nLongitude") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  theme(panel.background = element_rect(fill="black", color="black")) +
+  theme(plot.background = element_rect(fill="black", color="black")) +
+  theme(legend.background =element_rect(fill="black", color="black"), legend.text = element_text(color="white"), legend.title = element_text(color="white")) +
+  theme(axis.text=element_text(color="white", size=12)) +
+  theme(axis.title=element_text(color="white", face="bold", size=14))
+  
+ggsave("outputs/1306/basic-map.jpeg")
+
+```
+
+
+## Generate georeferenced existing names
+
+```{r}
+names<-read_tsv("meta/existing-names.tsv")
+names
+```
+```{r}
+ggplot() +
+  geom_point(data=names, aes(x=Longitude, y=Latitude)) +
+  geom_text_repel(data=names, aes(x=Longitude, y=Latitude, label=paste0(Name, " ", Authority)))
+```
+
+```{r, eval=FALSE}
+ggplot() +
+  geom_raster(data = rast.table, mapping = aes(x = x, y = y), fill = rast.table$rgb, interpolate = TRUE)  +
+  geom_point(data=names, aes(x=Longitude, y=Latitude)) +
+  geom_text_repel(data=names, aes(x=Longitude, y=Latitude, label=paste0(Name, " ", Authority))) +
+  scale_fill_gradient(low="yellow", high="red") +
+  ylab("Latitude\n") +
+  xlab("\nLongitude") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  theme(panel.background = element_rect(fill="black", color="black")) +
+  theme(plot.background = element_rect(fill="black", color="black")) +
+  theme(legend.background =element_rect(fill="black", color="black"), legend.text = element_text(color="white"), legend.title = element_text(color="white")) +
+  theme(axis.text=element_text(color="white", size=12)) +
+  theme(axis.title=element_text(color="white", face="bold", size=14)) 
+  
+ggsave("outputs/1306/existing-names.pdf")
+ggsave("outputs/1306/existing-names.jpeg")
+
+```
+
+## Colletion information for our samples
+
+```{r}
+mafsb<-read_csv("meta/m131.csv") %>% filter(!Lineage %in% c("Mainstream","OceanPick")) %>% filter(Run !="Broome01")
+locs<-read_tsv("outputs/range-map/points-edited-2 copy.tsv") %>% select(Locality, long, lat)
+points<-mafsb %>% left_join(locs) %>% group_by(Lineage,Region,Locality, lat, long) %>% summarise("Sample Size"=n())
+points$Lineage<-factor(points$Lineage, levels=c("IND","uwisara","lakdiva","SEA","WAL","AUS"))
+```
+```{r}
+ggplot() +
+  geom_point(data=points, aes(x=long, y=lat, size=`Sample Size`,fill=Lineage), pch=21, alpha=0.75) +
+  scale_size_continuous(breaks=c(1,5,10)) +
+  scale_fill_viridis_d(option="H")
+```
+
+```{r, eval=FALSE}
+ggplot() +
+  geom_raster(data = rast.table, mapping = aes(x = x, y = y), fill = rast.table$rgb, interpolate = TRUE)  +
+  geom_point(data=points, aes(x=long, y=lat, size=`Sample Size`,fill=Lineage), pch=21, alpha=0.75) +
+  scale_size_continuous(breaks=c(1,5,10)) +
+  scale_fill_viridis_d(option="H")+
+  ylab("Latitude\n") +
+  xlab("\nLongitude") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  theme(panel.background = element_rect(fill="black", color="black")) +
+  theme(plot.background = element_rect(fill="black", color="black")) +
+  theme(legend.background =element_rect(fill="black", color="black"), legend.text = element_text(color="white"), legend.title = element_text(color="white")) +
+  theme(axis.text=element_text(color="white", size=12)) +
+  theme(axis.title=element_text(color="white", face="bold", size=14))  +
+  theme(legend.position = "none")
+  
+ggsave("outputs/1306/sample-map.pdf")
+ggsave("outputs/1306/sample-map.jpeg")
+
+```
+
+## Call Snps for network etc.
+```{r}
+mafsb %>% select(Path) %>% write_tsv("bamlists/108.bamlist", col_names = FALSE)
+mafsb %>% select(Run) %>% write_tsv("bamlists/108.names", col_names = FALSE)
+
+```
+
+```{sh, eval=FALSE}
+srun -t 36:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 97 -bam bamlists/108.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf  meta/no-inv.txt -out outputs/1306/snps-wgs-01-glf  \
+-minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1306/snps-wgs-01-glf.out 2> outputs/1306/snps-wgs-01-glf.err &
+```
+
+Possible commands
+	-> Number of sites retained after filtering: 7625790 
+
+
+```{sh}
+plink --tped snps-wgs-01-glf.tped --tfam snps-wgs-01-glf.tfam  --out plink-binary-01 --recode --allow-extra-chr --noweb
+plink --ped plink-binary-01.ped --map plink-binary-01.map --recode vcf --allow-extra-chr -out plink-01
+bgzip plink-01.vcf 
+tabix plink-01.vcf.gz
+
+#renaming vcf bcftools/1.13
+module load bcftools
+
+bcftools reheader --samples bamlists/108.names -o outputs/1306/renamed-01.vcf.gz outputs/1306/plink-01.vcf.gz
+
+bcftools +fill-tags outputs/1306/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/pruned-01-maf05-45.vcf
+
+bcftools +fill-tags outputs/1306/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.01' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/pruned-01-maf01-45.vcf
+
+bcftools +fill-tags outputs/1306/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/pruned-01-maf10-45.vcf
+
+#Convert to phylip and then to nex
+conda activate py2;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf01-45.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf05-45.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45.vcf;
+
+conda deactivate;
+```
