@@ -166,6 +166,7 @@ srun -t 48:00:00 -p bigmemm --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-t
 -rf  meta/no-inv.txt -out outputs/1306/snps-wgs-01-glf  \
 -minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1306/snps-wgs-01-glf.out 2> outputs/1306/snps-wgs-01-glf.err &
+
 ```
 
 Possible commands

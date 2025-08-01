@@ -17,8 +17,8 @@ SRR3183253,SAMN04482522,SRS1284022,India East Coast,Pazhayar-TamilNadu,63984970,
 SRR3183255,SAMN04482523,SRS1284023,India East Coast,Pazhayar-TamilNadu,38650072,33515505,6.83614,data/split/SRR3183255.sort.flt.bam,IND,NA,data/split/SRR3183255.sort.flt.bam,
 SRR3183256,SAMN04482524,SRS1284024,India East Coast,Pazhayar-TamilNadu,48796326,36968633,7.52759,data/split/SRR3183256.sort.flt.bam,IND,NA,data/split/SRR3183256.sort.flt.bam,
 SRR3183257,SAMN04482525,SRS1284025,India East Coast,Pazhayar-TamilNadu,45634612,41086834,8.46042,data/split/SRR3183257.sort.flt.bam,IND,NA,data/split/SRR3183257.sort.flt.bam,
-SRR3183258,SAMN04482526,SRS1284026,India West Coast,Mumbai,196695055,178632224,34.8059,data/split/SRR3183258.sort.flt.bam,IND,NA,data/split/SRR3183258.sort.flt.bam,Incomplete Assembly
-SRR3183259,SAMN04482527,SRS1284027,India West Coast,Mumbai,143785172,133091074,25.5825,data/split/SRR3183259.sort.flt.bam,IND,NA,data/split/SRR3183259.sort.flt.bam,
+SRR3183258,SAMN04482526,SRS1284026,India West Coast,Mumbai,196695055,178632224,34.8059,data/split/SRR3183258.sort.flt.bam,IND,NA,data/downsample/SRR3183258.reduced.bam,Incomplete Assembly
+SRR3183259,SAMN04482527,SRS1284027,India West Coast,Mumbai,143785172,133091074,25.5825,data/split/SRR3183259.sort.flt.bam,IND,NA,data/downsample/SRR3183259.reduced.bam,
 SRR3183260,SAMN04482528,SRS1284028,India West Coast,Mumbai,52601809,49606529,10.5794,data/split/SRR3183260.sort.flt.bam,IND,NA,data/split/SRR3183260.sort.flt.bam,
 SRR3183261,SAMN04482529,SRS1284029,India West Coast,Mumbai,51249916,47169202,9.92069,data/split/SRR3183261.sort.flt.bam,IND,NA,data/split/SRR3183261.sort.flt.bam,
 SRR3165613,SAMN04482556,SRS1284056,Indonesia-K,Samarinda,33294808,31924152,4.73449,data/split/SRR3165613.sort.flt.bam,WAL,NA,data/split/SRR3165613.sort.flt.bam,

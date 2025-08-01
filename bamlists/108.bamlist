@@ -16,8 +16,8 @@ data/split/SRR3183253.sort.flt.bam
 data/split/SRR3183255.sort.flt.bam
 data/split/SRR3183256.sort.flt.bam
 data/split/SRR3183257.sort.flt.bam
-data/split/SRR3183258.sort.flt.bam
-data/split/SRR3183259.sort.flt.bam
+data/downsample/SRR3183258.reduced.bam
+data/downsample/SRR3183259.reduced.bam
 data/split/SRR3183260.sort.flt.bam
 data/split/SRR3183261.sort.flt.bam
 data/split/SRR3165613.sort.flt.bam
