@@ -1,0 +1,2 @@
+samtools view -bs 0.201115328148389 data/split/SRR3183258.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183258.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/SRR3183258.reduced.bam ;
+samtools view -bs 0.27362454803088 data/split/SRR3183259.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/SRR3183259.reduced.bam ; samtools index /home/maccamp/lates-wgs/data/downsample/SRR3183259.reduced.bam ;

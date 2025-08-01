@@ -402,7 +402,7 @@ ggplot(pcadata) +
   theme(legend.position = "none") +
   theme(panel.grid = element_blank()) +
   xlab("PC 1") +
-  ylab("PC 2") 
+  ylab("PC 4") 
 ```
 
 ```{r}

@@ -13,6 +13,14 @@ library(tidyverse)
 library(raster)
 library(ozmaps)
 library(ggrepel)
+library(ggtree)
+library(tanggle)
+library(phangorn)
+library(viridis)
+library(ggpubr)
+library(ape)
+library(pcadapt)
+library(ggpubr)
 ```
 Plot Range on world map.
 
@@ -114,6 +122,7 @@ mafsb<-read_csv("meta/m131.csv") %>% filter(!Lineage %in% c("Mainstream","OceanP
 locs<-read_tsv("outputs/range-map/points-edited-2 copy.tsv") %>% select(Locality, long, lat)
 points<-mafsb %>% left_join(locs) %>% group_by(Lineage,Region,Locality, lat, long) %>% summarise("Sample Size"=n())
 points$Lineage<-factor(points$Lineage, levels=c("IND","uwisara","lakdiva","SEA","WAL","AUS"))
+mafsb$Lineage<-factor(mafsb$Lineage, levels=c("IND","uwisara","lakdiva","SEA","WAL","AUS"))
 ```
 ```{r}
 ggplot() +
@@ -146,13 +155,13 @@ ggsave("outputs/1306/sample-map.jpeg")
 
 ## Call Snps for network etc.
 ```{r}
-mafsb %>% select(Path) %>% write_tsv("bamlists/108.bamlist", col_names = FALSE)
+mafsb %>% select(NewPath) %>% write_tsv("bamlists/108.bamlist", col_names = FALSE)
 mafsb %>% select(Run) %>% write_tsv("bamlists/108.names", col_names = FALSE)
 
 ```
 
 ```{sh, eval=FALSE}
-srun -t 36:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+srun -t 48:00:00 -p bigmemm --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
 -minInd 97 -bam bamlists/108.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -rf  meta/no-inv.txt -out outputs/1306/snps-wgs-01-glf  \
 -minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
@@ -160,7 +169,7 @@ srun -t 36:00:00 -p high --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task
 ```
 
 Possible commands
-	-> Number of sites retained after filtering: 7625790 
+	-> Number of sites retained after filtering: 7032672 
 
 
 ```{sh}
@@ -182,9 +191,231 @@ bcftools +fill-tags outputs/1306/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftoo
 
 #Convert to phylip and then to nex
 conda activate py2;
+
 ~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf01-45.vcf;
 ~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf05-45.vcf;
 ~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45.vcf;
 
 conda deactivate;
+```
+
+```{r}
+dat<-read.dna(file="outputs/1306/pruned-01-maf05-45.min4.phy")
+write.nexus.data(dat, file="outputs/1306/pruned-01-maf05-45.nex")
+
+dat<-read.dna(file="outputs/1306/pruned-01-maf01-45.min4.phy")
+write.nexus.data(dat, file="outputs/1306/pruned-01-maf01-45.nex")
+
+dat<-read.dna(file="outputs/1306/pruned-01-maf10-45.min4.phy")
+write.nexus.data(dat, file="outputs/1306/pruned-01-maf10-45.nex")
+```
+Plotting a network
+
+```{r}
+net<-read.nexus.networx("outputs/1306/pruned-01-maf10-45-network.nex")
+m<-mafsb
+m$Lineage<-factor(m$Lineage, levels=c("IND","uwisara","lakdiva","SEA","WAL","AUS"))
+
+```
+
+```{r}
+g<-ggsplitnet(net, color="black")  
+g$data<-left_join(g$data, m, by=c("label"="Run")) 
+
+n<-g + 
+  geom_tippoint(aes(fill=Lineage), cex=5, alpha=1.00, pch=21) +
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "none") +
+  theme(panel.grid=element_blank()) +
+  #theme(panel.background = element_rect(fill="black", color="black")) +
+  #theme(plot.background = element_rect(fill="black", color="black")) +
+  #theme(legend.background =element_rect(fill="black", color="black"), legend.text = element_text(color="white"), legend.title = element_text(color="white")) +
+  #theme(axis.text=element_text(color="white", size=12)) +
+  #theme(axis.title=element_text(color="white", face="bold", size=14))  +
+  theme(legend.position = "none")
+  
+  
+  #color white and black
+n
+ggsave("outputs/1306/wgs-network.jpeg", width=9, height=8)
+ggsave("outputs/1306/wgs-network.pdf", width=9, height=8)
+
+```
+
+Call snps in an inversion zone.
+
+NC_066837.1:5247652-
+
+```{sh, eval=FALSE}
+srun -t 12:00:00 -p bigmemm --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 97 -bam bamlists/108.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-r NC_066837.1:5247652- -out outputs/1306/lca05  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1306/lca05.out 2> outputs/1306/lca05.err &
+```
+
+Convert to vcf and prune
+
+```{sh}
+plink --tped lca05.tped --tfam lca05.tfam  --out lca05-binary --recode --allow-extra-chr --noweb
+plink --ped lca05-binary.ped --map lca05-binary.map --recode vcf --allow-extra-chr -out plink-lca05
+bgzip plink-lca05.vcf 
+tabix plink-lca05.vcf.gz
+
+#renaming vcf bcftools/1.13
+module load bcftools
+
+bcftools reheader --samples bamlists/108.names -o outputs/1306/lca05-renamed.vcf.gz outputs/1306/plink-lca05.vcf.gz
+
+bcftools +fill-tags outputs/1306/lca05-renamed.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/lca05-pruned.vcf
+
+bcftools +fill-tags outputs/1306/lca05-renamed.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/lca05-pruned-01.vcf
+```
+
+417 snps
+```{sh}
+conda activate py2;
+~/github/mccloud-rrt/vcf2phylip.py -i lca05-pruned.vcf
+~/github/mccloud-rrt/vcf2phylip.py -i lca05-pruned-01.vcf
+
+conda deactivate;
+```
+
+
+
+```{r}
+path_to_file <- "outputs/1306/pruned-01-maf05-45.vcf"
+
+filename <- read.pcadapt(path_to_file, type = "vcf")
+x <- pcadapt(input = filename, K = 20) 
+var<-round(x$singular.values^2*100,2)
+var
+```
+
+```{r}
+#plot(x, option = "screeplot")
+panela<-plot(x, option = "screeplot", K = 10) + ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  scale_x_continuous(breaks=seq(1,10,1), labels=seq(1,10,1)) +
+  ylab("Proption of Explained Variance\n") +
+  xlab("\nPrincipal Component") +
+  theme(axis.title=element_text(size=12))
+panela
+```
+
+```{r}
+m<-mafsb
+plot(x, option = "scores", pop = m$Lineage)
+```
+
+
+Get scree plot and PCA    
+```{r}
+pcadata<-x$scores[,1:5] %>% as_tibble()
+pcadata<-pcadata %>% bind_cols(m)
+
+```
+
+```{r}
+wgs<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V2, fill=Lineage), pch=21, alpha=0.95, size=3) +
+  scale_shape_manual(values=c(21,23,23,24,22)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab(paste0("\nPC1 ", round(var[1],2),"%")) +
+  ylab(paste0("PC2 ", round(var[2],2),"%\n")) +
+  ggtitle("Genome Wide SNPs\n") +
+  theme(plot.title = element_text(size=14, hjust=0.5, face="bold"))
+
+wgs
+
+ggsave("outputs/1306/genome-wide-snps.jpeg", width=7, height=6)
+```
+
+
+
+```{r}
+path_to_file <- "outputs/1306/lca05-pruned.vcf"
+
+filename <- read.pcadapt(path_to_file, type = "vcf")
+x <- pcadapt(input = filename, K = 20) 
+var<-round(x$singular.values^2*100,2)
+var
+```
+
+```{r}
+#plot(x, option = "screeplot")
+panela<-plot(x, option = "screeplot", K = 10) + ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  scale_x_continuous(breaks=seq(1,10,1), labels=seq(1,10,1)) +
+  ylab("Proption of Explained Variance\n") +
+  xlab("\nPrincipal Component") +
+  theme(axis.title=element_text(size=12))
+panela
+```
+
+```{r}
+m<-mafsb
+plot(x, option = "scores", pop = m$Lineage)
+```
+
+
+Get scree plot and PCA    
+```{r}
+pcadata<-x$scores[,1:5] %>% as_tibble()
+pcadata<-pcadata %>% bind_cols(m)
+
+```
+
+```{r}
+lca05<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V2, fill=Lineage), pch=21, alpha=0.95, size=3) +
+  scale_shape_manual(values=c(21,23,23,24,22)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab(paste0("\nPC1 ", round(var[1],2),"%")) +
+  ylab(paste0("PC2 ", round(var[2],2),"%\n")) +
+  ggtitle("Lca05\n") +
+  theme(plot.title = element_text(size=14, hjust=0.5, face="bold"))
+
+lca05
+
+ggsave("outputs/1306/lca05-snps.jpeg", width=7, height=6)
+
+```
+
+
+## Trees
+
+in outputs/1306/phylo
+
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf01-45.min4.phy --seqtype DNA --redo
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf01-45.min4.phy.varsites.phy --seqtype DNA --redo
+
+
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf05-45.min4.phy --seqtype DNA --redo
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf05-45.min4.phy.varsites.phy --seqtype DNA --redo
+
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf10-45.min4.phy --seqtype DNA --redo
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf10-45.min4.phy.varsites.phy --seqtype DNA --redo
+
+## Downsample 
+SRR3183258	SAMN04482526	SRS1284026	India West Coast	Mumbai	196695055	178632224	34.8059
+SRR3183259	SAMN04482527	SRS1284027	India West Coast	Mumbai	143785172	133091074	25.5825
+
+```{r}
+down<-mafsb %>% filter(Run %in% c("SRR3183258","SRR3183259")) %>% mutate(Frac=7/Coverage) %>%
+  mutate(Command = paste0("samtools view -bs ", Frac, " ", "data/split/",Run,".sort.flt.bam", " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;"," samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;")) 
+down %>% select(Command)
+down %>% select(Command) %>% write_tsv(file="1306.1-downsample.sh", col_names = FALSE)
+ 
 ```
