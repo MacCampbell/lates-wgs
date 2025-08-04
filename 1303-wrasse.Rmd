@@ -10,6 +10,9 @@ knitr::opts_chunk$set(echo = TRUE, warnign=FALSE, message=FALSE)
 
 ```{r, message=FALSE, warning=FALSE}
 library(gplots)
+library(pheatmap)
+library(ozmaps)
+library(ggplotify)
 library(tidyverse)
 library(snpR)
 library(adegenet)
@@ -539,7 +542,7 @@ Cluster, have the one overlapping POS
 gst<-gs %>% select(POS, Indiv, Genotype) %>% pivot_wider(id_cols = POS, names_from = Indiv, values_from = Genotype)
 m<-as.matrix(gst %>% select(-POS))
 
-pdf("outputs/1303/super14heatmap.pdf", width=22, height=8)
+#pdf("outputs/1303/super14heatmap.pdf", width=22, height=8)
 heatmap.2(m,
           ylab="SNPs",
           dendrogram = "both",
@@ -548,7 +551,7 @@ heatmap.2(m,
           xlab="Individuals",
           labCol = "",
           )
-dev.off()
+#dev.off()
 ```
 
 Super19
@@ -605,6 +608,7 @@ I'll check these ones...
 
 ```{r}
 gensub<-gen[loc=tops$Locus]
+
 Xsub <- tab(gensub, NA.method="mean")
 
 pcsub<- dudi.pca(Xsub,scannf=FALSE,scale=FALSE,nf=3)
@@ -614,13 +618,13 @@ dfs<-dfs %>% bind_cols(meta)
 eig<-pcsub$eig/sum(pcsub$eig)*100
 
 
-pcss<-ggplot(dfs) + 
-  geom_point(aes(x=Axis1, y=Axis2, fill=pop),pch=21, alpha=0.75, cex=2) +
+pcss<-ggplot(dfs %>% filter(site_name %in% c("Abrolhos Islands north", "Abrolhos Islands south","Qoubba","Coral Bay"))) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=site_name),pch=21, alpha=0.75, cex=2) +
   theme_bw() +
   xlab(paste0("PC1 ",round(eig[1],2), "%")) +
   ylab(paste0("PC2 ",round(eig[2],2), "%")) +
   theme(panel.grid = element_blank()) +
-  scale_fill_viridis_c(option="H") +
+  scale_fill_viridis_d(option="H") +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
   theme(legend.position = "top") 
  # geom_text_repel(aes(x=Axis1, y=Axis2,label=id))
@@ -643,19 +647,74 @@ gs<-gs %>% filter(POS %in% tops$Position)
 Cluster
 
 ```{r}
-gst<-gs %>% select(POS, Indiv, Genotype) %>% pivot_wider(id_cols = POS, names_from = Indiv, values_from = Genotype)
-library("gplots")
+gst<-gs %>% select(POS, Indiv, Genotype) %>% filter(POS %in% c("21045112","21044777","21045005")) %>% pivot_wider(id_cols = POS, names_from = Indiv, values_from = Genotype)
 m<-as.matrix(gst %>% select(-POS))
 
-pdf("outputs/1303/super19heatmap.pdf", width=22, height=8)
-heatmap.2(m,
-          ylab="SNPs",
-          dendrogram = "both",
-          trace="none", key=FALSE,
-          labRow = gst$POS,
-          xlab="Individuals",
-          labCol = "",
-          )
-dev.off()
+#pdf("outputs/1303/super19heatmap.pdf", width=22, height=8)
+#@heatmap.2(m,
+ #        ylab="SNPs",
+  #        dendrogram = "both",
+   #       trace="none", key=FALSE,
+    #      labRow = gst$POS,
+     #     xlab="Individuals",
+      #    labCol = "",
+       #   )
+
+
+gs2<-gs %>% select(Indiv) %>% unique() 
+gs2$Indiv<-gsub("^\\d+_","",gs2$Indiv)
+gs2<-gs2 %>% left_join(wrasse, by=c("Indiv"="id"))
 ```
 
+```{r}
+as.ggplot(pheatmap(m, cluster_cols = TRUE, cluster_rows = FALSE, labels_col = gs2$site_name, fontsize_col=4, labels_row = gst$POS))
+
+ggsave("outputs/1303/super19-redo.pdf", width=22, height = 8)
+#dev.off()
+```
+Check for HWE?
+
+```{r}
+
+gs3<-gs
+gs3$Indiv<-gsub("^\\d+_","",gs3$Indiv)
+gs3<-gs3 %>% left_join(wrasse, by=c("Indiv"="id")) %>% filter(POS %in% c("21045112","21044777","21045005"))
+#remove the one NA in Coral Bay
+gs3<-na.omit(gs3)
+
+gs4<-gs3 %>% group_by(site_name, POS) %>% mutate(SampleSize=n()) %>% mutate(Freq=sum(Genotype)/(2*SampleSize))
+gs5<-gs4 %>% select(POS, site_name, Freq, SampleSize) %>% unique() %>% arrange(-Freq)
+```
+```{r}
+labels<-gs5 %>% filter(site_name %in% c("Abrolhos Islands north", "Abrolhos Islands south","Qoubba","Coral Bay","Dongara","Jurien Bay"))
+ggplot(gs5) + 
+  geom_point(aes(x=POS, y=Freq, fill=site_name), pch=21) +
+  geom_text_repel(data=labels, aes(x=POS, y=Freq, label=site_name)) +
+  theme_bw() +
+  theme(legend.position = "none")
+```
+
+Plot...
+
+```{r}
+oz <- ozmap_data("states")
+oz<-oz[oz$NAME=="Western Australia",]
+ggplot(oz) +
+  geom_sf()
+```
+```{r}
+locs<-wrasse %>% group_by(site_name) %>% summarize(Lat=mean(lat), Long=mean(lon))
+d6<-gs5 %>% left_join(locs)
+```
+
+```{r}
+ggplot(oz) +
+  geom_sf() +
+  geom_jitter(data=d6, aes(x=Long, y=Lat, fill=Freq, size=SampleSize), pch=21, alpha=0.8) +
+  scale_fill_viridis_c() +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  facet_wrap(.~POS)
+
+ggsave("outputs/1303/facetted-super19.pdf", width=12, height=6)
+```

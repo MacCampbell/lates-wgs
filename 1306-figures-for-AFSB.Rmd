@@ -157,7 +157,7 @@ ggsave("outputs/1306/sample-map.jpeg")
 ```{r}
 mafsb %>% select(NewPath) %>% write_tsv("bamlists/108.bamlist", col_names = FALSE)
 mafsb %>% select(Run) %>% write_tsv("bamlists/108.names", col_names = FALSE)
-
+mafsb %>% filter(Lineage %in% c("IND","uwisara","lakdiva")) %>% select(Run) %>% write_tsv("bamlists/108-ind.names", col_names = FALSE)
 ```
 
 ```{sh, eval=FALSE}
@@ -171,6 +171,10 @@ srun -t 48:00:00 -p bigmemm --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-t
 
 Possible commands
 	-> Number of sites retained after filtering: 7032672 
+(base) maccamp@farm:~/lates-wgs/outputs/1306$ mv plink-01.vcf.gz plink-01.vcf.gz.bak
+
+Downsampling IND individuals
+	-> Number of sites retained after filtering: 7074172 
 
 
 ```{sh}
@@ -189,6 +193,12 @@ bcftools +fill-tags outputs/1306/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftoo
 bcftools +fill-tags outputs/1306/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.01' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/pruned-01-maf01-45.vcf
 
 bcftools +fill-tags outputs/1306/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/pruned-01-maf10-45.vcf
+
+bcftools view -S bamlists/108-ind.names -o outputs/1306/ind.vcf outputs/1306/renamed-01.vcf.gz 
+bgzip outputs/1306/ind.vcf
+tabix outputs/1306.ind.vcf.gz
+
+bcftools +fill-tags outputs/1306/ind.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/pruned-01-maf05-45-ind.vcf
 
 #Convert to phylip and then to nex
 conda activate py2;
