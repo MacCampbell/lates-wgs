@@ -26,6 +26,13 @@ library(ggpubr)
 
 Have the new Pilbara seqs, there are a few lanes to combine
 
+```{sh, eval=FALSE}
+module load parallel
+srun -p high -t 12:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=11 parallel -j 11 < ../../1308.1-combine.sh  
+bash ../../do-align.sh to-align.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
+cat *stats > piblara.csv
+```
+
 
 ```{r}
 m152<-read_csv("meta/m152.csv")
