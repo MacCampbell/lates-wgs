@@ -157,3 +157,33 @@ ggplot(rel)+geom_histogram(aes(x=theta), bins=50, fill="grey", color="grey") +
   ylab("Count") +
   xlab("Kinship Coefficient")
 ```
+
+
+plot without dups
+
+
+```{r}
+rel2<-rel %>% filter(!SampleNameA %in% c("Comb12","Comb13","Comb23","Dup1","Dup2","Dup3"))
+rel2<-rel2 %>% filter(!SampleNameB %in% c("Comb12","Comb13","Comb23","Dup1","Dup2","Dup3"))
+
+ggplot(rel2) +
+  geom_histogram(aes(x=rab), bins=50, fill="grey", color="grey") +
+  geom_vline(xintercept =.50, col=cols[1]) + #Parent offspring/full sibs
+  geom_vline(xintercept =.25, col=cols[2]) + #2nd degree half sib, grandparent, aunt/uncle, double first cousins
+  geom_vline(xintercept =.125, col=cols[3]) + # 3rd cousins
+  geom_vline(xintercept = .0625, col=cols[4]) + 
+  geom_vline(xintercept = .03125, col=cols[5]) +
+  geom_vline(xintercept = 0.0, col=cols[6]) +
+  scale_x_continuous(breaks=c(0,.03125, .0625, .125, .25, .5),
+                     labels=c("0 / Unrelated","5th Deg.","4th Deg.","3rd Deg.", "2nd Deg.", "1st Deg.")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(hjust=1, angle=45)) +
+  theme(panel.grid=element_blank()) +
+  ylab("Count") +
+  xlab("Pairwise Relatedness") 
+```
+
+
+```{r}
+rel2 %>% arrange(-theta) %>% select(SampleNameA, SampleNameB, rab, theta)
+```

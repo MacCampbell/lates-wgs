@@ -1,0 +1,32 @@
+---
+title: "1308-pilbara"
+output: html_document
+date: "2025-11-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+
+```{r}
+library(tidyverse)
+library(raster)
+library(ozmaps)
+library(ggrepel)
+library(ggtree)
+library(tanggle)
+library(phangorn)
+library(viridis)
+library(ggpubr)
+library(ape)
+library(pcadapt)
+library(ggpubr)
+```
+
+Have the new Pilbara seqs, there are a few lanes to combine
+
+
+```{r}
+m152<-read_csv("meta/m152.csv")
+```

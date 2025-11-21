@@ -194,18 +194,28 @@ bcftools +fill-tags outputs/1306/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftoo
 
 bcftools +fill-tags outputs/1306/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/pruned-01-maf10-45.vcf
 
-bcftools view -S bamlists/108-ind.names -o outputs/1306/ind.vcf outputs/1306/renamed-01.vcf.gz 
-bgzip outputs/1306/ind.vcf
-tabix outputs/1306.ind.vcf.gz
+bcftools +fill-tags outputs/1306/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode maxAF  > outputs/1306/pruned-01-maf10-45-max.vcf
+
+
+
+bcftools view -S bamlists/108-ind.names -o outputs/1306/ind.vcf outputs/1306/renamed-01.vcf.gz; bgzip outputs/1306/ind.vcf; tabix outputs/1306.ind.vcf.gz
 
 bcftools +fill-tags outputs/1306/ind.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/pruned-01-maf05-45-ind.vcf
+
+bcftools +fill-tags outputs/1306/ind.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/pruned-01-maf10-45-ind.vcf
+
+bcftools +fill-tags outputs/1306/ind.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode maxAF  > outputs/1306/pruned-01-maf10-45-max-ind.vcf
 
 #Convert to phylip and then to nex
 conda activate py2;
 
 ~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf01-45.vcf;
 ~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf05-45.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45-max.vcf;
 ~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf05-45-ind.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45-ind.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45-max-ind.vcf;
 
 conda deactivate;
 ```
@@ -219,13 +229,24 @@ write.nexus.data(dat, file="outputs/1306/pruned-01-maf01-45.nex")
 
 dat<-read.dna(file="outputs/1306/pruned-01-maf10-45.min4.phy")
 write.nexus.data(dat, file="outputs/1306/pruned-01-maf10-45.nex")
+
+dat<-read.dna(file="outputs/1306/pruned-01-maf10-45-max.min4.phy")
+write.nexus.data(dat, file="outputs/1306/pruned-01-maf10-45-max.nex")
+
+
+dat<-read.dna(file="outputs/1306/pruned-01-maf05-45-ind.min4.phy")
+write.nexus.data(dat, file="outputs/1306/pruned-01-maf05-45-ind.min4.nex")
 ```
 Plotting a network
 
 ```{r}
-net<-read.nexus.networx("outputs/1306/pruned-01-maf10-45-network.nex")
+#net<-read.nexus.networx("outputs/1306/pruned-01-maf10-45-network.nex")
+#net<-read.nexus.networx("outputs/1306/pruned-01-maf01-45-downin.network.nex")
+net<-read.nexus.networx("outputs/1306/pruned-01-maf10-45-max.network")
 m<-mafsb
+m<-m %>% mutate(Lineage2=ifelse(Locality=="Pazhayar-TamilNadu","calcarifer",as.character(Lineage)))
 m$Lineage<-factor(m$Lineage, levels=c("IND","uwisara","lakdiva","SEA","WAL","AUS"))
+m$Lineage2<-factor(m$Lineage2, levels=c("calcarifer","uwisara","lakdiva","IND","SEA","WAL","AUS"))
 
 ```
 
@@ -234,17 +255,17 @@ g<-ggsplitnet(net, color="black")
 g$data<-left_join(g$data, m, by=c("label"="Run")) 
 
 n<-g + 
-  geom_tippoint(aes(fill=Lineage), cex=5, alpha=1.00, pch=21) +
+  geom_tippoint(aes(fill=Lineage2), cex=5, alpha=1.00, pch=21) +
   scale_fill_viridis_d(option="H") +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
-  theme(legend.position = "none") +
-  theme(panel.grid=element_blank()) +
+#  theme(legend.position = "none") +
+  theme(panel.grid=element_blank())
   #theme(panel.background = element_rect(fill="black", color="black")) +
   #theme(plot.background = element_rect(fill="black", color="black")) +
   #theme(legend.background =element_rect(fill="black", color="black"), legend.text = element_text(color="white"), legend.title = element_text(color="white")) +
   #theme(axis.text=element_text(color="white", size=12)) +
   #theme(axis.title=element_text(color="white", face="bold", size=14))  +
-  theme(legend.position = "none")
+ # theme(legend.position = "none")
   
   
   #color white and black
@@ -297,12 +318,13 @@ conda deactivate;
 
 ```{r}
 path_to_file <- "outputs/1306/pruned-01-maf05-45.vcf"
-
+path_to_file <- "outputs/1306/pruned-01-maf10-45-max.vcf"
 filename <- read.pcadapt(path_to_file, type = "vcf")
 x <- pcadapt(input = filename, K = 20) 
 var<-round(x$singular.values^2*100,2)
 var
 ```
+Note to self to run a structure-type analysis of this.
 
 ```{r}
 #plot(x, option = "screeplot")
@@ -419,6 +441,47 @@ iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf05-45.min4.phy.varsites.ph
 iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf10-45.min4.phy --seqtype DNA --redo
 iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf10-45.min4.phy.varsites.phy --seqtype DNA --redo
 
+in outputs/1306/max
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf10-45-max.min4.phy --seqtype DNA --redo
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf10-45-max.min4.phy.varsites.phy --seqtype DNA --redo
+
+in outputs/1306/ind
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf10-45-max-ind.min4.phy --seqtype DNA --redo
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s  pruned-01-maf10-45-max-ind.min4.phy.varsites.phy --seqtype DNA --redo
+
+
+```{r}
+tree<-read.tree("outputs/1306/max/pruned-01-maf10-45-max.min4.phy.varsites.phy.contree")
+t1<-ggtree(tree) + geom_nodelab(aes(label=node))
+t1
+```
+
+```{r}
+#ind<-m %>% filter(Lineage=="IND")
+#t2<-root.phylo(tree,outgroup = ind$Run)
+#t2<-midpoint.root(t2)
+t2<-root.phylo(tree, node=73)
+t3<-as.polytomy(t2, feature='node.label', fun=function(x) as.numeric(x) < 75)
+
+t<-t3
+
+t<-ggtree(t)
+
+t$data$Bootstrap<-as.numeric(t$data$label)
+
+d <- t$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+d <- d[d$label >= 90,]
+
+e <- t$data
+e <- e[!e$isTip,]
+e$label <- as.numeric(e$label)
+e <- e[e$label < 90,]
+e <- e[e$label >= 75,]
+```
+
+
 ## Downsample 
 SRR3183258	SAMN04482526	SRS1284026	India West Coast	Mumbai	196695055	178632224	34.8059
 SRR3183259	SAMN04482527	SRS1284027	India West Coast	Mumbai	143785172	133091074	25.5825
@@ -429,4 +492,240 @@ down<-mafsb %>% filter(Run %in% c("SRR3183258","SRR3183259")) %>% mutate(Frac=7/
 down %>% select(Command)
 down %>% select(Command) %>% write_tsv(file="1306.1-downsample.sh", col_names = FALSE)
  
+```
+
+Ran it, has some effects.
+
+Make a PCA now of ind
+
+```{r}
+path_to_file <- "outputs/1306/pruned-01-maf05-45-ind.vcf"
+path_to_file <- "outputs/1306/pruned-01-maf10-45-max-ind.vcf"
+
+filename <- read.pcadapt(path_to_file, type = "vcf")
+x <- pcadapt(input = filename, K = 20) 
+var<-round(x$singular.values^2*100,2)
+var
+```
+
+```{r}
+#plot(x, option = "screeplot")
+panela<-plot(x, option = "screeplot", K = 10) + ggtitle("A") +
+  theme(plot.title = element_text(size=14, face="bold")) +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  scale_x_continuous(breaks=seq(1,10,1), labels=seq(1,10,1)) +
+  ylab("Proption of Explained Variance\n") +
+  xlab("\nPrincipal Component") +
+  theme(axis.title=element_text(size=12))
+panela
+```
+
+```{r}
+m<-mafsb %>% filter(Lineage %in% c("IND","uwisara","lakdiva"))
+plot(x, option = "scores", pop = m$Lineage)
+```
+
+
+Get scree plot and PCA    
+```{r}
+pcadata<-x$scores[,1:5] %>% as_tibble()
+pcadata<-pcadata %>% bind_cols(m)
+
+```
+
+```{r}
+ind12<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V2, fill=Lineage), pch=21, alpha=0.95, size=3) +
+  scale_shape_manual(values=c(21,23,23,24,22)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab(paste0("\nPC1 ", round(var[1],2),"%")) +
+  ylab(paste0("PC2 ", round(var[2],2),"%\n")) +
+  ggtitle("Indian Ocean PCA\n") +
+  theme(plot.title = element_text(size=14, hjust=0.5, face="bold"))
+
+ind12
+
+ind13<-ggplot(pcadata) +
+  geom_point(aes(x=V1, y=V3, fill=Lineage), pch=21, alpha=0.95, size=3) +
+  scale_shape_manual(values=c(21,23,23,24,22)) + 
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  theme(panel.grid = element_blank()) +
+  xlab(paste0("\nPC1 ", round(var[1],2),"%")) +
+  ylab(paste0("PC3 ", round(var[3],2),"%\n")) +
+  ggtitle("Indian Ocean PCA\n") +
+  theme(plot.title = element_text(size=14, hjust=0.5, face="bold"))
+
+ind13
+
+ggsave("outputs/1306/ind-snps.jpeg", width=7, height=6)
+
+```
+
+
+## Stats for Matt
+
+```{r}
+mafsb %>% filter(Locality %in% c("Broome", "Fitzroy River","river estuaries between Yangon and Sittang")) %>% select(Sample, Locality, Aligned, Filtered, Coverage) %>% 
+  mutate("% Dup"=(Aligned-Filtered)/Filtered * 100) %>% write_csv("outputs/1306/stats-for-Matt.csv")
+
+```
+
+
+# Admixture
+
+(base) ➜  admixture git:(main) ✗ ln -s ../pruned-01-maf10-45-max.vcf ./
+
+plink --vcf pruned-01-maf10-45-max.vcf --make-bed --out myplink --allow-extra-chr --noweb
+plink -bfile myplink --recode12 -out myplink2 --allow-extra-chr --noweb
+
+no1 in subdir 1306.admixture
+
+```{sh, eval=FALSE}
+for K in 1 2 3 4 5; \
+do ~/github/admixture/admixture --cv myplink2.ped $K | tee log${K}.out; done
+```
+
+```{r}
+tbl=read.table("outputs/1204/admixture/myplink2.2.Q")
+admix<-mafsb %>% bind_cols(tbl)
+```
+
+
+
+```{r, echo=FALSE}
+PlotAdmixture<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  ylab("Q\n") +
+  theme(legend.position = "") +
+  theme(axis.text = element_text(size=10, face="bold")) +
+  theme(axis.title.y=element_text(size=14, face="bold")) +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  #theme(axis.text.x=element_blank()) +
+  scale_fill_viridis_d(option="viridis") +
+  theme(axis.ticks.x = element_blank())
+
+}
+```
+
+```{r, echo=FALSE}
+PlotAdmixtureNoLabels<- function(file, meta) {
+
+q<-read_delim(file, delim=" ", col_names=FALSE)
+#Make generic colnames
+
+nums<-1:length(colnames(q))
+mynames<-paste0("Q",nums)
+
+qs<-length(colnames(q))-1
+
+colnames(q)<-mynames
+
+#Bind met and arrange 
+df<-bind_cols(q, meta) %>% arrange(Region) %>% mutate(Index=1:n())
+df$Region<-factor(df$Region, levels=unique(df$Region))
+
+rdf<-df %>% dplyr::select(Region, Index, colnames(q) ) %>% gather(key=Ancestry, value=Q, 3:(3+length(colnames(q))-1))
+
+#Make names for structure-like plot
+labels<-rdf %>% group_by(Region) %>% mutate(Start=min(Index), Stop=max(Index)) %>% 
+  select(Region,Start,Stop) %>% unique() %>% 
+  mutate(Position=round((Start+Stop)/2)) %>% ungroup() %>% unique()
+
+#Plot
+ggplot(rdf) + 
+  geom_col(aes(x=Index,y=Q, fill=Ancestry), color="NA", size = 0, width = 1) +
+  geom_segment(data=labels, x = labels$Start - 0.5, y=0, xend = labels$Start-0.5, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(data=labels, x = labels$Stop[length(labels$Stop)]  + 0.5, y=0, 
+               xend= labels$Stop[length(labels$Stop)] + 0.5, yend=1,  alpha=0.9,
+               size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=1, yend=1, alpha=0.9, size=0.25) +
+  geom_segment(x=0+0.5, xend= labels$Stop[length(labels$Stop)]+0.5, y=0, yend=0, alpha=0.9, size=0.25) +
+  ylim(-0.1,1.01) +
+  xlim(-0.1, labels$Stop[length(labels$Stop)]+1) +
+  theme(panel.background = element_blank()) +
+  xlab("") +
+  ylab("Q\n") +
+  theme(legend.position = "") +
+  theme(axis.title.y=element_text(size=14, face="bold")) +
+  scale_x_continuous(breaks=labels$Position, labels=labels$Region) +
+    theme(axis.text = element_text(size=10, face="bold")) +
+  #theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  theme(axis.text.x=element_blank()) +
+  scale_fill_viridis_d(option="viridis") +
+  theme(axis.ticks.x = element_blank())
+
+}
+
+```
+
+
+##Admixture
+
+```{r}
+PlotAdmixture("outputs/1306/admixture/myplink2.2.Q",mafsb) 
+PlotAdmixture("outputs/1306/admixture/myplink2.3.Q",mafsb) 
+PlotAdmixture("outputs/1306/admixture/myplink2.4.Q",mafsb) 
+PlotAdmixture("outputs/1306/admixture/myplink2.5.Q",mafsb) 
+
+```
+pb<-PlotAdmixtureNoLabels("outputs/1204/admixture/myplink2.3.Q",m103) 
+pc<-PlotAdmixtureNoLabels("outputs/1204/admixture/myplink2.4.Q",m103) 
+pd<-PlotAdmixtureNoLabels("outputs/1204/admixture/myplink2.5.Q",m103) 
+pe<-PlotAdmixture("outputs/1204/admixture/myplink2.6.Q",m103) 
+
+
+
+plink --vcf pruned-01-maf10-45-max-ind.vcf --make-bed --out myplink --allow-extra-chr --noweb
+plink -bfile myplink --recode12 -out myplink2 --allow-extra-chr --noweb
+
+
+Get these fish 
+```{r}
+tind<-mafsb %>% filter(Lineage %in% c("IND","lakdiva","uwisara"))
+
+PlotAdmixture("outputs/1306/ind-admixture/myplink2.2.Q",tind) 
+PlotAdmixture("outputs/1306/ind-admixture/myplink2.3.Q",tind) 
+
 ```

@@ -1,0 +1,42 @@
+---
+title: "102-with-Taiwan"
+output: html_document
+date: "2025-08-26"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(RColorBrewer)
+library(ggrepel)
+library(ggpubr)
+```
+
+Most of these fish are catadromous, that is:
+
+This fish was not analyzed:
+WJC9188
+&
+WJC9556 - aquaculture escapee
+
+```{r}
+t<-read_csv("~/github/barra-lh/meta/taiwanese-fish.csv") %>% mutate(Path=paste0("/home/maccamp/lates-wgs/data/taiwan/",sample_id,".sort.flt.bam")) %>% filter(!library_id %in% c("WJC9188","WJC9556")) %>% select(-sample_id)
+t
+```
+```{r}
+m52<-read_csv("~/github/barra-lh/meta/m52.csv")
+
+ggplot(m52) +
+  geom_histogram(aes(x=Coverage, fill=Phenotype))
+```
+```{r}
+m56<-m52 %>% bind_rows(t) %>% filter(Coverage > 10)
+m56 %>% group_by(Phenotype) %>% summarize(Count=n())
+
+m56 %>% select(Path) %>% write_tsv("~/github/barra-lh/bamlists/test56.bamlist", col_names = FALSE)
+m56 %>% select(Pheno) %>% write_tsv("~/github/barra-lh/bamlists/test56.pheno", col_names = FALSE)
+
+```

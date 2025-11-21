@@ -1,0 +1,29 @@
+---
+title: "1307-fitzroyqld"
+output: html_document
+date: "2025-08-23"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+Combining samples in data/fitzroy
+(base) maccamp@farm:~/lates-wgs/data/fitzroy$ cat AGRF_NXGSQCAGRF25070193-1_23537LLT3/Fitzroy01*R1.fastq.gz > Fitz01-R1.fastq.gz
+(base) maccamp@farm:~/lates-wgs/data/fitzroy$ cat AGRF_NXGSQCAGRF25070193-1_23537LLT3/Fitzroy01*R2.fastq.gz > Fitz01-R2.fastq.gz
+
+```{sh, eval=FALSE}
+for ((i=2; i<=9; i++)); do echo "0$i"; cat AGRF_NXGSQCAGRF25070193-1_23537LLT3/Fitzroy0$i*R1.fastq.gz > Fitz0$i-R1.fastq.gz; done;
+for ((i=2; i<=9; i++)); do echo "0$i"; cat AGRF_NXGSQCAGRF25070193-1_23537LLT3/Fitzroy0$i*R2.fastq.gz > Fitz0$i-R2.fastq.gz; done;
+
+for ((i=10; i<=12; i++)); do echo "$i"; cat AGRF_NXGSQCAGRF25070193-1_23537LLT3/Fitzroy$i*R1.fastq.gz > Fitz$i-R1.fastq.gz; done;
+for ((i=10; i<=12; i++)); do echo "$i"; cat AGRF_NXGSQCAGRF25070193-1_23537LLT3/Fitzroy$i*R2.fastq.gz > Fitz$i-R2.fastq.gz; done;
+
+```
+
+bash ../../doAlign-zipped.sh to-align.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
+

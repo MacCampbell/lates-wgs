@@ -275,6 +275,8 @@ ggplot(p1) +
   scale_color_manual(values=mycolors) +
   ylab("MDS1") +
   xlab("Chromosome")
+
+ggsave("outputs/1303/MDS1.jpeg")
 ```
 
 ### MDS2
@@ -312,6 +314,9 @@ ggplot(p2) +
   scale_color_manual(values=mycolors) +
   ylab("MDS2") +
   xlab("Chromosome")
+
+ggsave("outputs/1303/MDS2.jpeg")
+
 ```
 
 ### MDS3     
@@ -360,7 +365,7 @@ Locations:
 ```{r}
 MDS1 %>% arrange(-Value1)
 MDS2 %>% arrange(Value2)
-
+MDS3 %>% arrange(-Value3)
 ```
 
 ```{r}
@@ -406,7 +411,13 @@ lc<-read.delim("outputs/1303/vcfs/SUPER_19.ldf.ld",sep="",stringsAsFactors=FALSE
   
 ```
 
+MD3
 
+```{r}
+s03<-read_csv("~/github/local_pca/templated/lostruct_results/type_snp_size_15_weights_none_jobid_1304/SUPER_17.regions.csv") %>% mutate(Window=1:n())
+#0 or 1 referenced? I don't know.
+s03 %>% filter(Window %in% c(71))
+```
 
 ## Pull Interesting regions
 
@@ -680,7 +691,7 @@ gs3<-gs
 gs3$Indiv<-gsub("^\\d+_","",gs3$Indiv)
 gs3<-gs3 %>% left_join(wrasse, by=c("Indiv"="id")) %>% filter(POS %in% c("21045112","21044777","21045005"))
 #remove the one NA in Coral Bay
-gs3<-na.omit(gs3)
+gs3<-na.omit(gs3 %>% select(-sex))
 
 gs4<-gs3 %>% group_by(site_name, POS) %>% mutate(SampleSize=n()) %>% mutate(Freq=sum(Genotype)/(2*SampleSize))
 gs5<-gs4 %>% select(POS, site_name, Freq, SampleSize) %>% unique() %>% arrange(-Freq)
@@ -689,7 +700,7 @@ gs5<-gs4 %>% select(POS, site_name, Freq, SampleSize) %>% unique() %>% arrange(-
 labels<-gs5 %>% filter(site_name %in% c("Abrolhos Islands north", "Abrolhos Islands south","Qoubba","Coral Bay","Dongara","Jurien Bay"))
 ggplot(gs5) + 
   geom_point(aes(x=POS, y=Freq, fill=site_name), pch=21) +
-  geom_text_repel(data=labels, aes(x=POS, y=Freq, label=site_name)) +
+  geom_text_repel(data=labels, aes(x=POS, y=Freq, label=site_name, color=site_name)) +
   theme_bw() +
   theme(legend.position = "none")
 ```
@@ -716,5 +727,57 @@ ggplot(oz) +
   theme(panel.grid = element_blank()) +
   facet_wrap(.~POS)
 
-ggsave("outputs/1303/facetted-super19.pdf", width=12, height=6)
+ggsave("outputs/1303/facetted-super19-redo.pdf", width=12, height=6)
 ```
+
+
+Plot as latitude 
+
+```{r}
+ggplot(d6) + 
+  geom_point(aes(x=Lat, y=Freq)) +
+  geom_smooth(aes(x=Lat, y=Freq), method = 'lm', formula=y~x) +
+  facet_wrap(.~POS) +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+ggsave("outputs/1303/wrasse-latitude-freq.jpeg")
+```
+
+```{r}
+ggplot(d6) + 
+  geom_point(aes(x=Lat, y=Freq)) +
+  geom_smooth(aes(x=Lat, y=Freq)) +
+  facet_wrap(.~POS) +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+ggsave("outputs/1303/wrasse-latitude-freq-geom-smooth.jpeg")
+```
+
+
+
+## Extract flanking data
+
+The super 14/super 19 sites cover a large area.
+
+SUPER_14	16525923	17019428	40	
+SUPER_14	17019428	17514154	41	
+
+SUPER_19	20571979	21044777	42	
+SUPER_19	21045005	21392500	43
+
+Were aligned to hap1
+
+```{sh, eval=FALSE}
+samtools faidx ~/genomes/baldchin/OG910_241127.hic1.3.curated.hap1.fasta SUPER_4:26003203-26903544 > outputs/1303/seqs/super4-sub.fasta
+samtools faidx ~/genomes/baldchin/OG910_241127.hic1.3.curated.hap1.fasta SUPER_14:16525923-17514154 > outputs/1303/seqs/super14-sub.fasta
+samtools faidx ~/genomes/baldchin/OG910_241127.hic1.3.curated.hap1.fasta SUPER_19:20571979-21392500 > outputs/1303/seqs/super19-sub.fasta
+samtools faidx ~/genomes/baldchin/OG910_241127.hic1.3.curated.hap1.fasta SUPER_17:30442256-31138561 > outputs/1303/seqs/super17-sub.fasta
+```
+
+
+Align to a reference https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_963930695.1/ ?
+
+
+

@@ -1,0 +1,177 @@
+---
+title: "1216-sampling-map"
+output: html_document
+date: "2025-10-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+Need a sampling map in sline with color/point scheme of 1214
+
+
+```{r}
+library(tidyverse)
+
+library(raster)
+library(ozmaps)
+library(ggrepel)
+library(ggtree)
+library(tanggle)
+library(phangorn)
+library(viridis)
+library(ggpubr)
+library(ape)
+library(pcadapt)
+library(ggpubr)
+```
+
+
+```{r}
+range<-read_csv("outputs/range-map/1693178727.csv")
+range$`Overall Probability`<-as.numeric(range$`Overall Probability`)
+range
+```
+
+```{r}
+ggplot() +
+geom_raster(data=range, aes(x=`Center Long`, y=`Center Lat`, fill=`Overall Probability`),alpha=0.75) +
+  scale_fill_gradient(low="yellow", high="red")
+```
+
+```{r}
+range2<-na.omit(range)
+domain <- c(min(range2$`Center Long`)-5, max(range2$`Center Long`)+5, 
+            min(range2$`Center Lat`)-5, max(range2$`Center Lat`)+5)
+```
+
+
+
+```{r, eval=FALSE}
+nat.earth<-stack("~/github/fish-lake/data/earth/NE2_HR_LC_SR_W_DR/NE2_HR_LC_SR_W_DR.tif")
+
+nat.crop <- crop(nat.earth, y=extent(domain))
+
+rast.table <- data.frame(xyFromCell(nat.crop, 1:ncell(nat.crop)),
+                         getValues(nat.crop/255))
+
+
+rast.table$rgb <- with(rast.table, rgb(NE2_HR_LC_SR_W_DR_1,
+                                       NE2_HR_LC_SR_W_DR_2,
+                                       NE2_HR_LC_SR_W_DR_3,
+                                       1))
+
+save(rast.table, file="data/earth/world-rast.rda")
+```
+
+```{r, eval=FALSE}
+load("data/earth/world-rast.rda")
+ggplot() +
+  geom_raster(data = rast.table, mapping = aes(x = x, y = y), fill = rast.table$rgb, interpolate = TRUE)  +
+  geom_raster(data=range, aes(x=`Center Long`, y=`Center Lat`, fill=`Overall Probability`),alpha=0.75) +
+  scale_fill_gradient(low="yellow", high="red") +
+  ylab("Latitude\n") +
+  xlab("\nLongitude") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  theme(panel.background = element_rect(fill="black", color="black")) +
+  theme(plot.background = element_rect(fill="black", color="black")) +
+  theme(legend.background =element_rect(fill="black", color="black"), legend.text = element_text(color="white"), legend.title = element_text(color="white")) +
+  theme(axis.text=element_text(color="white", size=12)) +
+  theme(axis.title=element_text(color="white", face="bold", size=14))
+  
+ggsave("outputs/1216/basic-map.jpeg")
+
+```
+
+
+Get meta and points
+
+
+```{r}
+m103<-read_csv("meta/m103.csv")
+m103$Region<-factor(m103$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","OceanPick",
+                                           "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippines","Taiwan",
+                                              "Vietnam","Cambodia","Thailand", "Bangladesh",
+                                              "India East Coast","Sri Lanka","India West Coast"))
+```
+
+coding scale bar, 1000km rectangles?
+
+
+```{r}
+# At the equator, 1 degree of longitude ≈ 111.32 km (69.17 miles).
+# 1000/111.32=8.983112
+# 500/111.32=4.491556
+
+
+#Longitude: 1 deg = 111.320*cos(latitude) km
+# 1 deg = 45.2477 km @ -20 degrees
+# how many degrees is 500 KM
+# 1 km = 0.022013 degrees
+# 500 km = 11.0065 degrees
+
+#degrees<-500/(111.320*cos(-20))
+#degrees
+
+degrees<-8.983112
+
+ggplot() + geom_rect(aes(xmin=55, xmax=55+degrees,ymin=-1, ymax=1), fill="white", color="black") +
+           geom_rect(aes(xmin=55+degrees, xmax=55+(2*degrees), ymin=-1, ymax=1), fill="black", color="black") 
+  
+```
+
+```{r}
+mafsb<-read_csv("meta/m131-formap.csv") %>% filter(Run !="Broome01")
+locs<-read_tsv("outputs/range-map/points-edited-3.tsv") %>% select(Locality, long, lat)
+points<-mafsb %>% left_join(locs) %>% group_by(Lineage,Region,Locality, lat, long) %>% summarise("Sample Size"=n())
+points$Lineage<-factor(points$Lineage, levels=c("IND","uwisara","lakdiva","SEA","WAL","AUS","Aquaculture"))
+points<-points %>% filter(!Locality %in% c("Daly River","Roper River","Fitzroy River QLD","Broome","Fitzroy River WA","river estuaries between Yangon and Sittang"))
+points$Region<-factor(points$Region, levels=c("Queensland","Northern Territory","Papua New Guinea","Mainstream","Sri Lankan Aquaculture",
+                                           "Indonesia-K","Indonesia-SU","Indonesia-SJ","Philippine Aquaculture","Taiwan",
+                                              "Vietnamese Aquaculture","Cambodia","Thailand", "Bangladesh",
+                                              "India East Coast","Sri Lanka","India West Coast"))
+points$Lineage<-as.character(points$Lineage)
+points2<-points %>% mutate(Origin=ifelse(Lineage %in% c("IND","lakdiva"),"Indian Ocean", 
+                         ifelse(Lineage %in% c("AUS"), "Australasia",
+                         ifelse(Lineage %in% c("SEA","WAL"),"Southeast &\nEast Asian","Aquaculture"))))
+points2$Origin<-factor(points2$Origin, levels=c("Indian Ocean","Southeast &\nEast Asian","Australasia","Aquaculture"))
+
+ggplot() +
+  geom_point(data=points2, aes(x=long, y=lat, size=`Sample Size`,fill=Region, shape=Origin), alpha=0.75) +
+  geom_text_repel(data=points2, aes(x=long, y=lat, label=Region)) + 
+  geom_rect(aes(xmin=55, xmax=55+degrees,ymin=-1, ymax=1), fill="white", color="black") +
+  geom_rect(aes(xmin=55+degrees, xmax=55+(2*degrees), ymin=-1, ymax=1), fill="black", color="black") +
+  scale_size_continuous(breaks=c(1,5,10)) +
+  scale_shape_manual(values=c(23,24,21,22)) +
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) 
+
+ggsave("outputs/1216/tester.jpeg", width=11, height=8.5)
+```
+
+```{r}
+ggplot() +
+  geom_raster(data = rast.table, mapping = aes(x = x, y = y), fill = rast.table$rgb, interpolate = TRUE)  +
+  geom_point(data=points2, aes(x=long, y=lat, size=`Sample Size`,fill=Region, shape=Origin), alpha=0.75) +
+  geom_text_repel(data=points2, aes(x=long, y=lat, label=Region)) +
+  scale_size_continuous(breaks=c(1,5,10)) +
+  scale_shape_manual(values=c(23,24,21,22)) +
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  geom_rect(aes(xmin=55, xmax=55+degrees,ymin=-1, ymax=1), fill="white", color="black") +
+  geom_rect(aes(xmin=55+degrees, xmax=55+(2*degrees), ymin=-1, ymax=1), fill="black", color="black") +
+  ylab("Latitude\n") +
+  xlab("\nLongitude") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+#  theme(panel.background = element_rect(fill="black", color="black")) +
+#  theme(plot.background = element_rect(fill="black", color="black")) +
+ # theme(legend.background =element_rect(fill="black", color="black"), legend.text = element_text(color="white"), legend.title = element_text(color="white")) +
+  theme(axis.text=element_text(color="black", size=12)) +
+  theme(axis.title=element_text(color="black", face="bold", size=14))
+
+ggsave("outputs/1216/sampling-map.pdf", width=15, height=8.5)
+
+```

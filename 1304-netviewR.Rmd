@@ -43,7 +43,8 @@ g %>% plot_netview()
 ```
 
 
-#Genomics
+# Tutorial and stuff   
+
 https://github.com/esteinig/netviewr/blob/master/docs/POPGENOM.md#population-genomics
 
 Before using Netview to obtain a mutual k-nearest-neighbor graph, a distance matrix should be computed that is suitable for your type of data. For example, for eukaryotic SNP panels, you may want to use the 1-IBS matrix that can be computed in PLINK. For others applications, e.g. in bacterial pathogen whole genome sequence data, you may want to compute a simple SNP distance matrix from reference alignments, e.g. with the excellent Rust package psdm. You can also use a phylogenetic tree as the basis for your distance matrix, e.g. by computing pairwise root-to-tip distance between samples, or even using a non-genetic distance measure of similarity.
@@ -52,7 +53,7 @@ Graph construction from a distance matrix file (symmetrical without column or ro
 
 convert to plink in outputs/1304/plink
 
-````{sh, eval=FALSE}
+```{sh, eval=FALSE}
 plink --vcf SUPER_4.vcf --make-bed --out SUPER_4 --allow-extra-chr
 plink --bfile SUPER_4 --distance square ibs --out SUPER_4-plink --allow-extra-chr
 
@@ -62,12 +63,36 @@ plink --bfile SUPER_19 --distance square ibs --out SUPER_19-plink --allow-extra-
 plink --vcf gl.qc.vcf.gz --make-bed --out gl --allow-extra-chr
 plink --bfile gl --distance square ibs --out gl-plink --allow-extra-chr
 
+# how about something with expected outputs. Aussie Lates WGS thinned50.vcf.gz from 1305, 23,334 variants
+plink --vcf thinned50.vcf.gz --make-bed --out thinned50 --allow-extra-chr
+plink --bfile thinned50 --distance square ibs --out thinned50-plink --allow-extra-chr
+
+
 ```
 
 
+## Barra
 
 ```{r}
-g<-as.matrix(read.csv("outputs/1304/plink/SUPER_19-plink.mibs", sep="\t", header=F)) %>% netview(k=8) 
+g<-as.matrix(read.csv("outputs/1304/thinned50-plink.mibs", sep="\t", header=F)) %>% netview(k=8) 
+lm<-read_csv("meta/aus40.csv")
+#lm$Locality<-factor(lm$Locality, levels=c("Broome","Fitzroy River","Daly River","Darwin Harbour","Roper River","Fly River","Hinchinbrook Channel"))
+#Net to set legend some other way
+
+cols<-viridis(length(unique(lm$Locality)), option="H")
+
+g %@% lm %@% node_color(data='Locality', palette = cols) %>% plot_netview(legend = "Locality" )
+
+```
+
+I wonder if the technical differences are showing up here, as Darwin Harbour/Fly River are from the same older data.
+
+# Groper
+
+```{r}
+#g<-as.matrix(read.csv("outputs/1304/plink/SUPER_4-plink.mibs", sep="\t", header=F)) %>% netview(k=6) 
+g<-as.matrix(read.csv("outputs/1304/plink/gl-plink.mibs", sep="\t", header=F)) %>% netview(k=40) 
+
 g %>% plot_netview()
 
 ```
@@ -77,13 +102,29 @@ Need node data
 
 ```{r}
 wd<-read_csv("data/wrasse/bg_metadata_mc_qc.csv")
-cols<-viridis(length(unique(wd$site_name)), option="H")
+wd$Pop<-as.factor(wd$pop)
+wd<-wd %>% mutate(NS=ifelse(lat > -28.36334, "N","S"))
+cols<-viridis(length(unique(wd$site_name)), option="viridis")
+g %@% wd  %@% node_color(data='NS', palette = cols) %>% plot_netview(legend="NS")
 ```
 
 
+# Admixture
+outputs/1304/plink
 
+```{sh, eval=FALSE}
+plink --vcf gl.qc.vcf.gz --make-bed --out myplink --allow-extra-chr --noweb
+plink -bfile myplink --recode12 -out myplink2 --allow-extra-chr --noweb
 
+for K in 1 2 3 4 5; \
+do ~/github/admixture/admixture --cv myplink2.ped $K | tee log${K}.out; done
 
-```{r}
-g %@% wd  %@% node_color(data='site_name', palette = cols) %>% plot_netview()
+grep -h CV log*.out > cross-validation.txt
+
 ```
+CV error (K=1): 0.39171
+CV error (K=2): 0.39625
+
+Plot cross validation scores
+
+No to long at scores
