@@ -84,12 +84,12 @@ srun -p high -t 5:00:00 --mem=32G --nodes=1 --cpus-per-task=12  $HOME/angsd/angs
 
 #Only Newly Determined data
 srun -p high -t 5:00:00 --mem=32G --nodes=1 --cpus-per-task=12  $HOME/angsd/angsd -P 12  \
--bam bamlists/68.bamlist -r NC_066833.1 \
+-bam bamlists/69.bamlist -r NC_066833.1 \
 -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--minInd 61 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
+-minInd 62 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
--out outputs/1308/68-ibs-90-Lcal01 > outputs/1308/68-ibs-90-Lcal01.out 2> outputs/1308/68-ibs-90-Lcal01.err &
+-out outputs/1308/68-ibs-90-Lcal01 > outputs/1308/69-ibs-90-Lcal01.out 2> outputs/1308/69-ibs-90-Lcal01.err &
 
 ```
 
@@ -171,12 +171,62 @@ pc13
 ```
 
 
-```{r}
-covs %>% filter(Lineage=="AUS") %>% ggplot() +
-  geom_point(aes(x=V1, y=V2, fill=Locality), pch=21)
+# Call SNPs
 
-covs %>% filter(Lineage=="AUS") %>% ggplot() +
-  geom_point(aes(x=V1, y=V3, fill=Locality), pch=21) +
-  scale_fill_viridis_d(option="H")
+
+```{sh, eval=FALSE}
+srun -t 48:00:00 -p bigmemm --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 116 -bam bamlists/129.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf  meta/no-inv.txt -out outputs/1306/snps-wgs-01-glf  \
+-minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1306/snps-wgs-01-glf.out 2> outputs/1306/snps-wgs-01-glf.err &
+
+
 
 ```
+
+
+
+```{sh}
+plink --tped snps-wgs-01-glf.tped --tfam snps-wgs-01-glf.tfam  --out plink-binary-01 --recode --allow-extra-chr --noweb
+plink --ped plink-binary-01.ped --map plink-binary-01.map --recode vcf --allow-extra-chr -out plink-01
+bgzip plink-01.vcf 
+tabix plink-01.vcf.gz
+
+#renaming vcf bcftools/1.13
+module load bcftools
+
+bcftools reheader --samples bamlists/108.names -o outputs/1306/renamed-01.vcf.gz outputs/1306/plink-01.vcf.gz
+
+bcftools +fill-tags outputs/1306/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/pruned-01-maf05-45.vcf
+
+bcftools +fill-tags outputs/1306/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.01' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/pruned-01-maf01-45.vcf
+
+bcftools +fill-tags outputs/1306/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/pruned-01-maf10-45.vcf
+
+bcftools +fill-tags outputs/1306/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode maxAF  > outputs/1306/pruned-01-maf10-45-max.vcf
+
+
+
+bcftools view -S bamlists/108-ind.names -o outputs/1306/ind.vcf outputs/1306/renamed-01.vcf.gz; bgzip outputs/1306/ind.vcf; tabix outputs/1306.ind.vcf.gz
+
+bcftools +fill-tags outputs/1306/ind.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/pruned-01-maf05-45-ind.vcf
+
+bcftools +fill-tags outputs/1306/ind.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1306/pruned-01-maf10-45-ind.vcf
+
+bcftools +fill-tags outputs/1306/ind.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode maxAF  > outputs/1306/pruned-01-maf10-45-max-ind.vcf
+
+#Convert to phylip and then to nex
+conda activate py2;
+
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf01-45.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf05-45.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45-max.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf05-45-ind.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45-ind.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45-max-ind.vcf;
+
+conda deactivate;
+```
+
