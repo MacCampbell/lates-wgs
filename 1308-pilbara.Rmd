@@ -43,17 +43,16 @@ Downsample.
 
 ```{r}
 m152<-read_csv("meta/m152.csv")
-m128<-m152 %>% filter(Coverage > 3) %>% filter(!Locality %in% c("Mainstream","OceanPick"))
+m129<-m152 %>% filter(Coverage > 3) %>% filter(!Locality %in% c("Mainstream","OceanPick"))
 
-m128 %>% select(Path) %>% write_tsv("bamlists/128.bamlist", col_names = FALSE)
-m128 %>% select(Run) %>% write_tsv("bamlists/128.names", col_names = FALSE)
+m129 %>% select(NewPath) %>% write_tsv("bamlists/129.bamlist", col_names = FALSE)
+m129 %>% select(Run) %>% write_tsv("bamlists/129.names", col_names = FALSE)
 
-m68<-m128 %>% filter(Source=="New")
+m69<-m129 %>% filter(Source=="New")
+m69 %>% select(NewPath) %>% write_tsv("bamlists/69.bamlist", col_names = FALSE)
+m69 %>% select(Run) %>% write_tsv("bamlists/69.names", col_names = FALSE)
 
-m68 %>% select(Path) %>% write_tsv("bamlists/68.bamlist", col_names = FALSE)
-m68 %>% select(Run) %>% write_tsv("bamlists/68.names", col_names = FALSE)
-
-meta<-m68
+meta<-m129
 ```
 
 
@@ -62,7 +61,11 @@ down<-m152 %>% filter(Locality %in% c("Fitzroy River QLD","DeGrey River","Tully 
   mutate(Command = paste0("samtools view -bs ", Frac, " ", Path, " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;"," samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;")) 
 down %>% select(Command)
 down %>% select(Command) %>% write_tsv(file="1308.2-downsample.sh", col_names = FALSE)
- 
+```
+
+```{sh, eval=FALSE}
+module load parallel
+srun -p high -t 4:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=11 parallel -j 11 < 1308.2-downsample.sh
 ```
 
 
@@ -72,9 +75,9 @@ One chrom GLs for sanity
 ```{sh, eval=FALSE}
 #All Data
 srun -p high -t 5:00:00 --mem=32G --nodes=1 --cpus-per-task=12  $HOME/angsd/angsd -P 12  \
--bam bamlists/128.bamlist -r NC_066833.1 \
+-bam bamlists/129.bamlist -r NC_066833.1 \
 -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
--minInd 115 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
+-minInd 116 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/1308/ibs-90-Lcal01 > outputs/1308/ibs-90-Lcal01.out 2> outputs/1308/ibs-90-Lcal01.err &
@@ -93,7 +96,7 @@ srun -p high -t 5:00:00 --mem=32G --nodes=1 --cpus-per-task=12  $HOME/angsd/angs
 
 
 ```{r}
-m <- as.matrix(read.table("outputs/1308/68-ibs-90-Lcal01.covMat"))
+m <- as.matrix(read.table("outputs/1308/ibs-90-Lcal01.covMat"))
 eig <- eigen(m)
 var<-eig$values/sum(eig$values)
 cumvar<-cumsum(eig$values)/sum(eig$values)
