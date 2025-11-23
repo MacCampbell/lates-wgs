@@ -35,6 +35,11 @@ bash ../../do-align.sh to-align.txt /home/maccamp/lates-wgs/genome/GCF_001640805
 cat *stats > piblara.csv
 ```
 
+Can downsample, need to downsample fitzroy QLD fish too 
+
+Downsample.  
+
+
 
 ```{r}
 m152<-read_csv("meta/m152.csv")
@@ -42,7 +47,22 @@ m128<-m152 %>% filter(Coverage > 3) %>% filter(!Locality %in% c("Mainstream","Oc
 
 m128 %>% select(Path) %>% write_tsv("bamlists/128.bamlist", col_names = FALSE)
 m128 %>% select(Run) %>% write_tsv("bamlists/128.names", col_names = FALSE)
+
+m68<-m128 %>% filter(Source=="New")
+
+m68 %>% select(Path) %>% write_tsv("bamlists/68.bamlist", col_names = FALSE)
+m68 %>% select(Run) %>% write_tsv("bamlists/68.names", col_names = FALSE)
+
 meta<-m128
+```
+
+
+```{r}
+down<-m152 %>% filter(Locality %in% c("Fitzroy River QLD","DeGrey River","Tully Inlet")) %>% mutate(Frac=7/Coverage) %>%
+  mutate(Command = paste0("samtools view -bs ", Frac, " ", Path, " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;"," samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;")) 
+down %>% select(Command)
+down %>% select(Command) %>% write_tsv(file="1308.2-downsample.sh", col_names = FALSE)
+ 
 ```
 
 
@@ -50,12 +70,78 @@ meta<-m128
 One chrom GLs for sanity
 
 ```{sh, eval=FALSE}
+#All Data
 srun -p high -t 5:00:00 --mem=32G --nodes=1 --cpus-per-task=12  $HOME/angsd/angsd -P 12  \
--bam bamlists/aus40.bamlist -r NC_066833.1 \
+-bam bamlists/128.bamlist -r NC_066833.1 \
 -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -minInd 115 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
 -out outputs/1308/ibs-90-Lcal01 > outputs/1308/ibs-90-Lcal01.out 2> outputs/1308/ibs-90-Lcal01.err &
+
+#Only Newly Determined data
+srun -p high -t 5:00:00 --mem=32G --nodes=1 --cpus-per-task=12  $HOME/angsd/angsd -P 12  \
+-bam bamlists/68.bamlist -r NC_066833.1 \
+-ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 61 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1308/68-ibs-90-Lcal01 > outputs/1308/68-ibs-90-Lcal01.out 2> outputs/1308/68-ibs-90-Lcal01.err &
+
+```
+
+
+
+```{r}
+m <- as.matrix(read.table("outputs/1308/ibs-90-Lcal01.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+
+vdf<-var %>% as_tibble() %>% rename(Variance=value) %>% mutate(PC=1:n()) %>% head(n=10)
+
+scree<-ggplot(vdf) +
+  geom_line(aes(x=PC, y=Variance)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_x_continuous(breaks=vdf$PC) +
+  theme(axis.text=element_text(size=8)) +
+  ggtitle("Scree Plot") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+scree
+ggsave("outputs/1309/chrom01-scree-plot.jpeg")
+```
+
+
+```{r}
+covs<-eig$vectors[,1:3] %>% as_tibble() %>% bind_cols(meta)
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+text12L<-covs %>% select(Run, Locality, V1, V2) %>%
+  group_by(Locality) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+pc12<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Locality), pch=21, alpha=0.75, cex=2) +
+  #  geom_text(aes(x=V1, y=V2, label=Run), pch=21, alpha=0.75, cex=2) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+  geom_text_repel(data=text12L, aes(x=x, y=y, label=Locality), size=3, max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="C") +
+  ggtitle("PCs 1 and 2") +
+  theme(plot.title = element_text(hjust=0.5, face="bold")) +
+  theme(legend.position = "none")
+
+pc12
+ggsave("outputs/1308/chrom01-lates-pc12.jpeg", width=6, height=6)
+ggsave("outputs/1308/chrom01-lates-pc12.pdf", width=6, height=6)
 
 ```
