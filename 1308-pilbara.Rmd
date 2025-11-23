@@ -26,6 +26,8 @@ library(ggpubr)
 
 Have the new Pilbara seqs, there are a few lanes to combine
 
+Don't forget to md5sum -c checksums.md5
+srun -p high -t 12:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=2 md5sum -c checksums.md5 > check.out 2> check.err
 ```{sh, eval=FALSE}
 module load parallel
 srun -p high -t 12:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=11 parallel -j 11 < ../../1308.1-combine.sh  
@@ -36,4 +38,24 @@ cat *stats > piblara.csv
 
 ```{r}
 m152<-read_csv("meta/m152.csv")
+m128<-m152 %>% filter(Coverage > 3) %>% filter(!Locality %in% c("Mainstream","OceanPick"))
+
+m128 %>% select(Path) %>% write_tsv("bamlists/128.bamlist", col_names = FALSE)
+m128 %>% select(Run) %>% write_tsv("bamlists/128.names", col_names = FALSE)
+meta<-m128
+```
+
+
+
+One chrom GLs for sanity
+
+```{sh, eval=FALSE}
+srun -p high -t 5:00:00 --mem=32G --nodes=1 --cpus-per-task=12  $HOME/angsd/angsd -P 12  \
+-bam bamlists/aus40.bamlist -r NC_066833.1 \
+-ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 115 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1308/ibs-90-Lcal01 > outputs/1308/ibs-90-Lcal01.out 2> outputs/1308/ibs-90-Lcal01.err &
+
 ```
