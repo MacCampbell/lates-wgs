@@ -34,6 +34,12 @@ meta<-read_csv("meta/aus-wgs-61.csv") %>% filter(Run !="WAF011639") %>% filter(R
 meta %>% dplyr::select(Run) %>% write_tsv("outputs/1309/samples-59.txt", col_names = FALSE)
 
 meta$Locality<-factor(meta$Locality, levels=c("DeGrey River","Broome","Fitzroy River WA","Daly River","Darwin Harbour","Roper River","Tully Inlet","Fly River","Hinchinbrook Channel", "Fitzroy River QLD"))
+
+colors<-viridis(13,option="H")
+colors<-colors[1:11]
+
+meta %>% group_by(Locality) %>% summarize(Count=n())
+
 ```
 
 
@@ -134,13 +140,13 @@ pcb<-ggplot(pcadata) +
   geom_point(aes(x=V1, y=V2, shape=Lineage, fill=Locality), alpha=0.95) +
   geom_label_repel(data=labels12, aes(x=x, y=y, label=Locality, fill=Locality), alpha=0.8, size=3) +
   scale_shape_manual(values=c(21,23,23,24,22)) + 
-  scale_fill_viridis_d(option="H") +
+  scale_fill_manual(values=colors) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
   theme_bw() +
   theme(legend.position = "none") +
   theme(panel.grid = element_blank()) +
-  xlab("PC 1") +
-  ylab("PC 2") +
+  xlab(paste0("PC 1 (",var[1],")%")) +
+  ylab(paste0("PC 2 (",var[2],")%")) +
   ggtitle("B") +
   theme(plot.title = element_text(size=14, face="bold")) 
 
@@ -150,14 +156,14 @@ pcc<-ggplot(pcadata) +
   geom_point(aes(x=V1, y=V3, shape=Lineage, fill=Locality), alpha=0.9) +
   geom_label_repel(data=labels13, aes(x=x, y=y, label=Locality, fill=Locality), alpha=0.8, size=3) +
   scale_shape_manual(values=c(21,23,23,24,22)) + 
-  scale_fill_viridis_d(option="H") +
+  scale_fill_manual(values=colors) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
   theme_bw() +
   theme(panel.grid = element_blank()) +
   theme(legend.position = "none") +
 
-  xlab("PC 1") +
-  ylab("PC 3") +
+  xlab(paste0("PC 1 (",var[1],")%")) +
+  ylab(paste0("PC 3 (",format(var[3], nsmall = 2),")%")) +
   ggtitle("C") +
   theme(plot.title = element_text(size=14, face="bold")) 
 
@@ -167,12 +173,12 @@ pcd<-ggplot(pcadata) +
   geom_point(aes(x=V1, y=V4, shape=Lineage, fill=Locality), alpha=0.9) +
   geom_label_repel(data=labels14, aes(x=x, y=y, label=Locality, fill=Locality), alpha=0.8, size=3) +
   scale_shape_manual(values=c(21,23,23,24,22)) + 
-  scale_fill_viridis_d(option="H") +
+  scale_fill_manual(values=colors) +
   guides(fill = guide_legend(override.aes = list(pch = 22))) +
   theme_bw() +
   theme(panel.grid = element_blank()) +
-  xlab("PC 1") +
-  ylab("PC 4") +
+  xlab(paste0("PC 1 (",var[1],")%")) +
+  ylab(paste0("PC 4 (",var[4],")%")) +
   ggtitle("C") +
   theme(plot.title = element_text(size=14, face="bold")) 
 ```
@@ -444,3 +450,5 @@ u
 
 ggsave("outputs/1309/aus-phylo.pdf", width=6, height=9)
 ```
+
+

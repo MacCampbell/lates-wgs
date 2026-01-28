@@ -1,0 +1,133 @@
+---
+title: "1400-wa"
+output: html_document
+date: "2026-01-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(ggrepel)
+```
+
+Received new samples from WA, Fitzroy River and Cambridge Gulf. Need to check checksums and merge data, align, etc.
+
+Don't forget to md5sum -c checksums.md5
+srun -p bigmemh -t 12:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=2 md5sum -c checksums.md5 > check.out 2> check.err
+
+
+Manually combine, don't ask me why.
+
+```{sh, eval=FALSE}
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/FIT-45*R1.fastq.gz > Fitzroy45-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/FIT-45*R2.fastq.gz > Fitzroy45-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/FIT-47*R1.fastq.gz > Fitzroy47-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/FIT-47*R2.fastq.gz > Fitzroy47-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-003767*R1.fastq.gz > WAF003767-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-003767*R2.fastq.gz > WAF003767-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-003768*R1.fastq.gz > WAF003768-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-003768*R2.fastq.gz > WAF003768-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-003770*R1.fastq.gz > WAF003770-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-003770*R2.fastq.gz > WAF003770-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-003774*R1.fastq.gz > WAF003774-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-003774*R2.fastq.gz > WAF003774-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-003775*R1.fastq.gz > WAF003775-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-003775*R2.fastq.gz > WAF003775-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-003776*R1.fastq.gz > WAF003776-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-003776*R2.fastq.gz > WAF003776-R2.fastq.gz
+
+##
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-004001*R1.fastq.gz > WAF004001-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-004001*R2.fastq.gz > WAF004001-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-004002*R1.fastq.gz > WAF004002-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-004002*R2.fastq.gz > WAF004002-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-004003*R1.fastq.gz > WAF004003-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-004003*R2.fastq.gz > WAF004003-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-004008*R1.fastq.gz > WAF004008-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-004008*R2.fastq.gz > WAF004008-R2.fastq.gz
+
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-004014*R1.fastq.gz > WAF004014-R1.fastq.gz
+cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-004014*R2.fastq.gz > WAF004014-R2.fastq.gz
+
+```
+
+
+Need to align, but the options have changed! 
+
+
+Can downsample
+
+
+# meta
+
+```{r}
+meta<-read_csv("meta/m164.csv") 
+summary<-meta %>% group_by(Region, Locality) %>% summarize(`Sample Size`=n())
+locs<-read_tsv("outputs/range-map/points-edited-4.tsv")
+points<-summary %>% left_join(locs)
+points$Lineage<-factor(points$Lineage, levels=c("IND","uwisara","lakdiva","SEA","WAL","AUS"))
+points
+```
+
+```{r}
+names<-read_tsv("meta/existing-names.tsv")
+names
+```
+```{r}
+ggplot() +
+  geom_point(data=names, aes(x=Longitude, y=Latitude)) +
+  geom_text_repel(data=names, aes(x=Longitude, y=Latitude, label=paste0(Name, " ", Authority)))
+```
+
+Dropping 81.37789136152588	8.467975090691	WGS	Trinco	green	23	IND	Sri Lankan Aquaculture	Sri Lankan Aquaculture
+
+```{r}
+ggplot() +
+  geom_point(data=points, aes(x=long, y=lat, size=`Sample Size`,fill=Lineage), pch=21, alpha=0.75) +
+  geom_point(data=names, aes(x=Longitude, y=Latitude), pch=15) +
+  geom_text_repel(data=names, aes(x=Longitude, y=Latitude, label=paste0(Name, "\n", Authority)), size=3) +
+  scale_size_continuous(breaks=c(1,5,10)) +
+  scale_fill_viridis_d(option="H") +
+
+ggsave("outputs/1400/sampling-map-with-names.pdf", width=12, height=8.5)
+```
+
+
+
+```{r, eval=FALSE}
+load("data/earth/world-rast.rda")
+
+earth<-ggplot() +
+  geom_raster(data = rast.table, mapping = aes(x = x, y = y), fill = rast.table$rgb, interpolate = TRUE)  +
+  geom_rect(aes(xmin=55, xmax=55+degrees,ymin=-1, ymax=1), fill="white", color="black") +
+  geom_rect(aes(xmin=55+degrees, xmax=55+(2*degrees), ymin=-1, ymax=1), fill="black", color="black") +
+  ylab("Latitude\n") +
+  xlab("\nLongitude") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  theme(axis.text=element_text(color="black", size=12)) +
+  theme(axis.title=element_text(color="black", face="bold", size=14))
+
+earth+geom_point(data=points, aes(x=long, y=lat, size=`Sample Size`,fill=Lineage), pch=21, alpha=0.75) +
+  geom_point(data=names, aes(x=Longitude, y=Latitude), pch=15) +
+  geom_text_repel(data=names, aes(x=Longitude, y=Latitude, label=paste0(Name, "\n", Authority)), size=3) +
+  scale_size_continuous(breaks=c(1,5,10)) +
+  scale_fill_viridis_d(option="H")
+
+ggsave("outputs/1400/sampling-map.pdf", width=12, height=8.5)
+```
+
+```

@@ -69,6 +69,12 @@ w<- m129 %>% filter(Locality %in% c("Samarinda","Sulawesi"))
 m76<-bind_rows(aus,w,t) %>%  filter(Run !="WAF011639") %>% filter(Run != "Broome01") %>% write_csv(file="meta/m76.csv")
 m76 %>% select(NewPath) %>% write_tsv("bamlists/76.bamlist", col_names = FALSE)
 m76 %>% select(Run) %>% write_tsv("bamlists/76.names", col_names = FALSE)
+
+
+m65<-bind_rows(aus,w) %>%  filter(Run !="WAF011639") %>% filter(Run != "Broome01") %>% write_csv(file="meta/m65.csv")
+m65 %>% select(NewPath) %>% write_tsv("bamlists/65.bamlist", col_names = FALSE)
+m65 %>% select(Run) %>% write_tsv("bamlists/65.names", col_names = FALSE)
+
 ```
 
 
@@ -960,4 +966,62 @@ u<-t %<+% m + #bind_rows(m58, rm) +
 u
 
 ggsave("outputs/1308/aus-phylo.pdf", width=6, height=9)
+```
+
+
+## What about life history variants?
+
+```{r}
+gl<-read_tsv("outputs/1308/snps-wgs-05-glf.geno.gz", col_names = c("Chrom","Position",aus$Run)) %>% select(-X64) %>% select(-"WAF011639")
+gl2<-gl %>% filter(Chrom=="NC_066856.1") %>% filter(Position %in% c("2922305","2922339","2922605","2996993","3001384"))
+
+m60<-aus %>% filter(Run!="WAF011639")
+
+gl2[gl2==-1]<-NA
+m2<-gl2 %>% dplyr::select(-Chrom, -Position) %>% as.matrix()
+colnames(m2)<-m60$Locality
+rownames(m2)<-gl2$Position
+```
+
+```{r}
+library(ggplotify)
+library(pheatmap)
+as.ggplot(pheatmap(m2, cluster_cols = FALSE, cluster_rows = FALSE, color=colorRampPalette(viridis(3, option="cividis", direction=-1, alpha = 0.75))(3)
+                   )) +
+    ggtitle("Heatmap of associated barra variants on Lca24\n") + 
+  theme(plot.title = element_text(hjust=0.5))
+
+ggsave("outputs/1308/associated-variants-australia-wide.jpeg", width=12, height=5)
+ggsave("outputs/1308/associated-variants-australia-wide.pdf", width=12, height=5)
+
+```
+
+
+
+```{r}
+gl<-read_tsv("outputs/1308/snps-wgs-01-glf.geno.gz", col_names = c("Chrom","Position",m129$Run)) %>% select(-X132) %>% select(-"WAF011639")
+gl2<-gl %>% filter(Chrom=="NC_066856.1") %>% filter(Position %in% c("2922305","2922339","2922605","2996993","3001384"))
+```
+
+```{r}
+m128<-m128 %>% filter(Run!="WAF011639")
+```
+
+```{r}
+gl2[gl2==-1]<-NA
+m2<-gl2 %>% dplyr::select(-Chrom, -Position) %>% as.matrix()
+colnames(m2)<-m128$Locality
+rownames(m2)<-gl2$Position
+```
+
+```{r}
+library(ggplotify)
+library(pheatmap)
+as.ggplot(pheatmap(m2, cluster_cols = FALSE, cluster_rows = FALSE, color=colorRampPalette(viridis(3, option="cividis", direction=-1, alpha = 0.75))(3)
+                   )) +
+    ggtitle("Heatmap of associated barra variants on Lca24\n") + 
+  theme(plot.title = element_text(hjust=0.5))
+
+ggsave("outputs/1308/associated-variants-range-wide.jpeg", width=12, height=5)
+
 ```

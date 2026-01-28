@@ -1,0 +1,10 @@
+upload 
+
+(base) maccamp@farm:~/lates-wgs/data/daly$ lftp subftp@ftp-private.ncbi.nlm.nih.gov
+cd uploads/drmaccampbell_gmail.com_S63YgRdQ
+
+mkdir SUB123456_related_data
+ cd SUB123456_related_data/
+mput *fastq.gz
+
+!ls vs ls
