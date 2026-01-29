@@ -15,11 +15,11 @@ library(ggrepel)
 
 Received new samples from WA, Fitzroy River and Cambridge Gulf. Need to check checksums and merge data, align, etc.
 
-Don't forget to md5sum -c checksums.md5
-srun -p bigmemh -t 12:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=2 md5sum -c checksums.md5 > check.out 2> check.err
+Don't forget to md5sum -c checksums.md5.     
+`srun -p bmh -t 12:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=2 md5sum -c checksums.md5 > check.out 2> check.err`.     
+cat check.out returns all OK status.       
 
-
-Manually combine, don't ask me why.
+Manually combining, don't ask me why.    
 
 ```{sh, eval=FALSE}
 cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/FIT-45*R1.fastq.gz > Fitzroy45-R1.fastq.gz
@@ -46,7 +46,6 @@ cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-003775*R2.fastq.gz > WAF003775-R2.fa
 cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-003776*R1.fastq.gz > WAF003776-R1.fastq.gz
 cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-003776*R2.fastq.gz > WAF003776-R2.fastq.gz
 
-##
 cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-004001*R1.fastq.gz > WAF004001-R1.fastq.gz
 cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-004001*R2.fastq.gz > WAF004001-R2.fastq.gz
 
@@ -61,14 +60,20 @@ cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-004008*R2.fastq.gz > WAF004008-R2.fa
 
 cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-004014*R1.fastq.gz > WAF004014-R1.fastq.gz
 cat AGRF_NXGSQCAGRF25120123-1_23GGJFLT3/WAF-004014*R2.fastq.gz > WAF004014-R2.fastq.gz
-
 ```
 
 
-Need to align, but the options have changed! 
+Need to align, but the options have changed! Edited do-align.sh.       
 
+```{sh, eval=FALSE}
+ls | grep R1 > forward
+ls | grep R2 > reverse
+ls | grep R1 | perl -pe s'/-R1.fastq.gz//g' > names.txt
+paste forward reverse names.txt > to-align.txt
+bash ../../do-align.sh to-align.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
+```
 
-Can downsample
+Can downsample if needed 
 
 
 # meta

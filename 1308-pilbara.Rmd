@@ -25,10 +25,11 @@ library(pcadapt)
 library(ggpubr)
 ```
 
-Have the new Pilbara seqs, there are a few lanes to combine
+Have the new Pilbara seqs, there are a few lanes to combine. 
 
-Don't forget to md5sum -c checksums.md5
-srun -p high -t 12:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=2 md5sum -c checksums.md5 > check.out 2> check.err
+Don't forget to md5sum -c checksums.md5!   
+srun -p high -t 12:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=2 md5sum -c checksums.md5 > check.out 2> check.err   
+cat check.out returns all OK status.      
 ```{sh, eval=FALSE}
 module load parallel
 srun -p high -t 12:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=11 parallel -j 11 < ../../1308.1-combine.sh  
