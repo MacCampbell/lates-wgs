@@ -146,7 +146,28 @@ down %>% select(Command) %>% write_tsv(file="1400.1-downsample.sh", col_names = 
 
 ```{sh, eval=FALSE}
 module load parallel
-srun -p high -t 4:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 parallel -j 12 < 1400.1-downsample.sh
+srun -p bmh -t 4:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 parallel -j 12 < 1400.1-downsample.sh
 ```
 
+
+```{r}
+m90<-meta %>% filter(Run !="WAF011639") %>% filter(Region != "Australian Aquaculture") %>% filter(Region !="Sri Lankan Aquaculture") %>% 
+  filter( Locality %in% c("DeGrey River","Broome","Fitzroy River WA","Fitzroy River WA-Historical","Cambridge Gulf","Daly River","Darwin Harbour","Roper River","Tully Inlet","Fly River","Hinchinbrook Channel", "Fitzroy River QLD","Samarinda","Sulawesi","Tamsui River"))
+m90$Locality<-factor(m90$Locality, levels=c("DeGrey River","Broome","Fitzroy River WA","Fitzroy River WA-Historical","Cambridge Gulf","Daly River","Darwin Harbour","Roper River","Tully Inlet","Fly River","Hinchinbrook Channel", "Fitzroy River QLD","Samarinda","Sulawesi","Tamsui River") )
+
+m90 %>% select(NewPath)
 ```
+
+One chrom GLs for sanity
+
+```{sh, eval=FALSE}
+srun -p bmh -t 5:00:00 --mem=32G --nodes=1 --cpus-per-task=12  $HOME/angsd/angsd -P 12  \
+-bam bamlists/90.bamlist -r NC_066833.1 \
+-ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 81 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1400/ibs-90-Lcal01 > outputs/1400/ibs-90-Lcal01.out 2> outputs/1400/ibs-90-Lcal01.err &
+
+```
+
