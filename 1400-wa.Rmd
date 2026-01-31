@@ -135,4 +135,18 @@ earth+geom_point(data=points, aes(x=long, y=lat, size=`Sample Size`,fill=Lineage
 ggsave("outputs/1400/sampling-map.pdf", width=12, height=8.5)
 ```
 
+# Downsample
+
+
+```{r}
+down<-meta %>% filter(Locality %in% c("Fitzroy River WA-Historical","Fitzroy River WA","Cambridge Gulf")) %>% filter(Coverage > 7) %>% mutate(Frac=7/Coverage) %>% filter(Run !="Fitzroy01") %>%
+  mutate(Command = paste0("samtools view -bs ", Frac, " ", Path, " > ",   "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;"," samtools index ", "/home/maccamp/lates-wgs/data/downsample/", Run, ".reduced.bam ;")) 
+down %>% select(Command) %>% write_tsv(file="1400.1-downsample.sh", col_names = FALSE)
+```
+
+```{sh, eval=FALSE}
+module load parallel
+srun -p high -t 4:00:00 --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 parallel -j 12 < 1400.1-downsample.sh
+```
+
 ```
