@@ -105,7 +105,7 @@ ggplot() +
   geom_point(data=names, aes(x=Longitude, y=Latitude), pch=15) +
   geom_text_repel(data=names, aes(x=Longitude, y=Latitude, label=paste0(Name, "\n", Authority)), size=3) +
   scale_size_continuous(breaks=c(1,5,10)) +
-  scale_fill_viridis_d(option="H") +
+  scale_fill_viridis_d(option="H") 
 
 ggsave("outputs/1400/sampling-map-with-names.pdf", width=12, height=8.5)
 ```
@@ -155,7 +155,13 @@ m90<-meta %>% filter(Run !="WAF011639") %>% filter(Region != "Australian Aquacul
   filter( Locality %in% c("DeGrey River","Broome","Fitzroy River WA","Fitzroy River WA-Historical","Cambridge Gulf","Daly River","Darwin Harbour","Roper River","Tully Inlet","Fly River","Hinchinbrook Channel", "Fitzroy River QLD","Samarinda","Sulawesi","Tamsui River"))
 m90$Locality<-factor(m90$Locality, levels=c("DeGrey River","Broome","Fitzroy River WA","Fitzroy River WA-Historical","Cambridge Gulf","Daly River","Darwin Harbour","Roper River","Tully Inlet","Fly River","Hinchinbrook Channel", "Fitzroy River QLD","Samarinda","Sulawesi","Tamsui River") )
 
-m90 %>% select(NewPath)
+m90 %>% select(NewPath) %>% write_tsv(file="bamlists/90.bamlist", col_names = FALSE)
+m90 %>% select(Run) %>% write_tsv(file="bamlists/90.names", col_names = FALSE)
+
+m89<-m90 %>% filter(Run!="WAF003776")
+m89 %>% select(NewPath) %>% write_tsv(file="bamlists/89.bamlist", col_names = FALSE)
+m89 %>% select(Run) %>% write_tsv(file="bamlists/89.names", col_names = FALSE)
+
 ```
 
 One chrom GLs for sanity
@@ -171,3 +177,136 @@ srun -p bmh -t 5:00:00 --mem=32G --nodes=1 --cpus-per-task=12  $HOME/angsd/angsd
 
 ```
 
+	-> Number of sites retained after filtering: 92652 
+
+
+```{r}
+m <- as.matrix(read.table("outputs/1400/ibs-90-Lcal01.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+
+vdf<-var %>% as_tibble() %>% rename(Variance=value) %>% mutate(PC=1:n()) %>% head(n=10)
+
+scree<-ggplot(vdf) +
+  geom_line(aes(x=PC, y=Variance)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_x_continuous(breaks=vdf$PC) +
+  theme(axis.text=element_text(size=8)) +
+  ggtitle("Scree Plot") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+scree
+ggsave("outputs/1400/chrom01-scree-plot.jpeg")
+```
+
+
+```{r}
+meta<-m90
+covs<-eig$vectors[,1:4] %>% as_tibble() %>% bind_cols(meta)
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+text12L<-covs %>% select(Run, Locality, V1, V2) %>%
+  group_by(Locality) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+pc12<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Locality), pch=21, alpha=0.75, cex=2) +
+  #  geom_text(aes(x=V1, y=V2, label=Run), pch=21, alpha=0.75, cex=2) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+ # geom_text_repel(data=text12L, aes(x=x, y=y, label=Locality), size=3, max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="C") +
+  ggtitle("PCs 1 and 2") +
+  theme(plot.title = element_text(hjust=0.5, face="bold")) +
+  theme(legend.position = "none")
+
+pc12
+ggsave("outputs/1400/chrom01-lates-pc12.jpeg", width=6, height=6)
+ggsave("outputs/1400/chrom01-lates-pc12.pdf", width=6, height=6)
+
+```
+
+0.230  -0.211   -0.0361  0.795    WAF0… WAF003776
+
+Its a stinker!  Time to drop it
+
+```{r}
+text13<-covs %>% select(Run, Region, V1, V3) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
+
+text13L<-covs %>% select(Run, Locality, V1, V3) %>%
+  group_by(Locality) %>% summarize(Count=n(), x=mean(V1), y=mean(V3))
+
+pc13<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V3, fill=Locality), pch=21, alpha=0.75, cex=2) +
+  #  geom_text(aes(x=V1, y=V2, label=Run), pch=21, alpha=0.75, cex=2) +
+  geom_text_repel(data=text13, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+ # geom_text_repel(data=text13L, aes(x=x, y=y, label=Locality), size=3, max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC3", " ", round((100*var[3]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="C") +
+  ggtitle("PCs 1 and 3") +
+  theme(plot.title = element_text(hjust=0.5, face="bold")) +
+  theme(legend.position = "none")
+
+pc13
+```
+
+# Calls
+
+Excluding inversion zones
+
+```{sh, eval=FALSE}
+srun -t 48:00:00 -p bmh --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 81 -bam bamlists/90.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf  meta/no-inv.txt -out outputs/1400/snps-wgs-01-glf  \
+-minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1400/snps-wgs-01-glf.out 2> outputs/1400/snps-wgs-01-glf.err &
+```
+
+	-> Number of sites retained after filtering: 11383714 
+
+
+```{sh}
+plink --tped snps-wgs-01-glf.tped --tfam snps-wgs-01-glf.tfam  --out plink-binary-01 --recode --allow-extra-chr --noweb
+plink --ped plink-binary-01.ped --map plink-binary-01.map --recode vcf --allow-extra-chr -out plink-01
+bgzip plink-01.vcf 
+tabix plink-01.vcf.gz
+
+#renaming vcf bcftools/1.13
+module load bcftools
+
+bcftools reheader --samples bamlists/90.names -o outputs/1400/renamed-01-90.vcf.gz outputs/1400/plink-01.vcf.gz
+bcftools view --samples bamlists/89.names -o outputs/1400/renamed-01.vcf.gz outputs/1400/renamed-01-90.vcf.gz
+
+bcftools +fill-tags outputs/1400/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1400/pruned-01-maf05-45.vcf
+
+bcftools +fill-tags outputs/1400/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.01' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1400/pruned-01-maf01-45.vcf
+
+bcftools +fill-tags outputs/1400/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1400/pruned-01-maf10-45.vcf
+
+bcftools +fill-tags outputs/1400/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode maxAF  > outputs/1400/pruned-01-maf10-45-max.vcf
+
+
+
+#Convert to phylip and then to nex
+conda activate py2;
+
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf01-45.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf05-45.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45-max.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45.vcf;
+
+conda deactivate;
+```
