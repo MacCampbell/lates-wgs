@@ -1,0 +1,81 @@
+---
+title: "1401-taxonomy"
+output: html_document
+date: "2026-03-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(ape)
+library(phangorn)
+library(tidyverse)
+library(pcadapt)
+library(ggpubr)
+library(grid)
+library(ggrepel)
+library(ggtree)
+library(tanggle)
+```
+
+
+Have a comprehensive data set, but am including two L. japonicus
+
+Need to dump one and align.    
+```{sh, eval=FALSE}
+module load sratoolkit
+fastq-dump --outdir split --skip-technical --read-filter pass --dumpbase --split-3 --gzip --clip DRR397260.lite.1.1
+
+# in data/split
+bash ../../../do-align.sh to-align.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
+
+# downsample
+srun -p bmh -t 24:00:00 --mem=32G --nodes=1 samtools view -bs  /home/maccamp/lates-wgs/data/split/DRR397260.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/DRR397260.reduced.bam
+
+```
+
+Goal - created rooted phylogenetic tree of samples. Can use svd quartets
+
+_1_ Create bamlist excluding aquaculture samples 
+
+Broome01 is odd in behavior as well
+Can excluded taiwanese admixed fish
+
+```{r}
+meta<-read_csv("meta/m164.csv") %>% filter(Run !="WAF011639") %>% filter(Run !="WAF003776") %>% filter(Run !="Broome01") %>% filter(Region != "Australian Aquaculture") %>% filter(Region !="Sri Lankan Aquaculture")  
+summary<-meta %>% group_by(Region, Locality, Lineage) %>% summarize(`Sample Size`=n())
+locs<-read_tsv("outputs/range-map/points-edited-4.tsv")
+points<-summary %>% left_join(locs)
+points$Lineage<-factor(points$Lineage, levels=c("IND","uwisara","lakdiva","SEA","WAL","AUS","japonicus"))
+points
+```
+
+```{r}
+meta %>% write_csv("meta/taxonomy-paper.csv")
+meta %>% select(NewPath) %>% write_tsv("bamlists/141.bamlist", col_names = FALSE)
+meta %>% select(Run) %>% write_tsv("bamlists/141.names", col_names = FALSE)
+
+nometa<-meta %>% filter(Lineage !="japonicus")
+nometa %>% select(NewPath) %>% write_tsv("bamlists/139.bamlist", col_names = FALSE)
+nometa %>% select(Run) %>% write_tsv("bamlists/139.names", col_names = FALSE)
+
+```
+
+ levels=c("DeGrey River","Broome","Fitzroy River WA","Fitzroy River WA-Historical","Cambridge Gulf","Daly River","Darwin Harbour","Roper River","Tully Inlet","Fly River","Hinchinbrook Channel", "Fitzroy River QLD","Samarinda","Sulawesi","Tamsui River") )
+
+_2_ One chrom GLs for sanity
+
+One chrom GLs for sanity
+
+```{sh, eval=FALSE}
+srun -p bmh -t 5:00:00 --mem=32G --nodes=1 --cpus-per-task=12  $HOME/angsd/angsd -P 12  \
+-bam bamlists/139.bamlist -r NC_066833.1 \
+-ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 125 -minMapQ 20 -minQ 20 -GL 2 -doGLF 2 \
+-doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 \
+-out outputs/1401/ibs-90-Lcal01 > outputs/1401/ibs-90-Lcal01.out 2> outputs/1401/ibs-90-Lcal01.err &
+```
+

@@ -8,3 +8,4 @@ mkdir SUB123456_related_data
 mput *fastq.gz
 
 !ls vs ls
+
