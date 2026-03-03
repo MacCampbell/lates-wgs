@@ -45,6 +45,9 @@ Can excluded taiwanese admixed fish
 
 ```{r}
 meta<-read_csv("meta/m164.csv") %>% filter(Run !="WAF011639") %>% filter(Run !="WAF003776") %>% filter(Run !="Broome01") %>% filter(Region != "Australian Aquaculture") %>% filter(Region !="Sri Lankan Aquaculture")  
+
+meta$Lineage<-factor(meta$Lineage, levels=c("IND","uwisara","lakdiva","SEA","WAL","AUS","japonicus"))
+
 summary<-meta %>% group_by(Region, Locality, Lineage) %>% summarize(`Sample Size`=n())
 locs<-read_tsv("outputs/range-map/points-edited-4.tsv")
 points<-summary %>% left_join(locs)
@@ -53,9 +56,10 @@ points
 ```
 
 ```{r}
-meta %>% write_csv("meta/taxonomy-paper.csv")
-meta %>% select(NewPath) %>% write_tsv("bamlists/141.bamlist", col_names = FALSE)
-meta %>% select(Run) %>% write_tsv("bamlists/141.names", col_names = FALSE)
+m141<-meta
+m141 %>% write_csv("meta/taxonomy-paper.csv")
+m141 %>% select(NewPath) %>% write_tsv("bamlists/141.bamlist", col_names = FALSE)
+m141 %>% select(Run) %>% write_tsv("bamlists/141.names", col_names = FALSE)
 
 nometa<-meta %>% filter(Lineage !="japonicus")
 nometa %>% select(NewPath) %>% write_tsv("bamlists/139.bamlist", col_names = FALSE)
@@ -79,3 +83,114 @@ srun -p bmh -t 5:00:00 --mem=32G --nodes=1 --cpus-per-task=12  $HOME/angsd/angsd
 -out outputs/1401/ibs-90-Lcal01 > outputs/1401/ibs-90-Lcal01.out 2> outputs/1401/ibs-90-Lcal01.err &
 ```
 
+	-> Number of sites retained after filtering: 580629 at maf=0.01.        
+	-> Number of sites retained after filtering: 147600 at maf=0.05.    
+
+6/139 = 0.04, so maf < 0.05 won't produce unique variants in some pops. Setting maf initially to 0.01. Very noisy PCA, trying again at 0.05.     
+
+Should try 0.01, 0.05 and 0.10 for phylogenies though, using rand when pruning and maxAF options.
+
+
+```{r}
+m <- as.matrix(read.table("outputs/1401/ibs-90-Lcal01.covMat"))
+eig <- eigen(m)
+var<-eig$values/sum(eig$values)
+cumvar<-cumsum(eig$values)/sum(eig$values)
+
+head(var)
+head(cumvar)
+
+vdf<-var %>% as_tibble() %>% rename(Variance=value) %>% mutate(PC=1:n()) %>% head(n=10)
+
+scree<-ggplot(vdf) +
+  geom_line(aes(x=PC, y=Variance)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_x_continuous(breaks=vdf$PC) +
+  theme(axis.text=element_text(size=8)) +
+  ggtitle("Scree Plot") +
+  theme(plot.title = element_text(hjust=0.5, face="bold"))
+
+scree
+ggsave("outputs/1401/chrom01-scree-plot.jpeg")
+```
+
+
+```{r}
+meta<-nometa
+covs<-eig$vectors[,1:4] %>% as_tibble() %>% bind_cols(meta)
+
+text12<-covs %>% select(Run, Region, V1, V2) %>%
+  group_by(Region) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+text12L<-covs %>% select(Run, Locality, V1, V2) %>%
+  group_by(Locality) %>% summarize(Count=n(), x=mean(V1), y=mean(V2))
+
+pc12<-ggplot(covs) +
+  geom_point(aes(x=V1, y=V2, fill=Lineage), pch=21, alpha=0.75, cex=2) +
+  #  geom_text(aes(x=V1, y=V2, label=Run), pch=21, alpha=0.75, cex=2) +
+  geom_text_repel(data=text12, aes(x=x, y=y, label=Region), max.overlaps = Inf) +
+ # geom_text_repel(data=text12L, aes(x=x, y=y, label=Locality), size=3, max.overlaps = Inf) +
+  xlab(paste("PC1", " ", round((100*var[1]),2), "%", sep = "")) +
+  ylab(paste("PC2", " ", round((100*var[2]),2), "%", sep = "")) +
+  theme_bw() +
+  theme(panel.grid=element_blank()) +
+  scale_fill_viridis_d(option="H") +
+  ggtitle("PCs 1 and 2") +
+  theme(plot.title = element_text(hjust=0.5, face="bold")) 
+#  theme(legend.position = "none")
+
+pc12
+ggsave("outputs/1401/chrom01-lates-pc12.jpeg", width=6, height=6)
+ggsave("outputs/1401/chrom01-lates-pc12.pdf", width=6, height=6)
+
+```
+
+_3_ Calls
+
+# Calls
+
+Excluding inversion zones
+
+```{sh, eval=FALSE}
+srun -t 48:00:00 -p bmh --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 127 -bam bamlists/141.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf  meta/no-inv.txt -out outputs/1401/snps-wgs-01-glf  \
+-minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1401/snps-wgs-01-glf.out 2> outputs/1401/snps-wgs-01-glf.err &
+```
+
+	-> Number of sites retained 
+
+
+```{sh, eval=FALSE}
+plink --tped snps-wgs-01-glf.tped --tfam snps-wgs-01-glf.tfam  --out plink-binary-01 --recode --allow-extra-chr --noweb
+plink --ped plink-binary-01.ped --map plink-binary-01.map --recode vcf --allow-extra-chr -out plink-01
+bgzip plink-01.vcf 
+tabix plink-01.vcf.gz
+
+#renaming vcf bcftools/1.13
+module load bcftools
+
+bcftools reheader --samples bamlists/141.names -o outputs/1401/renamed-01-90.vcf.gz outputs/1401/plink-01.vcf.gz
+#bcftools view -S bamlists/89.names -o outputs/1401/renamed-01.vcf.gz outputs/1401/renamed-01-90.vcf.gz
+
+bcftools +fill-tags outputs/1401/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.01' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1401/pruned-01-maf01-45.vcf
+
+bcftools +fill-tags outputs/1401/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1401/pruned-01-maf05-45.vcf
+
+bcftools +fill-tags outputs/1401/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1401/pruned-01-maf10-45.vcf
+
+bcftools +fill-tags outputs/1401/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode maxAF  > outputs/1401/pruned-01-maf10-45-max.vcf
+
+
+#Convert to phylip and then to nex
+conda activate py2;
+
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf01-45.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf05-45.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45-max.vcf;
+~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45.vcf;
+
+conda deactivate
+```
