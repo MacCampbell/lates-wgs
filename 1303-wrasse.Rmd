@@ -780,4 +780,6 @@ samtools faidx ~/genomes/baldchin/OG910_241127.hic1.3.curated.hap1.fasta SUPER_1
 Align to a reference https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_963930695.1/ ?
 
 
+## Functionally annotate? 
 
+Can use snpeff or similar. 

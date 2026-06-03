@@ -31,9 +31,9 @@ fastq-dump --outdir split --skip-technical --read-filter pass --dumpbase --split
 # in data/split
 bash ../../../do-align.sh to-align.txt /home/maccamp/lates-wgs/genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna.gz
 
-# downsample
-srun -p bmh -t 24:00:00 --mem=32G --nodes=1 samtools view -bs  /home/maccamp/lates-wgs/data/split/DRR397260.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/DRR397260.reduced.bam
-
+# downsample to 20x to match other sample 20/110.53=0.1809463
+srun -p bmh -t 24:00:00 --mem=32G --nodes=1 samtools view -bs 0.1809463  /home/maccamp/lates-wgs/data/japonicus/split/DRR397260.sort.flt.bam > /home/maccamp/lates-wgs/data/downsample/DRR397260.reduced.bam
+samtools index /home/maccamp/lates-wgs/data/downsample/DRR397260.reduced.bam
 ```
 
 Goal - created rooted phylogenetic tree of samples. Can use svd quartets
@@ -160,7 +160,7 @@ srun -t 48:00:00 -p bmh --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doPlink 2  > outputs/1401/snps-wgs-01-glf.out 2> outputs/1401/snps-wgs-01-glf.err &
 ```
 
-	-> Number of sites retained 
+	-> Number of sites retained after filtering: 19024878 
 
 
 ```{sh, eval=FALSE}
@@ -172,7 +172,7 @@ tabix plink-01.vcf.gz
 #renaming vcf bcftools/1.13
 module load bcftools
 
-bcftools reheader --samples bamlists/141.names -o outputs/1401/renamed-01-90.vcf.gz outputs/1401/plink-01.vcf.gz
+bcftools reheader --samples bamlists/141.names -o outputs/1401/renamed-01.vcf.gz outputs/1401/plink-01.vcf.gz
 #bcftools view -S bamlists/89.names -o outputs/1401/renamed-01.vcf.gz outputs/1401/renamed-01-90.vcf.gz
 
 bcftools +fill-tags outputs/1401/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.01' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1401/pruned-01-maf01-45.vcf
@@ -185,12 +185,114 @@ bcftools +fill-tags outputs/1401/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftoo
 
 
 #Convert to phylip and then to nex
-conda activate py2;
+conda activate py27;
 
-~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf01-45.vcf;
-~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf05-45.vcf;
-~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45-max.vcf;
-~/github/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45.vcf;
+~/mccloud-rrt/vcf2phylip.py -i pruned-01-maf01-45.vcf;
+~/mccloud-rrt/vcf2phylip.py -i pruned-01-maf05-45.vcf;
+~/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45-max.vcf;
+~/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45.vcf;
 
 conda deactivate
+```
+
+_4_ Network
+```{r}
+dat<-read.dna(file="outputs/1401/maf01/pruned-01-maf01-45.min4.phy")
+write.nexus.data(dat, file="outputs/1401/maf01/pruned-01-maf01-45.min4.nex")
+
+
+dat<-read.dna(file="outputs/1401/maf05/pruned-01-maf05-45.min4.phy")
+write.nexus.data(dat, file="outputs/1401/maf05/pruned-01-maf05-45.min4.nex")
+
+dat<-read.dna(file="outputs/1401/maf10-max/pruned-01-maf10-45-max.min4.phy")
+write.nexus.data(dat, file="outputs/1401/maf10-max/pruned-01-maf10-45-max.min4.nex")
+
+dat<-read.dna(file="outputs/1401/maf10-rand/pruned-01-maf10-45.min4.phy")
+write.nexus.data(dat, file="outputs/1401/maf10-rand/pruned-01-maf10-45.min4.nex")
+```
+
+
+```{r}
+net<-read.nexus.networx("outputs/1401/maf05/pruned-01-maf05-45.min4.network")
+#net<-read.nexus.networx("outputs/1401/maf01/pruned-01-maf01-45.min4.network")
+#net<-read.nexus.networx("outputs/1401/maf10-max/pruned-01-maf10-45-max.network")
+
+m<-m141
+```
+
+```{r}
+g<-ggsplitnet(net, color="black")  
+g$data<-left_join(g$data, m, by=c("label"="Run")) 
+
+n<-g + 
+  geom_tippoint(aes(fill=Lineage), cex=5, alpha=1.00, pch=21) +
+  scale_fill_viridis_d(option="H") +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+#  theme(legend.position = "none") +
+  theme(panel.grid=element_blank())
+  #theme(panel.background = element_rect(fill="black", color="black")) +
+  #theme(plot.background = element_rect(fill="black", color="black")) +
+  #theme(legend.background =element_rect(fill="black", color="black"), legend.text = element_text(color="white"), legend.title = element_text(color="white")) +
+  #theme(axis.text=element_text(color="white", size=12)) +
+  #theme(axis.title=element_text(color="white", face="bold", size=14))  +
+ # theme(legend.position = "none")
+  
+  
+  #color white and black
+n
+
+
+```
+
+_5_ Ml tree
+
+
+```{sh, eval=FALSE}
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s pruned-01-maf10-45-max.min4.phy --seqtype DNA --redo
+iqtree2  -nt AUTO -m MFP+ASC -bb 10000 -s pruned-01-maf10-45-max.min4.phy.varsites.phy --seqtype DNA --redo
+```
+ERROR: Invalid use of +ASC because of 198 invariant sites in the alignment
+
+_6_ Species tree
+
+
+## Aside
+
+SNPs differentiating WA from QLD
+
+```{r}
+comp<-nometa %>% filter(Lineage=="AUS") %>% filter(Region %in% c("Queensland", "Western Australia")) %>% filter(Locality != "Tully Inlet")
+comp %>% select(Run) %>% write_tsv("meta/comp.names", col_names = FALSE)
+comp %>% select(NewPath) %>% write_tsv("meta/comp.bamlist", col_names = FALSE)
+
+comp %>% filter(Region=="Western Australia") %>% select(Run) %>% write_tsv("outputs/1401/pop1.names", col_names = FALSE)
+comp %>% filter(Region=="Queensland") %>% select(Run) %>% write_tsv("outputs/1401/pop2.names", col_names = FALSE)
+
+```
+
+```{sh, eval=FALSE}
+srun -t 48:00:00 -p bmh --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
+-minInd 43 -bam bamlists/comp.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-rf  meta/lates-lgs.txt  -out outputs/1401/comp-01-glf  \
+-minMaf 0.05 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
+-doGeno 2 -doPost 1 -postCutoff 0.9 -doVcf 1  > outputs/1401/comp.out 2> outputs/1401/comp.err &
+```
+
+```{sh, eval=FALSE}
+bcftools view -S outputs/1401/comp.names  outputs/1401/renamed-01.vcf.gz | bcftools +fill-tags -- -t MAF,F_MISSING | bcftools view -i 'INFO/MAF > 0.10' > outputs/1401/comp.vcf
+```
+
+Calling my own file
+```{sh, eval=FALSE}
+bcftools view -S outputs/1401/pop1.names outputs/1401/comp.vcf \
+  | bcftools +fill-tags -- -t AF \
+  | bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%AF\n' \
+  > outputs/1401/pop1.af.txt
+
+bcftools view -S outputs/1401/pop2.names outputs/1401/comp.vcf \
+  | bcftools +fill-tags -- -t AF \
+  | bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%AF\n' \
+  > outputs/1401/pop2.af.txt
+  
+paste outputs/1401/pop1.af.txt outputs/1401/pop2.af.txt | awk '{print $1,$2,$3,$4,$5-$10}' > outputs/1401/diff.txt
 ```

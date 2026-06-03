@@ -163,5 +163,5 @@ WAF003770 ,WAF003770 ,WAF003770 ,Western Australia,Cambridge Gulf,261355003,1693
 WAF003774 ,WAF003774 ,WAF003774 ,Western Australia,Cambridge Gulf,285358713,187925876,40.6469,/home/maccamp/lates-wgs/data/wa/WAF003774.sort.flt.bam,AUS,data/wa,data/downsample/WAF003774.reduced.bam,New,,,
 WAF003775 ,WAF003775 ,WAF003775 ,Western Australia,Cambridge Gulf,249133649,166723114,35.8027,/home/maccamp/lates-wgs/data/wa/WAF003775.sort.flt.bam,AUS,data/wa,data/downsample/WAF003775.reduced.bam,New,,,
 WAF003776 ,WAF003776 ,WAF003776 ,Western Australia,Cambridge Gulf,291925856,50879626,6.12919,/home/maccamp/lates-wgs/data/wa/WAF003776.sort.flt.bam,AUS,data/wa,data/wa/WAF003776.sort.flt.bam,New,,,
-DRR397260,SAMD00518784,SAMD00518784,Japan,"Shiomi River, Miyazaki",,,,,japonicus,data/japonicus,data/downsample/DRR397260.reduced.bam,Existing,,,
+DRR397260,SAMD00518784,SAMD00518784,Japan,"Shiomi River, Miyazaki",876389609,607675013,110.533,/home/maccamp/lates-wgs/data/japonicus/split/DRR397260.sort.flt.bam,japonicus,data/japonicus,data/downsample/DRR397260.reduced.bam,Existing,,,
 DRR391968,SAMD00509453,SAMD00509453,Japan,"Shimanto River, Kochi",972202037,621949413,110.071,/home/maccamp/lates-wgs/data/japonicus/split/DRR391968.sort.flt.bam,japonicus,data/japonicus,data/downsample/DRR391968.reduced.bam,Existing,,,
