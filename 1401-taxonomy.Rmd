@@ -324,7 +324,7 @@ etc.
 Can test indian ocean molecular phylogenetics separately with 'all' the fish.
 
 ```{r}
-subset<-c("DRR397260","DRR391968","SRR3183260","SRR3183261","SRR3183253","SRR3165594","Trinco1","Mannar1","1613156","1613186","SRR3165617","SRR3165612","SRR3165609","WJC9559","SRR3165603","SRR3165600",
+subset<-c("DRR397260","DRR391968","SRR3183260","SRR3183261","SRR3183253","SRR3165594","Trinco1","Mannar1","1613156","1613186","SRR3165617","SRR3165612","SRR3165609","WJC9559","SRR3183266","SRR3165601","SRR3165606",
           "SRR3165624","WAF011638",
           "Broome08","Fitzroy45","WAF003767","Daly02","Roper02","Tully02","Fitz07")
 
@@ -336,7 +336,7 @@ phylo$Lineage<-factor(phylo$Lineage, levels=c("IND","uwisara","lakdiva","SEA","W
 phylo<-phylo %>% arrange(Lineage, Locality) 
 
 phylo %>% dplyr::select(NewPath) %>% write_tsv(file="bamlists/phylo.bamlist", col_names = FALSE)
-phylo %>% dplyr::select(NewPath) %>% write_tsv(file="bamlists/phylo.names", col_names = FALSE)
+phylo %>% dplyr::select(Run) %>% write_tsv(file="bamlists/phylo.names", col_names = FALSE)
 phylo
 ```
 
@@ -346,40 +346,49 @@ rf  meta/no-inv.txt
 First, NC_066833.1
 ```{sh, eval=FALSE}
 srun -t 2:00:00 -p bmh --mem=32G --nodes=1 --ntasks-per-node=1 --cpus-per-task=12 $HOME/angsd/angsd -nthreads 12 \
--minInd 21 -bam bamlists/phylo.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
+-minInd 22 -bam bamlists/phylo.bamlist -ref genome/GCF_001640805.2_TLL_Latcal_v3_genomic.fna \
 -r NC_066833.1 -out outputs/1401/phylo-snps-01  \
 -minMaf 0.01 -minMapQ 20 -minQ 20 -GL 1 -doGLF 2 -doMajorMinor 1 -doMaf 1 -SNP_pval 1e-6 \
 -doGeno 2 -doPost 1 -postCutoff 0.9 -doVcf 1  > outputs/1401/phylo-snps-01.out 2> outputs/1401/phylo-snps-01.err &
 ```
 
+	-> Number of sites retained after filtering: 836966 
+
+consider dropping  bcftools view -i 'F_MISSING < 0.05' 
+
+
+MAF 05/rand worked ok
+trying 10/rand, its ok too
 
 
 ```{sh, eval=FALSE}
-plink --tped snps-wgs-01-glf.tped --tfam snps-wgs-01-glf.tfam  --out plink-binary-01 --recode --allow-extra-chr --noweb
-plink --ped plink-binary-01.ped --map plink-binary-01.map --recode vcf --allow-extra-chr -out plink-01
-bgzip plink-01.vcf 
-tabix plink-01.vcf.gz
 module load bcftools
 
-bcftools reheader --samples bamlists/141.names -o outputs/1401/renamed-01.vcf.gz outputs/1401/plink-01.vcf.gz
-#bcftools view -S bamlists/89.names -o outputs/1401/renamed-01.vcf.gz outputs/1401/renamed-01-90.vcf.gz
+bcftools reheader --samples bamlists/phylo.names -o outputs/1401/phylo-01.vcf.gz outputs/1401/phylo-snps-01.vcf.gz
+tabix outputs/1401/phylo-01.vcf.gz
 
-bcftools +fill-tags outputs/1401/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.01' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1401/pruned-01-maf01-45.vcf
+bcftools +fill-tags outputs/1401/phylo-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'INFO/MAF > 0.05' | bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1401/phylo-rand.vcf
 
-bcftools +fill-tags outputs/1401/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.05' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1401/pruned-01-maf05-45.vcf
+bcftools +fill-tags outputs/1401/phylo-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'INFO/MAF > 0.05' | bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode maxAF  > outputs/1401/phylo-max.vcf
 
-bcftools +fill-tags outputs/1401/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1401/pruned-01-maf10-45.vcf
+bcftools +fill-tags outputs/1401/phylo-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'INFO/MAF > 0.10' | bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode rand  > outputs/1401/phylo-rand-10.vcf
 
-bcftools +fill-tags outputs/1401/renamed-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'F_MISSING < 0.05' | bcftools view -i 'INFO/MAF > 0.10' | bcftools view -i 'INFO/MAF < 0.45' |  bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode maxAF  > outputs/1401/pruned-01-maf10-45-max.vcf
-
+bcftools +fill-tags outputs/1401/phylo-01.vcf.gz  -- -t MAF,F_MISSING | bcftools view -i 'INFO/MAF > 0.10' | bcftools +prune -m 0.20 -w 50kb --nsites-per-win 1 --nsites-per-win-mode maxAF  > outputs/1401/phylo-max-10.vcf
 
 #Convert to phylip and then to nex
 conda activate py27;
 
-~/mccloud-rrt/vcf2phylip.py -i pruned-01-maf01-45.vcf;
-~/mccloud-rrt/vcf2phylip.py -i pruned-01-maf05-45.vcf;
-~/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45-max.vcf;
-~/mccloud-rrt/vcf2phylip.py -i pruned-01-maf10-45.vcf;
-
+~/mccloud-rrt/vcf2phylip.py -i outputs/1401/phylo-rand.vcf;
+~/mccloud-rrt/vcf2phylip.py -i outputs/1401/phylo-max.vcf
+~/mccloud-rrt/vcf2phylip.py -i outputs/1401/phylo-rand-10.vcf;
+~/mccloud-rrt/vcf2phylip.py -i outputs/1401/phylo-max-10.vcf
 conda deactivate
+```
+
+```{sh, eval=FALSE}
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s phylo-rand.min4.phy --seqtype DNA --redo
+iqtree2  -nt AUTO -m MFP+ASC -bb 10000 -s phylo-rand.min4.phy.varsites.phy --seqtype DNA --redo
+
+iqtree2  -nt AUTO -m MFP+ASC -bb 1000 -s phylo-max.min4.phy --seqtype DNA --redo
+iqtree2  -nt AUTO -m MFP+ASC -bb 10000 -s phylo-max.min4.phy.varsites.phy --seqtype DNA --redo
 ```

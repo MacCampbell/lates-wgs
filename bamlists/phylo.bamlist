@@ -6,10 +6,11 @@ data/downsample/1613156.reduced.bam
 data/downsample/1613186.reduced.bam
 data/downsample/Mannar1.reduced.bam
 data/downsample/Trinco1.reduced.bam
-data/split/SRR3165600.sort.flt.bam
-data/split/SRR3165603.sort.flt.bam
+data/split/SRR3165601.sort.flt.bam
+data/split/SRR3183266.sort.flt.bam
 data/split/SRR3165609.sort.flt.bam
 data/downsample/WJC9559.reduced.bam
+data/split/SRR3165606.sort.flt.bam
 data/split/SRR3165617.sort.flt.bam
 data/split/SRR3165612.sort.flt.bam
 data/downsample/Broome08.reduced.bam
