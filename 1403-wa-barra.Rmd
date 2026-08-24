@@ -1,0 +1,18 @@
+---
+title: "1403-wa-barra-update"
+output: html_document
+date: "2026-06-24"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+samples<-read_csv("meta/260624-barramundi.csv")
+samples
+```

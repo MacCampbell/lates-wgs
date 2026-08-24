@@ -20,26 +20,7 @@ library(viridis)
 
 
 
-Let's pull in the Vij et al. COI data and make a tree.
 
-71 from vij et al.
-
-16 from Ward et al.
-
-17 from Wei-Jen
-
-`(base) ➜  vij-et-al git:(main) ✗ cat ../To_Mac_012024/COI_WJC.fasta vij-coi.fasta ward-coi.fasta > comb.fas`
-`(base) ➜  vij-et-al git:(main) ✗ mafft comb.fas > comb.afas`
-
-lots of gaps from data, removing ambiguous sites in alignment
-
-bmge -i comb.afas -t DNA -g 0.05 -of comb-trim.fas
-655 to 606 characters
-Alignment has 104 sequences with 606 columns, 40 distinct patterns
-58 parsimony-informative, 1 singleton sites, 547 constant sites
-
-Could do
-iqtree2 -nt AUTO -s comb-trim.fas -T AUTO -st DNA -m MFP -bb 10000 --redo 
 
 need to exchange names for a network analysis.
 rownames(dna)

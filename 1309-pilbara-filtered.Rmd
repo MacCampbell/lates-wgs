@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 library(tidyverse)
 library(raster)
 library(ozmaps)
+library(adegenet)
 library(ggrepel)
 library(ggtree)
 library(tanggle)
@@ -449,6 +450,48 @@ u<-t %<+% dplyr::select(meta, -`...1`) + #bind_rows(m58, rm) +
 u
 
 ggsave("outputs/1309/aus-phylo.pdf", width=6, height=9)
+```
+
+
+## Region 15
+
+bcftools view -r NC_066847.1:13250000-13450000 outputs/1309/renamed-05.vcf.gz > outputs/1309/lca15-region1.vcf
+
+
+
+```{r}
+vcf<-read.vcfR(file="outputs/1309/lca15-region1.vcf")
+
+genind<-vcfR2genind(vcf)
+genind@pop<-as.factor(meta$Locality)
+
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(meta)
+eig<-pca1$eig/sum(pca1$eig)*100
+
+
+pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Locality, shape=Lineage), alpha=0.75, cex=2) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "right") +
+  scale_shape_manual(values=c(21,23,23,24,22)) + 
+  scale_fill_manual(values=colors) +
+  guides(fill = guide_legend(override.aes = list(pch = 22)))  +
+  facet_grid(Region~.)
+
+pc12
+
+ggsave("outputs/1309/lca15-region-1-pca.jpeg", width=6, height=8.5)
+
 ```
 
 

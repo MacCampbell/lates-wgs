@@ -23,6 +23,10 @@ The fish from Cone Bay are mostly the (presumed) escapees based on their high de
 
 ```{r}
 d<-read_csv("~/Dropbox/Australian-fishes/wa-barra/240506-barramundi-mac-edit.csv")
+
+d<-read_csv("meta/260624-barramundi.csv") %>% filter(gene==TRUE) %>% filter(site_1!="Unknown site King Sound")
+
+
 # Some NA individuals bugger up this. I suppose replace missing with mean
 # https://stackoverflow.com/questions/9322773/how-to-replace-na-with-mean-by-group-subset
 impute.mean <- function(x) replace(x, is.na(x), mean(x, na.rm = TRUE))
@@ -40,7 +44,10 @@ dg  %>% arrange(Latitude)
 site2<-dg %>% group_by(site_2) %>% summarize(Latitude=mean(Latitude), Longitude=mean(Longitude), `Total Samples`=sum(Count))
 ```
 
-
+```{r}
+additional<-read_tsv("outputs/range-map/points-edited-4.tsv") %>% filter(Locality=="DeGrey River") %>% mutate(`Sample Size`=25)
+additional<-additional %>% dplyr::select(Locality, lat, long, `Sample Size`)
+```
 ## Get WA
 ```{r}
 oz <- ozmap_data("states")
@@ -65,6 +72,7 @@ tidy_subset <- function(x, longlat) {
 
 ```{r}
 domain <- c(min(dg$Longitude)-9, max(dg$Longitude)+5, min(dg$Latitude)-6, max(dg$Latitude)+2)
+domain
 ```
 
 
@@ -91,14 +99,15 @@ ggplot() +
   geom_raster(data = rast.table, mapping = aes(x = x, y = y), fill = rast.table$rgb, interpolate = TRUE)  +
   geom_sf(data=oz, fill=NA) +
   geom_jitter(data=dg, aes(x=Longitude, y=Latitude, size=`Sample Size`, fill=`Sample Size`), pch=21, alpha=0.75) +
-  coord_sf(xlim = c(domain[1]+1,domain[2]-1), ylim=c(domain[3]+1, domain[4]-1)) +
+  geom_point(data=additional, aes(x=long, y=lat, size=`Sample Size`, fill=`Sample Size`)) +
   ylab("Latitude\n") +
   xlab("\nLongitude") +
   theme_bw() +
   theme(panel.grid=element_blank()) +
-  scale_fill_viridis_c(option="magma")
+  scale_fill_viridis_c(option="magma") +
+  coord_sf(xlim = c(domain[1]+1,domain[2]-1), ylim=c(domain[3]+1, domain[4]-1)) 
 
-ggsave("outputs/1000/samples-052024.jpeg")
+ggsave("outputs/1000/samples-062026.jpeg")
 ```
 
 
@@ -121,6 +130,8 @@ ggplot() +
   geom_point(data=locs, aes(x=Longitude, y=Latitude), pch=22, fill="blue", alpha=0.75, size=4) +
   geom_text_repel(data=pbr, aes(x=Longitude, y=Latitude, label=River)) +
   geom_text_repel(data=locs, aes(x=Longitude, y=Latitude, label=Location)) +
+  geom_point(data=additional, aes(x=long, y=lat, size=`Sample Size`, fill=`Sample Size`)) +
+
  # geom_text_repel(data=site2, aes(x=Longitude, y=Latitude, label=site_2), max.overlaps = Inf) +
   coord_sf(xlim = c(domain[1]+1,domain[2]-1), ylim=c(domain[3]+1, domain[4]-1)) +
   ylab("Latitude\n") +
@@ -129,8 +140,8 @@ ggplot() +
   theme(panel.grid=element_blank()) +
   scale_fill_viridis_c(option="magma")
 
-ggsave("outputs/1000/samples-052024-pbr.jpeg")
-ggsave("outputs/1000/samples-052024-pbr.pdf")
+ggsave("outputs/1000/samples-07082026-pbr.jpeg")
+ggsave("outputs/1000/samples-07082026-pbr.pdf")
 
 ```
 

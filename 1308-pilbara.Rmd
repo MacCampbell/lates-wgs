@@ -23,6 +23,9 @@ library(ape)
 library(RColorBrewer)
 library(pcadapt)
 library(ggpubr)
+library(adegenet)
+library(vcfR)
+library(dplyr)
 ```
 
 Have the new Pilbara seqs, there are a few lanes to combine. 
@@ -47,17 +50,17 @@ Downsample.
 m152<-read_csv("meta/m152.csv")
 m129<-m152 %>% filter(Coverage > 3) %>% filter(!Locality %in% c("Mainstream","OceanPick"))
 
-m129 %>% select(NewPath) %>% write_tsv("bamlists/129.bamlist", col_names = FALSE)
-m129 %>% select(Run) %>% write_tsv("bamlists/129.names", col_names = FALSE)
+m129 %>% dplyr::select(NewPath) %>% write_tsv("bamlists/129.bamlist", col_names = FALSE)
+m129 %>% dplyr::select(Run) %>% write_tsv("bamlists/129.names", col_names = FALSE)
 
 m69<-m129 %>% filter(Source=="New")
-m69 %>% select(NewPath) %>% write_tsv("bamlists/69.bamlist", col_names = FALSE)
-m69 %>% select(Run) %>% write_tsv("bamlists/69.names", col_names = FALSE)
+m69 %>% dplyr::select(NewPath) %>% write_tsv("bamlists/69.bamlist", col_names = FALSE)
+m69 %>% dplyr::select(Run) %>% write_tsv("bamlists/69.names", col_names = FALSE)
 
 aus<-m129 %>% filter(Lineage=="AUS")
 
-aus %>% select(NewPath) %>% write_tsv("bamlists/61.bamlist", col_names = FALSE)
-aus %>% select(Run) %>% write_tsv("bamlists/61.names", col_names = FALSE)
+aus %>% dplyr::select(NewPath) %>% write_tsv("bamlists/61.bamlist", col_names = FALSE)
+aus %>% dplyr::select(Run) %>% write_tsv("bamlists/61.names", col_names = FALSE)
 write.csv(aus, file="meta/aus-wgs-61.csv")
 
 meta<-m129
@@ -68,13 +71,13 @@ t<- m129 %>% filter(Locality =="Tamsui River")
 w<- m129 %>% filter(Locality %in% c("Samarinda","Sulawesi"))
 
 m76<-bind_rows(aus,w,t) %>%  filter(Run !="WAF011639") %>% filter(Run != "Broome01") %>% write_csv(file="meta/m76.csv")
-m76 %>% select(NewPath) %>% write_tsv("bamlists/76.bamlist", col_names = FALSE)
-m76 %>% select(Run) %>% write_tsv("bamlists/76.names", col_names = FALSE)
+m76 %>% dplyr::select(NewPath) %>% write_tsv("bamlists/76.bamlist", col_names = FALSE)
+m76 %>% dplyr::select(Run) %>% write_tsv("bamlists/76.names", col_names = FALSE)
 
 
 m65<-bind_rows(aus,w) %>%  filter(Run !="WAF011639") %>% filter(Run != "Broome01") %>% write_csv(file="meta/m65.csv")
-m65 %>% select(NewPath) %>% write_tsv("bamlists/65.bamlist", col_names = FALSE)
-m65 %>% select(Run) %>% write_tsv("bamlists/65.names", col_names = FALSE)
+m65 %>% dplyr::select(NewPath) %>% write_tsv("bamlists/65.bamlist", col_names = FALSE)
+m65 %>% dplyr::select(Run) %>% write_tsv("bamlists/65.names", col_names = FALSE)
 
 ```
 
@@ -1024,5 +1027,49 @@ as.ggplot(pheatmap(m2, cluster_cols = FALSE, cluster_rows = FALSE, color=colorRa
   theme(plot.title = element_text(hjust=0.5))
 
 ggsave("outputs/1308/associated-variants-range-wide.jpeg", width=12, height=5)
+
+```
+
+
+## Region 15
+
+bcftools view -r NC_066847.1:13250000-13450000 outputs/1308/renamed-01.vcf.gz > outputs/1308/lca15-region1.vcf
+
+m76
+bcftools view -r NC_066847.1:13250000-13450000 outputs/1308/renamed-01.vcf.gz | bcftools view -S bamlists/76.names  > outputs/1308/lca15-region1.vcf
+
+
+```{r}
+
+vcf<-read.vcfR(file="outputs/1308/lca15-region1.vcf")
+
+genind<-vcfR2genind(vcf)
+genind@pop<-as.factor(m76$Locality)
+
+gen<-genind
+X <- tab(gen, NA.method="mean")
+
+pca1 <- dudi.pca(X,scannf=FALSE,scale=FALSE,nf=3)
+
+df<-pca1$li
+df<-df %>% bind_cols(m76)
+eig<-pca1$eig/sum(pca1$eig)*100
+
+
+pc12<-ggplot(df) + 
+  geom_point(aes(x=Axis1, y=Axis2, fill=Lineage, shape=Lineage), alpha=0.75, cex=2) +
+  theme_bw() +
+  xlab(paste0("PC1 ",round(eig[1],2), "%")) +
+  ylab(paste0("PC2 ",round(eig[2],2), "%")) +
+  theme(panel.grid = element_blank()) +
+  guides(fill = guide_legend(override.aes = list(pch = 22))) +
+  theme(legend.position = "right") +
+  scale_shape_manual(values=c(21,23,22)) +
+  facet_grid(Lineage~.) 
+
+
+pc12
+
+ggsave("outputs/1309/lca15-region-1-pca.jpeg", width=6, height=8.5)
 
 ```
